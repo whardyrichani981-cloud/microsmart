@@ -14,7 +14,11 @@ function fmtUSD(n: number | null) {
 }
 
 function norm(s: string) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') }
-function matches(text: string, q: string) { return norm(text).includes(norm(q)) }
+function matches(text: string, q: string) {
+  const words = norm(q).split(/\s+/).filter(Boolean)
+  const t = norm(text)
+  return words.every(w => t.includes(w))
+}
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
 const th: React.CSSProperties = {
@@ -29,15 +33,18 @@ const td: React.CSSProperties = {
 
 function Highlight({ text, q }: { text: string; q: string }) {
   if (!q) return <>{text}</>
-  const idx = norm(text).indexOf(norm(q))
-  if (idx < 0) return <>{text}</>
+  const words = norm(q).split(/\s+/).filter(Boolean)
+  if (!words.length) return <>{text}</>
+  // Build regex that matches any of the words
+  const pattern = new RegExp(`(${words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
+  const parts = text.split(pattern)
   return (
     <>
-      {text.slice(0, idx)}
-      <mark style={{ background: 'rgba(236,72,153,0.35)', color: '#fff', borderRadius: 2, padding: '0 1px' }}>
-        {text.slice(idx, idx + q.length)}
-      </mark>
-      {text.slice(idx + q.length)}
+      {parts.map((part, i) =>
+        words.some(w => norm(part) === w)
+          ? <mark key={i} style={{ background: 'rgba(236,72,153,0.35)', color: '#fff', borderRadius: 2, padding: '0 1px' }}>{part}</mark>
+          : part
+      )}
     </>
   )
 }
