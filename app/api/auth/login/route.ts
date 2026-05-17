@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { makeToken, COOKIE_NAME } from '@/lib/session'
 
+const USERS: Record<string, string> = {
+  microsmart:  'micro1278',
+  microwhardy: 'micro1278',
+  microsaddi:  'saddi',
+  microsharon: 'sharon',
+}
+
 export async function POST(req: NextRequest) {
   const { user, pass } = await req.json()
 
-  const validUser = process.env.AUTH_USER ?? 'microsmart'
-  const validPass = process.env.AUTH_PASS ?? 'microsmart2025'
-
-  if (user !== validUser || pass !== validPass) {
+  const validPass = USERS[user as string]
+  if (!validPass || pass !== validPass) {
     return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
   }
 
