@@ -62,7 +62,7 @@ export default function PriceComparator({
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeNav, setActiveNav] = useState<NavItem>('comparador')
   const [viewMode, setViewMode] = useState<'merged' | 'columns'>('columns')
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set())
 
   const today = new Date().toLocaleDateString('es-AR', {
     weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
@@ -103,8 +103,8 @@ export default function PriceComparator({
   const rows = useMemo(() => {
     const terms = expandQuery(search)
     let filtered = merged
-    if (selectedSupplierId)
-      filtered = filtered.filter(r => r.prices[selectedSupplierId] != null)
+    if (selectedSupplierIds.size > 0)
+      filtered = filtered.filter(r => [...selectedSupplierIds].some(id => r.prices[id] != null))
     if (terms.length) filtered = filtered.filter(r =>
       matchesQuery(r.name, terms) || matchesQuery(r.code, terms))
     if (activeCategories.size > 0)
@@ -118,7 +118,7 @@ export default function PriceComparator({
       }
       return sort.dir * ((a.prices[sort.col] ?? Infinity) - (b.prices[sort.col] ?? Infinity))
     })
-  }, [merged, search, sort, activeCategories, selectedSupplierId])
+  }, [merged, search, sort, activeCategories, selectedSupplierIds])
 
   const handleSort = useCallback((col: string) =>
     setSort(s => s.col === col ? { col, dir: s.dir === 1 ? -1 : 1 } : { col, dir: 1 }), [])
@@ -148,9 +148,18 @@ export default function PriceComparator({
     } finally { setRefreshing(false) }
   }
 
+  const toggleSupplier = (id: string) => {
+    setSelectedSupplierIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const handleNav = (id: NavItem) => {
     setActiveNav(id)
-    if (id !== 'comparador') setSelectedSupplierId(null)
+    if (id !== 'comparador') setSelectedSupplierIds(new Set())
   }
 
   const SIDEBAR_W = sidebarOpen ? 220 : 56
@@ -230,38 +239,43 @@ export default function PriceComparator({
                 )}
               </button>
 
-              {/* Supplier sub-items under "Listas de precio" */}
+              {/* Supplier sub-items under "Listas de precio" — multi-select toggles */}
               {isListas && comparadorSuppliers.length > 0 && (
                 <div style={{ overflow: 'hidden' }}>
                   {comparadorSuppliers.map(s => {
-                    const isSubActive = activeNav === 'comparador' && selectedSupplierId === s.id
+                    const isSelected = selectedSupplierIds.has(s.id)
                     return (
                       <button
                         key={s.id}
-                        onClick={() => { setActiveNav('comparador'); setSelectedSupplierId(s.id) }}
+                        onClick={() => { setActiveNav('comparador'); toggleSupplier(s.id) }}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center',
                           gap: 8,
                           padding: sidebarOpen ? '7px 18px 7px 38px' : '7px 0',
                           justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                          background: isSubActive ? `${s.color.border}22` : 'transparent',
+                          background: isSelected ? `${s.color.border}22` : 'transparent',
                           border: 'none',
-                          borderLeft: isSubActive ? `3px solid ${s.color.border}` : '3px solid transparent',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
+                          borderLeft: isSelected ? `3px solid ${s.color.border}` : '3px solid transparent',
+                          cursor: 'pointer', transition: 'all 0.15s',
                         }}
-                        onMouseEnter={e => { if (!isSubActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                        onMouseLeave={e => { if (!isSubActive) e.currentTarget.style.background = 'transparent' }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                       >
+                        {/* Checkbox indicator */}
                         <span style={{
-                          width: 7, height: 7, borderRadius: '50%',
-                          background: s.color.border, flexShrink: 0,
-                        }} />
+                          width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                          border: `2px solid ${isSelected ? s.color.border : '#475569'}`,
+                          background: isSelected ? s.color.border : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s',
+                        }}>
+                          {isSelected && <span style={{ color: '#0f1117', fontSize: 9, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                        </span>
                         {sidebarOpen && (
                           <>
                             <span style={{
-                              fontSize: 12, color: isSubActive ? s.color.text : '#94a3b8',
-                              fontWeight: isSubActive ? 600 : 400,
+                              fontSize: 12, color: isSelected ? s.color.text : '#94a3b8',
+                              fontWeight: isSelected ? 600 : 400,
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                               flex: 1, textAlign: 'left',
                             }}>
@@ -275,6 +289,21 @@ export default function PriceComparator({
                       </button>
                     )
                   })}
+                  {/* Deselect all button */}
+                  {selectedSupplierIds.size > 0 && sidebarOpen && (
+                    <button
+                      onClick={() => setSelectedSupplierIds(new Set())}
+                      style={{
+                        width: '100%', padding: '5px 18px 5px 38px', textAlign: 'left',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontSize: 11, color: '#475569',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+                    >
+                      Ver todas
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -444,8 +473,8 @@ export default function PriceComparator({
   )
 
   // ─── CONTENT VIEWS ────────────────────────────────────────────────────────
-  const visibleSuppliers = selectedSupplierId
-    ? comparadorSuppliers.filter(s => s.id === selectedSupplierId)
+  const visibleSuppliers = selectedSupplierIds.size > 0
+    ? comparadorSuppliers.filter(s => selectedSupplierIds.has(s.id))
     : comparadorSuppliers
 
   const ComparadorView = (
