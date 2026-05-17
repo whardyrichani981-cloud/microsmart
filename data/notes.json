@@ -1,0 +1,16 @@
+[
+  {
+    "author": "sharon",
+    "authorColor": "#f472b6",
+    "content": "Reparacion de placa",
+    "category": "reparacion-gremio",
+    "priority": "media",
+    "product": "iPhone 16 Pro Max",
+    "id": "1778992137413-vf127",
+    "createdAt": "2026-05-17T04:28:57.413Z",
+    "resolved": true,
+    "resolvedAt": "2026-05-17T04:34:07.349Z",
+    "deleted": true,
+    "deletedAt": "2026-05-17T04:34:16.181Z"
+  }
+]
