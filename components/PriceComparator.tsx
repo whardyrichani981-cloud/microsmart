@@ -257,15 +257,39 @@ export default function PriceComparator({ initialSuppliers }: Props) {
         })}
       </nav>
 
-      {/* Bottom: total products */}
-      {sidebarOpen && merged.length > 0 && (
-        <div style={{
-          padding: '12px 18px', borderTop: '1px solid var(--border)',
-          fontSize: 11, color: '#475569',
-        }}>
-          <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{merged.length}</span>{' '}productos totales
-        </div>
-      )}
+      {/* Bottom: total products + logout */}
+      <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+        {sidebarOpen && merged.length > 0 && (
+          <div style={{ padding: '10px 18px', fontSize: 11, color: '#475569' }}>
+            <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{merged.length}</span>{' '}productos totales
+          </div>
+        )}
+        <button
+          onClick={handleLogout}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center',
+            gap: 8, padding: sidebarOpen ? '12px 18px' : '12px 0',
+            justifyContent: sidebarOpen ? 'flex-start' : 'center',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#7c85a2', transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
+            e.currentTarget.style.color = '#fca5a5'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'none'
+            e.currentTarget.style.color = '#7c85a2'
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+            <path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3H9a2 2 0 0 0-2 2v4h2V5h11v14H9v-4H7v4a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
+          </svg>
+          {sidebarOpen && (
+            <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' }}>Cerrar sesión</span>
+          )}
+        </button>
+      </div>
     </aside>
   )
 
@@ -333,23 +357,6 @@ export default function PriceComparator({ initialSuppliers }: Props) {
           <path d="M12 4V1L8 5l4 4V6a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z" />
         </svg>
         {refreshing ? 'Actualizando...' : 'Actualizar'}
-      </button>
-
-      {/* Logout btn */}
-      <button onClick={handleLogout} title="Cerrar sesión" style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        padding: '6px 12px', borderRadius: 7, fontSize: 12, fontWeight: 500,
-        background: 'var(--surface2)', border: '1px solid var(--border)',
-        color: '#7c85a2', cursor: 'pointer', whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#fca5a5'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef4444' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#7c85a2'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)' }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3H9a2 2 0 0 0-2 2v4h2V5h11v14H9v-4H7v4a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
-        </svg>
-        Salir
       </button>
 
       {/* Notes btn */}
