@@ -284,10 +284,16 @@ export default function GremioView() {
   const [errors, setErrors] = useState<Partial<Record<TabId, string>>>({})
 
   useEffect(() => {
-    fetch('/api/gremio').then(r => r.json()).then(setReparaciones).catch(e => setErrors(p => ({ ...p, reparaciones: String(e) })))
-    fetch('/api/gremio/originales').then(r => r.json()).then(setOriginales).catch(e => setErrors(p => ({ ...p, originales: String(e) })))
-    fetch('/api/gremio/ampsentrix').then(r => r.json()).then(setAmpsentrix).catch(e => setErrors(p => ({ ...p, ampsentrix: String(e) })))
-    fetch('/api/gremio/cf').then(r => r.json()).then(setCf).catch(e => setErrors(p => ({ ...p, cf: String(e) })))
+    const load = <T,>(url: string, set: (v: T) => void, key: TabId) =>
+      fetch(url)
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() as Promise<T> })
+        .then(set)
+        .catch(e => setErrors(p => ({ ...p, [key]: String(e) })))
+
+    load('/api/gremio',            setReparaciones, 'reparaciones')
+    load('/api/gremio/originales', setOriginales,   'originales')
+    load('/api/gremio/ampsentrix', setAmpsentrix,   'ampsentrix')
+    load('/api/gremio/cf',         setCf,           'cf')
   }, [])
 
   // Badge counts per tab while searching

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const COOKIE_NAME = 'ms_auth'
-const PUBLIC_PATHS = ['/login', '/api/auth/']
+const PUBLIC_PATHS = ['/login', '/api/auth/', '/api/debug/']
+// TODO: remove /api/debug/ after testing
 
 async function verify(token: string): Promise<boolean> {
   try {
