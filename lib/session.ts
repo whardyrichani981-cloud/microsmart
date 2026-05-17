@@ -25,4 +25,15 @@ export function verifyTokenNode(token: string): boolean {
   } catch { return false }
 }
 
+export function getUserFromToken(token: string): string | null {
+  try {
+    const dot = token.lastIndexOf('.')
+    if (dot < 0) return null
+    const p = token.slice(0, dot)
+    const payload = JSON.parse(Buffer.from(p, 'base64url').toString())
+    if (typeof payload.exp === 'number' && payload.exp > Date.now()) return payload.u ?? null
+    return null
+  } catch { return null }
+}
+
 export { COOKIE_NAME }

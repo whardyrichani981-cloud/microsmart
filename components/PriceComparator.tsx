@@ -15,7 +15,14 @@ import NotasBoard from './NotasBoard'
 import GremioView from './GremioView'
 import CFView from './CFView'
 
-interface Props { initialSuppliers: Supplier[] }
+const USER_NAMES: Record<string, string> = {
+  microsmart:  'Ronald Diaz',
+  microwhardy: 'Whardy Richani',
+  microsaddi:  'Saddi Richani',
+  microsharon: 'Sharon Quiroz',
+}
+
+interface Props { initialSuppliers: Supplier[]; currentUser?: string }
 export type SortState = { col: string; dir: 1 | -1 }
 
 type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio'
@@ -28,7 +35,8 @@ const NAV: { id: NavItem; label: string; icon: string }[] = [
   { id: 'notasdash',   label: 'Notas',             icon: '📋' },
 ]
 
-export default function PriceComparator({ initialSuppliers }: Props) {
+export default function PriceComparator({ initialSuppliers, currentUser = '' }: Props) {
+  const displayName = USER_NAMES[currentUser] ?? currentUser
   const router = useRouter()
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers)
   const [search, setSearch] = useState('')
@@ -329,6 +337,26 @@ export default function PriceComparator({ initialSuppliers }: Props) {
       <div style={{ fontSize: 12, color: '#7c85a2', whiteSpace: 'nowrap' }}>
         📅 {today}
       </div>
+
+      {/* Current user */}
+      {displayName && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '4px 12px', borderRadius: 20,
+          background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: '50%',
+            background: '#6366f1', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff',
+            flexShrink: 0,
+          }}>
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#818cf8' }}>{displayName}</span>
+        </div>
+      )}
 
       {/* Stats pill */}
       {merged.length > 0 && (
