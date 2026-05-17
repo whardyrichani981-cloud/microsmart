@@ -1,3 +1,42 @@
+// ── Consumidor Final (CF) ─────────────────────────────────────────────────────
+export interface CFItem {
+  name: string
+  category: string
+  usdRepuesto: number | null
+  precioEfectivo: number | null  // col 6 — ARS efectivo/transferencia
+  precio3cuotas: number | null   // col 7
+  precio6cuotas: number | null   // col 8
+}
+
+export function parseCF(rows: Row[]): CFItem[] {
+  const items: CFItem[] = []
+  let headerFound = false
+
+  for (const row of rows) {
+    const c = row.map(clean)
+    if (!headerFound) {
+      if (/^reparacion$/i.test(c[0]) && /tipo/i.test(c[1])) { headerFound = true }
+      continue
+    }
+    const name = c[0]?.trim()
+    if (!name) continue
+    const parseN = (v: string) => {
+      if (!v || /^no$/i.test(v.trim())) return null
+      const n = parseFloat(v.replace(/\$/g, '').replace(/,/g, ''))
+      return isNaN(n) || n <= 0 ? null : n
+    }
+    items.push({
+      name,
+      category: c[1]?.trim() || '',
+      usdRepuesto: parseN(c[2]),
+      precioEfectivo: parseN(c[6]),
+      precio3cuotas: parseN(c[7]),
+      precio6cuotas: parseN(c[8]),
+    })
+  }
+  return items
+}
+
 // ── Repuestos Originales ──────────────────────────────────────────────────────
 export interface OriginalItem {
   name: string

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import type { GremioData, GremioSection, GremioItem, OriginalItem, AmpsentrixItem } from '@/lib/gremio-parser'
+import type { GremioData, GremioSection, GremioItem, OriginalItem, AmpsentrixItem, CFItem } from '@/lib/gremio-parser'
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function fmtARS(n: number | null) {
@@ -187,6 +187,72 @@ function AmpsentrixTab({ items, q }: { items: AmpsentrixItem[]; q: string }) {
   )
 }
 
+// ── Tab: Consumidor Final (CF) ────────────────────────────────────────────────
+function CFTab({ items, q }: { items: CFItem[]; q: string }) {
+  const filtered = q ? items.filter(it => matches(it.name, q) || matches(it.category, q)) : items
+
+  // Group by category
+  const grouped = filtered.reduce<Record<string, CFItem[]>>((acc, it) => {
+    const cat = it.category || 'Sin categoría'
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(it)
+    return acc
+  }, {})
+  const categories = Object.keys(grouped).sort()
+
+  return (
+    <>
+      {q && <div style={{ marginBottom: 12, fontSize: 12, color: '#7c85a2' }}>{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</div>}
+      {filtered.length === 0 ? <NoResults /> : (
+        categories.map(cat => (
+          <div key={cat} style={{ marginBottom: 20 }}>
+            <div style={{
+              padding: '7px 12px', background: 'rgba(234,179,8,0.15)', borderLeft: '3px solid #eab308',
+              borderRadius: '6px 6px 0 0', fontSize: 12, fontWeight: 700, color: '#facc15',
+              letterSpacing: 0.3, textTransform: 'uppercase',
+            }}>
+              {cat}
+              {q && <span style={{ fontWeight: 400, marginLeft: 8, fontSize: 11 }}>({grouped[cat].length})</span>}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'rgba(15,17,28,0.6)' }}>
+                  <th style={{ ...th, textAlign: 'left', width: '38%' }}>Reparación</th>
+                  <th style={th}>USD repuesto</th>
+                  <th style={th}>Efectivo / Transf.</th>
+                  <th style={th}>3 cuotas</th>
+                  <th style={th}>6 cuotas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grouped[cat].map((item, i) => (
+                  <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ ...td, color: '#e2e8f0', fontWeight: 500 }}>
+                      <Highlight text={item.name} q={q} />
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#818cf8', fontWeight: 600 }}>
+                      {item.usdRepuesto !== null ? fmtUSD(item.usdRepuesto) : <span style={{ color: '#475569' }}>—</span>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#fbbf24', fontWeight: 600 }}>
+                      {item.precioEfectivo !== null ? fmtARS(item.precioEfectivo) : <span style={{ color: '#475569' }}>—</span>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#f472b6', fontWeight: 600 }}>
+                      {item.precio3cuotas !== null ? fmtARS(item.precio3cuotas) : <span style={{ color: '#475569', fontStyle: 'italic', fontWeight: 400, fontSize: 12 }}>No</span>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#f472b6', fontWeight: 600 }}>
+                      {item.precio6cuotas !== null ? fmtARS(item.precio6cuotas) : <span style={{ color: '#475569', fontStyle: 'italic', fontWeight: 400, fontSize: 12 }}>No</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
+    </>
+  )
+}
+
 function NoResults() {
   return <div style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: 14 }}>Sin resultados</div>
 }
@@ -199,12 +265,13 @@ function Err({ msg }: { msg: string }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-type TabId = 'reparaciones' | 'originales' | 'ampsentrix'
+type TabId = 'reparaciones' | 'originales' | 'ampsentrix' | 'cf'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'reparaciones', label: 'Reparaciones' },
   { id: 'originales',   label: 'Repuestos Originales' },
   { id: 'ampsentrix',   label: 'Repuestos Ampsentrix' },
+  { id: 'cf',           label: 'Consumidor Final' },
 ]
 
 export default function GremioView() {
@@ -213,23 +280,26 @@ export default function GremioView() {
   const [reparaciones, setReparaciones] = useState<GremioData | null>(null)
   const [originales, setOriginales] = useState<OriginalItem[] | null>(null)
   const [ampsentrix, setAmpsentrix] = useState<AmpsentrixItem[] | null>(null)
+  const [cf, setCf] = useState<CFItem[] | null>(null)
   const [errors, setErrors] = useState<Partial<Record<TabId, string>>>({})
 
   useEffect(() => {
     fetch('/api/gremio').then(r => r.json()).then(setReparaciones).catch(e => setErrors(p => ({ ...p, reparaciones: String(e) })))
     fetch('/api/gremio/originales').then(r => r.json()).then(setOriginales).catch(e => setErrors(p => ({ ...p, originales: String(e) })))
     fetch('/api/gremio/ampsentrix').then(r => r.json()).then(setAmpsentrix).catch(e => setErrors(p => ({ ...p, ampsentrix: String(e) })))
+    fetch('/api/gremio/cf').then(r => r.json()).then(setCf).catch(e => setErrors(p => ({ ...p, cf: String(e) })))
   }, [])
 
   // Badge counts per tab while searching
   const counts = useMemo(() => {
     const q = search.trim()
-    if (!q || !reparaciones || !originales || !ampsentrix) return null
+    if (!q || !reparaciones || !originales || !ampsentrix || !cf) return null
     const rep = [...reparaciones.left, ...reparaciones.right].reduce((a, s) => a + s.items.filter(it => matches(it.name, q)).length, 0)
     const ori = originales.filter(it => matches(it.name, q) || matches(it.notas, q)).length
     const amp = ampsentrix.filter(it => matches(it.name, q)).length
-    return { reparaciones: rep, originales: ori, ampsentrix: amp }
-  }, [search, reparaciones, originales, ampsentrix])
+    const cfCount = cf.filter(it => matches(it.name, q) || matches(it.category, q)).length
+    return { reparaciones: rep, originales: ori, ampsentrix: amp, cf: cfCount }
+  }, [search, reparaciones, originales, ampsentrix, cf])
 
   const q = search.trim()
 
@@ -251,7 +321,7 @@ export default function GremioView() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar en lista Gremio..."
+            placeholder="Buscar en todas las listas..."
             style={{
               width: '100%', padding: '8px 32px 8px 32px', boxSizing: 'border-box',
               background: 'var(--surface2)', border: '1px solid var(--border)',
@@ -313,6 +383,11 @@ export default function GremioView() {
         errors.ampsentrix ? <Err msg={errors.ampsentrix} /> :
         !ampsentrix ? <Loading label="repuestos Ampsentrix" /> :
         <AmpsentrixTab items={ampsentrix} q={q} />
+      )}
+      {activeTab === 'cf' && (
+        errors.cf ? <Err msg={errors.cf} /> :
+        !cf ? <Loading label="lista Consumidor Final" /> :
+        <CFTab items={cf} q={q} />
       )}
 
       {/* Legend */}
