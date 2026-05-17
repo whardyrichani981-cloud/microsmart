@@ -15,6 +15,7 @@ import NotasBoard from './NotasBoard'
 import GremioView from './GremioView'
 import CFView from './CFView'
 import SettingsModal from './SettingsModal'
+import AdminView from './AdminView'
 import type { UserRole, Permissions } from '@/lib/roles'
 import { SUPERADMIN_PERMISSIONS } from '@/lib/roles'
 
@@ -27,14 +28,15 @@ interface Props {
 }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio'
+type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'administracion'
 
-const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions }[] = [
-  { id: 'comparador',  label: 'Listas de precio', icon: '📊', permKey: 'canViewComparador' },
-  { id: 'gremio',      label: 'Gremio',           icon: '🔧', permKey: 'canViewGremio' },
-  { id: 'cf',          label: 'Consumidor Final',  icon: '💰', permKey: 'canViewCF' },
-  { id: 'proveedores', label: 'Proveedores',       icon: '🏢', permKey: 'canViewProveedores' },
-  { id: 'notasdash',   label: 'Notas',             icon: '📋', permKey: 'canViewNotas' },
+const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions; adminOnly?: boolean }[] = [
+  { id: 'comparador',     label: 'Listas de precio', icon: '📊', permKey: 'canViewComparador' },
+  { id: 'gremio',         label: 'Gremio',           icon: '🔧', permKey: 'canViewGremio' },
+  { id: 'cf',             label: 'Consumidor Final',  icon: '💰', permKey: 'canViewCF' },
+  { id: 'proveedores',    label: 'Proveedores',       icon: '🏢', permKey: 'canViewProveedores' },
+  { id: 'notasdash',      label: 'Notas',             icon: '📋', permKey: 'canViewNotas' },
+  { id: 'administracion', label: 'Administración',    icon: '⚙️',  adminOnly: true },
 ]
 
 export default function PriceComparator({
@@ -42,7 +44,12 @@ export default function PriceComparator({
   role = 'employee', permissions = null,
 }: Props) {
   const p = permissions ?? SUPERADMIN_PERMISSIONS
-  const NAV = ALL_NAV.filter(item => !item.permKey || p[item.permKey])
+  const isSuperAdmin = role === 'superadmin'
+  const NAV = ALL_NAV.filter(item => {
+    if (item.adminOnly && !isSuperAdmin) return false
+    if (item.permKey && !p[item.permKey]) return false
+    return true
+  })
   const router = useRouter()
   const [displayName, setDisplayName] = useState(initialDisplayName || currentUser)
   const [showSettings, setShowSettings] = useState(false)
@@ -75,10 +82,12 @@ export default function PriceComparator({
   }, [])
 
   const activeSuppliers = suppliers.filter(s => s.items.length > 0)
+  // Gremio has its own dedicated tab — exclude it from the comparador
+  const comparadorSuppliers = activeSuppliers.filter(s => s.id !== 'gremio')
 
   const merged = useMemo<MergedRow[]>(() => {
     const map = new Map<string, MergedRow>()
-    for (const s of activeSuppliers) {
+    for (const s of comparadorSuppliers) {
       for (const item of s.items) {
         const key = item.name.toLowerCase().trim()
         if (!map.has(key))
@@ -89,7 +98,7 @@ export default function PriceComparator({
       }
     }
     return [...map.values()]
-  }, [activeSuppliers])
+  }, [comparadorSuppliers])
 
   const rows = useMemo(() => {
     const terms = expandQuery(search)
@@ -222,9 +231,9 @@ export default function PriceComparator({
               </button>
 
               {/* Supplier sub-items under "Listas de precio" */}
-              {isListas && activeSuppliers.length > 0 && (
+              {isListas && comparadorSuppliers.length > 0 && (
                 <div style={{ overflow: 'hidden' }}>
-                  {activeSuppliers.filter(s => s.id !== 'gremio').map(s => {
+                  {comparadorSuppliers.map(s => {
                     const isSubActive = activeNav === 'comparador' && selectedSupplierId === s.id
                     return (
                       <button
@@ -436,8 +445,8 @@ export default function PriceComparator({
 
   // ─── CONTENT VIEWS ────────────────────────────────────────────────────────
   const visibleSuppliers = selectedSupplierId
-    ? activeSuppliers.filter(s => s.id === selectedSupplierId)
-    : activeSuppliers
+    ? comparadorSuppliers.filter(s => s.id === selectedSupplierId)
+    : comparadorSuppliers
 
   const ComparadorView = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -581,6 +590,7 @@ export default function PriceComparator({
           {activeNav === 'notasdash' && (
             <NotasBoard onNotesChange={setPendingNotes} />
           )}
+          {activeNav === 'administracion' && <AdminView />}
         </main>
       </div>
 
