@@ -18,10 +18,11 @@ import CFView from './CFView'
 interface Props { initialSuppliers: Supplier[] }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf'
+type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio'
 
 const NAV: { id: NavItem; label: string; icon: string }[] = [
   { id: 'comparador',  label: 'Listas de precio', icon: '📊' },
+  { id: 'gremio',      label: 'Gremio',           icon: '🔧' },
   { id: 'cf',          label: 'Consumidor Final',  icon: '💰' },
   { id: 'proveedores', label: 'Proveedores',       icon: '🏢' },
   { id: 'notasdash',   label: 'Notas',             icon: '📋' },
@@ -124,7 +125,7 @@ export default function PriceComparator({ initialSuppliers }: Props) {
 
   const handleNav = (id: NavItem) => {
     setActiveNav(id)
-    if (id === 'comparador') setSelectedSupplierId(null)
+    if (id !== 'comparador') setSelectedSupplierId(null)
   }
 
   const SIDEBAR_W = sidebarOpen ? 220 : 56
@@ -207,7 +208,7 @@ export default function PriceComparator({ initialSuppliers }: Props) {
               {/* Supplier sub-items under "Listas de precio" */}
               {isListas && activeSuppliers.length > 0 && (
                 <div style={{ overflow: 'hidden' }}>
-                  {activeSuppliers.map(s => {
+                  {activeSuppliers.filter(s => s.id !== 'gremio').map(s => {
                     const isSubActive = activeNav === 'comparador' && selectedSupplierId === s.id
                     return (
                       <button
@@ -426,9 +427,7 @@ export default function PriceComparator({ initialSuppliers }: Props) {
       </div>
 
       {/* Content by view mode */}
-      {selectedSupplierId === 'gremio' ? (
-        <GremioView />
-      ) : viewMode === 'columns' ? (
+      {viewMode === 'columns' ? (
         <SupplierColumns
           suppliers={visibleSuppliers}
           search={search}
@@ -513,6 +512,7 @@ export default function PriceComparator({ initialSuppliers }: Props) {
 
         <main style={{ flex: 1, padding: 20, overflow: 'auto' }}>
           {activeNav === 'comparador' && ComparadorView}
+          {activeNav === 'gremio' && <GremioView />}
           {activeNav === 'cf' && <CFView />}
           {activeNav === 'proveedores' && ProveedoresView}
           {activeNav === 'notasdash' && (
