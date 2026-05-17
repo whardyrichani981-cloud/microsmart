@@ -68,45 +68,45 @@ for (const alias of ALIASES) {
   }
 }
 
-export function expandQuery(raw: string): string[] {
-  const q = raw.trim().toLowerCase()
-  if (!q) return []
+// Expand a single token into all its aliases (OR-group)
+function expandToken(token: string): string[] {
+  const result = new Set<string>([token])
 
-  const result = new Set<string>([q])
-
-  // Direct lookup
-  const direct = LOOKUP.get(q)
+  const direct = LOOKUP.get(token)
   if (direct) direct.forEach(t => result.add(t))
 
-  // Prefix match: "iphone 11" → strip "iphone " and look up "11"
-  if (q.startsWith('iphone ')) {
-    const model = q.slice(7)
+  if (token.startsWith('iphone ')) {
+    const model = token.slice(7)
     result.add(model)
     result.add(`iph ${model}`)
     result.add(`iph${model}`)
-    const extra = LOOKUP.get(model)
-    if (extra) extra.forEach(t => result.add(t))
+    LOOKUP.get(model)?.forEach(t => result.add(t))
   }
-  if (q.startsWith('iph ') || (q.startsWith('iph') && q.length > 3)) {
-    const model = q.replace(/^iph\s*/, '')
+  if (token.startsWith('iph ') || (token.startsWith('iph') && token.length > 3)) {
+    const model = token.replace(/^iph\s*/, '')
     result.add(model)
     result.add(`iphone ${model}`)
-    const extra = LOOKUP.get(model)
-    if (extra) extra.forEach(t => result.add(t))
+    LOOKUP.get(model)?.forEach(t => result.add(t))
   }
-
-  // Bare number: "11" → "iphone 11", "iph 11"
-  if (/^\d{1,2}$/.test(q)) {
-    result.add(`iphone ${q}`)
-    result.add(`iph ${q}`)
-    result.add(`iph${q}`)
+  if (/^\d{1,2}$/.test(token)) {
+    result.add(`iphone ${token}`)
+    result.add(`iph ${token}`)
+    result.add(`iph${token}`)
   }
 
   return [...result]
 }
 
-export function matchesQuery(text: string | undefined | null, terms: string[]): boolean {
-  if (!text) return false
+// Returns one group per word — item must match ALL groups (AND), each group via OR of aliases
+export function expandQuery(raw: string): string[][] {
+  const words = raw.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  if (!words.length) return []
+  return words.map(expandToken)
+}
+
+// Matches when every word-group has at least one alias present in the text
+export function matchesQuery(text: string | undefined | null, groups: string[][]): boolean {
+  if (!text || !groups.length) return false
   const lower = text.toLowerCase()
-  return terms.some(t => lower.includes(t))
+  return groups.every(group => group.some(t => lower.includes(t)))
 }
