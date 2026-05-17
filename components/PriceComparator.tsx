@@ -15,14 +15,7 @@ import NotasBoard from './NotasBoard'
 import GremioView from './GremioView'
 import CFView from './CFView'
 
-const USER_NAMES: Record<string, string> = {
-  microsmart:  'Ronald Diaz',
-  microwhardy: 'Whardy Richani',
-  microsaddi:  'Saddi Richani',
-  microsharon: 'Sharon Quiroz',
-}
-
-interface Props { initialSuppliers: Supplier[]; currentUser?: string }
+interface Props { initialSuppliers: Supplier[]; currentUser?: string; initialDisplayName?: string }
 export type SortState = { col: string; dir: 1 | -1 }
 
 type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio'
@@ -35,9 +28,13 @@ const NAV: { id: NavItem; label: string; icon: string }[] = [
   { id: 'notasdash',   label: 'Notas',             icon: '📋' },
 ]
 
-export default function PriceComparator({ initialSuppliers, currentUser = '' }: Props) {
-  const displayName = USER_NAMES[currentUser] ?? currentUser
+export default function PriceComparator({ initialSuppliers, currentUser = '', initialDisplayName = '' }: Props) {
   const router = useRouter()
+  const [displayName, setDisplayName] = useState(initialDisplayName || currentUser)
+  const [showSettings, setShowSettings] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+  const [nameError, setNameError] = useState('')
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SortState>({ col: 'name', dir: 1 })
@@ -120,6 +117,32 @@ export default function PriceComparator({ initialSuppliers, currentUser = '' }: 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
+  }
+
+  const handleOpenSettings = () => {
+    setNameInput(displayName)
+    setNameError('')
+    setShowSettings(true)
+  }
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) { setNameError('El nombre no puede estar vacío'); return }
+    setNameSaving(true)
+    setNameError('')
+    try {
+      const res = await fetch('/api/users/name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameInput.trim() }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Error') }
+      setDisplayName(nameInput.trim())
+      setShowSettings(false)
+    } catch (e) {
+      setNameError(String(e))
+    } finally {
+      setNameSaving(false)
+    }
   }
 
   const handleRefresh = async () => {
@@ -338,23 +361,41 @@ export default function PriceComparator({ initialSuppliers, currentUser = '' }: 
         📅 {today}
       </div>
 
-      {/* Current user */}
+      {/* Current user + settings */}
       {displayName && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 7,
-          padding: '4px 12px', borderRadius: 20,
-          background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
-          whiteSpace: 'nowrap', flexShrink: 0,
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <div style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: '#6366f1', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff',
-            flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 7,
+            padding: '4px 12px', borderRadius: 20,
+            background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+            whiteSpace: 'nowrap',
           }}>
-            {displayName.charAt(0).toUpperCase()}
+            <div style={{
+              width: 22, height: 22, borderRadius: '50%',
+              background: '#6366f1', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff',
+              flexShrink: 0,
+            }}>
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#818cf8' }}>{displayName}</span>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#818cf8' }}>{displayName}</span>
+          <button
+            onClick={handleOpenSettings}
+            title="Configuración"
+            style={{
+              width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)',
+              background: 'var(--surface2)', color: '#7c85a2', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#818cf8'; e.currentTarget.style.borderColor = '#6366f1' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#7c85a2'; e.currentTarget.style.borderColor = 'var(--border)' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.02 7.02 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.36 2.54a7.37 7.37 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.63 8.48a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.05.24.26.42.49.42h4c.25 0 .46-.18.49-.42l.36-2.54a7.37 7.37 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+            </svg>
+          </button>
         </div>
       )}
 
@@ -556,6 +597,90 @@ export default function PriceComparator({ initialSuppliers, currentUser = '' }: 
         </main>
       </div>
 
+      {/* Settings modal */}
+      {showSettings && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setShowSettings(false) }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div style={{
+            width: 400, background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 16, padding: 28, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#818cf8" viewBox="0 0 24 24">
+                  <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.02 7.02 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.36 2.54a7.37 7.37 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.63 8.48a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.05.24.26.42.49.42h4c.25 0 .46-.18.49-.42l.36-2.54a7.37 7.37 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+                </svg>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>Configuración</span>
+              </div>
+              <button onClick={() => setShowSettings(false)} style={{
+                background: 'none', border: 'none', color: '#7c85a2',
+                cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4,
+              }}>×</button>
+            </div>
+
+            {/* User info */}
+            <div style={{
+              padding: '12px 16px', borderRadius: 10,
+              background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+              marginBottom: 20, fontSize: 12, color: '#7c85a2',
+            }}>
+              Usuario: <span style={{ color: '#818cf8', fontWeight: 600 }}>{currentUser}</span>
+            </div>
+
+            {/* Name field */}
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 8 }}>
+                Nombre para mostrar
+              </label>
+              <input
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
+                placeholder="Tu nombre completo"
+                style={{
+                  width: '100%', padding: '10px 14px', boxSizing: 'border-box',
+                  background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: 8, color: '#e2e8f0', fontSize: 14, outline: 'none',
+                }}
+              />
+            </div>
+
+            {nameError && (
+              <div style={{
+                padding: '8px 12px', borderRadius: 8, fontSize: 12, marginBottom: 12,
+                background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#fca5a5',
+              }}>
+                {nameError}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button onClick={() => setShowSettings(false)} style={{
+                padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)',
+                background: 'var(--surface2)', color: '#7c85a2', cursor: 'pointer', fontSize: 13,
+              }}>
+                Cancelar
+              </button>
+              <button onClick={handleSaveName} disabled={nameSaving} style={{
+                padding: '9px 18px', borderRadius: 8, border: 'none',
+                background: nameSaving ? '#4f46e5' : '#6366f1',
+                color: '#fff', cursor: nameSaving ? 'not-allowed' : 'pointer',
+                fontSize: 13, fontWeight: 600, opacity: nameSaving ? 0.8 : 1,
+              }}>
+                {nameSaving ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
 <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

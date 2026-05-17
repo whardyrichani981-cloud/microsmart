@@ -1,14 +1,16 @@
 import { cookies } from 'next/headers'
 import { fetchBuiltinSuppliers } from '@/lib/suppliers'
 import { getUserFromToken, COOKIE_NAME } from '@/lib/session'
+import { getUserName } from '@/lib/user-names-server'
 import PriceComparator from '@/components/PriceComparator'
 
-export const revalidate = 3600
+export const revalidate = 0
 
 export default async function Home() {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value ?? ''
-  const currentUser = getUserFromToken(token) ?? ''
+  const username = getUserFromToken(token) ?? ''
+  const displayName = username ? await getUserName(username) : ''
   const suppliers = await fetchBuiltinSuppliers()
-  return <PriceComparator initialSuppliers={suppliers} currentUser={currentUser} />
+  return <PriceComparator initialSuppliers={suppliers} currentUser={username} initialDisplayName={displayName} />
 }
