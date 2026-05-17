@@ -209,16 +209,16 @@ export default function PriceComparator({
                   width: '100%', display: 'flex', alignItems: 'center',
                   gap: 10, padding: sidebarOpen ? '10px 18px' : '10px 0',
                   justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                  background: isActive && !selectedSupplierId ? 'rgba(99,102,241,0.15)' : 'transparent',
+                  background: isActive && selectedSupplierIds.size === 0 ? 'rgba(99,102,241,0.15)' : 'transparent',
                   border: 'none',
-                  borderLeft: isActive && !selectedSupplierId ? '3px solid #6366f1' : '3px solid transparent',
+                  borderLeft: isActive && selectedSupplierIds.size === 0 ? '3px solid #6366f1' : '3px solid transparent',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
                   color: isActive ? '#818cf8' : '#7c85a2',
                   position: 'relative',
                 }}
-                onMouseEnter={e => { if (!(isActive && !selectedSupplierId)) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                onMouseLeave={e => { if (!(isActive && !selectedSupplierId)) e.currentTarget.style.background = 'transparent' }}
+                onMouseEnter={e => { if (!(isActive && selectedSupplierIds.size === 0)) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { if (!(isActive && selectedSupplierIds.size === 0)) e.currentTarget.style.background = 'transparent' }}
               >
                 <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
                 {sidebarOpen && (
