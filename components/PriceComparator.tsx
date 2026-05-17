@@ -13,14 +13,16 @@ import { expandQuery, matchesQuery } from '@/lib/search'
 import SupplierColumns from './SupplierColumns'
 import NotasBoard from './NotasBoard'
 import GremioView from './GremioView'
+import CFView from './CFView'
 
 interface Props { initialSuppliers: Supplier[] }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash'
+type NavItem = 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf'
 
 const NAV: { id: NavItem; label: string; icon: string }[] = [
   { id: 'comparador',  label: 'Listas de precio', icon: '📊' },
+  { id: 'cf',          label: 'Consumidor Final',  icon: '💰' },
   { id: 'proveedores', label: 'Proveedores',       icon: '🏢' },
   { id: 'notasdash',   label: 'Notas',             icon: '📋' },
 ]
@@ -511,6 +513,7 @@ export default function PriceComparator({ initialSuppliers }: Props) {
 
         <main style={{ flex: 1, padding: 20, overflow: 'auto' }}>
           {activeNav === 'comparador' && ComparadorView}
+          {activeNav === 'cf' && <CFView />}
           {activeNav === 'proveedores' && ProveedoresView}
           {activeNav === 'notasdash' && (
             <NotasBoard onNotesChange={setPendingNotes} />
