@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readNotes, addNote } from '@/lib/notes-server'
-import { authorColor } from '@/lib/notes'
+import { readNotes, addNote, authorColor } from '@/lib/notes-server'
 import type { NoteCategory, NotePriority } from '@/lib/notes'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const notes = readNotes()
+  const notes = await readNotes()
   return NextResponse.json(notes)
 }
 
@@ -24,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Author and content required' }, { status: 400 })
   }
 
-  const note = addNote({
+  const note = await addNote({
     author: author.trim(),
     authorColor: authorColor(author.trim()),
     content: content.trim(),

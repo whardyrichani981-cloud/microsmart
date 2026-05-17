@@ -1,51 +1,53 @@
-// Server-only: file system operations — never import this from client components
-import fs from 'fs'
-import path from 'path'
-import type { Note } from './notes'
+// Server-only: database operations — never import this from client components
+import { getPool } from './db'
+import { ensureDB } from './db-init'
+import { authorColor } from './notes'
+import type { Note, NoteCategory, NotePriority } from './notes'
 
-const FILE = path.join(process.cwd(), 'data', 'notes.json')
-
-export function readNotes(): Note[] {
-  try {
-    return JSON.parse(fs.readFileSync(FILE, 'utf-8')) as Note[]
-  } catch {
-    return []
-  }
+export async function readNotes(): Promise<Note[]> {
+  await ensureDB()
+  const { rows } = await getPool().query<{ data: Note }>(
+    "SELECT data FROM notes ORDER BY (data->>'createdAt') DESC"
+  )
+  return rows.map(r => r.data)
 }
 
-export function writeNotes(notes: Note[]): void {
-  fs.writeFileSync(FILE, JSON.stringify(notes, null, 2), 'utf-8')
-}
-
-export function addNote(data: Omit<Note, 'id' | 'createdAt' | 'resolved'>): Note {
-  const notes = readNotes()
+export async function addNote(data: Omit<Note, 'id' | 'createdAt' | 'resolved'>): Promise<Note> {
+  await ensureDB()
   const note: Note = {
     ...data,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     createdAt: new Date().toISOString(),
     resolved: false,
   }
-  notes.unshift(note)
-  writeNotes(notes)
+  await getPool().query('INSERT INTO notes (id, data) VALUES ($1, $2)', [note.id, JSON.stringify(note)])
   return note
 }
 
-export function toggleResolved(id: string): Note | null {
-  const notes = readNotes()
-  const note = notes.find(n => n.id === id)
-  if (!note) return null
+export async function toggleResolved(id: string): Promise<Note | null> {
+  await ensureDB()
+  const { rows } = await getPool().query<{ data: Note }>('SELECT data FROM notes WHERE id = $1', [id])
+  if (!rows.length) return null
+  const note = rows[0].data
   note.resolved = !note.resolved
   note.resolvedAt = note.resolved ? new Date().toISOString() : undefined
-  writeNotes(notes)
+  await getPool().query('UPDATE notes SET data = $1 WHERE id = $2', [JSON.stringify(note), id])
   return note
 }
 
-export function deleteNote(id: string): boolean {
-  const notes = readNotes()
-  const note = notes.find(n => n.id === id)
-  if (!note) return false
+export async function deleteNote(id: string): Promise<Note | null> {
+  await ensureDB()
+  const { rows } = await getPool().query<{ data: Note }>('SELECT data FROM notes WHERE id = $1', [id])
+  if (!rows.length) return null
+  const note = rows[0].data
   note.deleted = true
   note.deletedAt = new Date().toISOString()
-  writeNotes(notes)
-  return true
+  await getPool().query('UPDATE notes SET data = $1 WHERE id = $2', [JSON.stringify(note), id])
+  return note
 }
+
+// Re-export authorColor so callers that used to get it from notes-server still work
+export { authorColor }
+
+// Types re-export for convenience
+export type { Note, NoteCategory, NotePriority }
