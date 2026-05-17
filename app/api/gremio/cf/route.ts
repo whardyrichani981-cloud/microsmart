@@ -5,6 +5,11 @@ import type { CFItem } from '@/lib/gremio-parser'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const data = await getSupplierData<CFItem[]>('cf')
-  return NextResponse.json(data)
+  try {
+    const data = await getSupplierData<CFItem[]>('cf')
+    return NextResponse.json(data)
+  } catch (e) {
+    console.error('[/api/gremio/cf]', e)
+    return NextResponse.json({ error: String(e) }, { status: 500 })
+  }
 }
