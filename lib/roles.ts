@@ -15,6 +15,16 @@ export interface Permissions {
   canViewNotas:      boolean
   canUploadSuppliers: boolean
   canManageNotas:    boolean
+  canViewOrdenes:    boolean
+  canViewServicios:  boolean
+  canViewClientes:   boolean
+  canViewAgenda:     boolean
+  canViewStock:      boolean
+  canViewVentas:     boolean
+  canViewGastos:     boolean
+  canViewComisiones: boolean
+  canViewReportes:   boolean
+  canViewIMEI:       boolean
 }
 
 export const PERM_LABELS: Record<keyof Permissions, string> = {
@@ -25,6 +35,16 @@ export const PERM_LABELS: Record<keyof Permissions, string> = {
   canViewNotas:       'Ver Notas',
   canUploadSuppliers: 'Cargar proveedores',
   canManageNotas:     'Resolver / eliminar notas',
+  canViewOrdenes:    'Órdenes de trabajo',
+  canViewServicios:  'Servicios',
+  canViewClientes:   'Clientes',
+  canViewAgenda:     'Turnos / Agenda',
+  canViewStock:      'Stock',
+  canViewVentas:     'Ventas',
+  canViewGastos:     'Gastos',
+  canViewComisiones: 'Comisiones',
+  canViewReportes:   'Reportes',
+  canViewIMEI:       'Verificar IMEI',
 }
 
 export const SUPERADMIN_PERMISSIONS: Permissions = {
@@ -35,6 +55,16 @@ export const SUPERADMIN_PERMISSIONS: Permissions = {
   canViewNotas:       true,
   canUploadSuppliers: true,
   canManageNotas:     true,
+  canViewOrdenes:    true,
+  canViewServicios:  true,
+  canViewClientes:   true,
+  canViewAgenda:     true,
+  canViewStock:      true,
+  canViewVentas:     true,
+  canViewGastos:     true,
+  canViewComisiones: true,
+  canViewReportes:   true,
+  canViewIMEI:       true,
 }
 
 export const DEFAULT_EMPLOYEE_PERMISSIONS: Permissions = {
@@ -45,6 +75,16 @@ export const DEFAULT_EMPLOYEE_PERMISSIONS: Permissions = {
   canViewNotas:       true,
   canUploadSuppliers: false,
   canManageNotas:     false,
+  canViewOrdenes:    true,
+  canViewServicios:  true,
+  canViewClientes:   true,
+  canViewAgenda:     true,
+  canViewStock:      true,
+  canViewVentas:     true,
+  canViewGastos:     true,
+  canViewComisiones: true,
+  canViewReportes:   true,
+  canViewIMEI:       true,
 }
 
 export function getRole(username: string): UserRole {

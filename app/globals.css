@@ -2,26 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Light theme (default) ────────────────────────────────────────────────── */
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d2e;
-  --surface2: #252840;
-  --border: #2e3150;
+  --bg: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface2: #F5F5F7;
+  --border: #D1D1D6;
+  --accent: #0066CC;
+  --accent-dim: rgba(0,102,204,0.08);
+  --accent-glow: rgba(0,102,204,0.20);
+
+  /* Text */
+  --text-primary: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-dim: #AEAEB2;
+
+  /* Utilities */
+  --shadow: rgba(0,0,0,0.08);
+  --hover-bg: rgba(0,0,0,0.04);
+  --row-border: #F2F2F7;
+  --row-hover: rgba(0,0,0,0.025);
+}
+
+/* ─── Dark theme ────────────────────────────────────────────────────────────── */
+html.dark {
+  --bg: #0A0A0A;
+  --surface: #1C1C1E;
+  --surface2: #2C2C2E;
+  --border: #3A3A3C;
+  --accent: #0066CC;
+  --accent-dim: rgba(0,102,204,0.12);
+  --accent-glow: rgba(0,102,204,0.25);
+
+  /* Text */
+  --text-primary: #F2F2F7;
+  --text-secondary: #AEAEB2;
+  --text-dim: #636366;
+
+  /* Utilities */
+  --shadow: rgba(0,0,0,0.5);
+  --hover-bg: rgba(255,255,255,0.06);
+  --row-border: rgba(255,255,255,0.05);
+  --row-hover: rgba(255,255,255,0.03);
 }
 
 * { box-sizing: border-box; }
 
 body {
   background: var(--bg);
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  transition: background 0.2s, color 0.2s;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3e4370; }
+/* Scrollbar — light */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #C7C7CC; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #AEAEB2; }
+
+/* Scrollbar — dark */
+html.dark ::-webkit-scrollbar-thumb { background: #3A3A3C; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #48484A; }
 
 /* Table sticky header */
 .table-scroll { overflow: auto; max-height: calc(100vh - 280px); }
@@ -29,7 +71,17 @@ body {
 
 /* Price highlight animation */
 @keyframes flash-green {
-  0% { background-color: rgba(34, 197, 94, 0.3); }
+  0% { background-color: rgba(34,197,94,0.2); }
   100% { background-color: transparent; }
 }
 .price-best { animation: flash-green 1s ease-out; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

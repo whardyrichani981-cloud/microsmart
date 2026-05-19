@@ -4,8 +4,11 @@
 type Alias = { terms: string[]; expands: string[] }
 
 const ALIASES: Alias[] = [
+  // ─── iPhone (generic) ─────────────────────────────────────────────────────
+  { terms: ['iphone', 'iph', 'ip iphone'], expands: ['iphone', 'iph'] },
+
   // ─── iPhone numbers ───────────────────────────────────────────────────────
-  ...(['6', '6s', '7', '8', 'x', 'xs', 'xr', '11', '12', '13', '14', '15', '16'] as const).map(n => ({
+  ...(['6', '6s', '7', '8', 'x', 'xs', 'xr', '11', '12', '13', '14', '15', '16', '17'] as const).map(n => ({
     terms: [n, `iphone ${n}`, `iph ${n}`, `iph${n}`],
     expands: [n, `iphone ${n}`, `iph ${n}`, `iph${n}`],
   })),
@@ -51,7 +54,7 @@ const ALIASES: Alias[] = [
 
   // ─── Common part types ────────────────────────────────────────────────────
   { terms: ['bateria', 'bat', 'battery'], expands: ['bateria', 'bat', 'battery'] },
-  { terms: ['modulo', 'mod', 'pantalla', 'display', 'lcd', 'incell', 'oled'], expands: ['modulo', 'mod', 'pantalla', 'display', 'lcd', 'incell', 'oled'] },
+  { terms: ['modulo', 'módulo', 'mod', 'pantalla', 'display', 'lcd', 'incell', 'oled', 'screen'], expands: ['modulo', 'módulo', 'mod', 'pantalla', 'display', 'lcd', 'incell', 'oled', 'screen'] },
   { terms: ['camara', 'cam', 'camera'], expands: ['camara', 'cam', 'camera'] },
   { terms: ['flex', 'flex carga', 'charging'], expands: ['flex', 'carga'] },
   { terms: ['tactil', 'touch', 'vidrio'], expands: ['tactil', 'touch', 'vidrio'] },
@@ -82,7 +85,7 @@ function expandToken(token: string): string[] {
     result.add(`iph${model}`)
     LOOKUP.get(model)?.forEach(t => result.add(t))
   }
-  if (token.startsWith('iph ') || (token.startsWith('iph') && token.length > 3)) {
+  if (token.startsWith('iph ') || (token.startsWith('iph') && token.length > 3 && token !== 'iphone')) {
     const model = token.replace(/^iph\s*/, '')
     result.add(model)
     result.add(`iphone ${model}`)

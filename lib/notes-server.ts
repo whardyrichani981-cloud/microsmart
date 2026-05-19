@@ -103,5 +103,19 @@ export async function deleteNote(id: string): Promise<Note | null> {
   return note
 }
 
+export async function permanentlyDeleteNote(id: string): Promise<boolean> {
+  if (!process.env.DATABASE_URL) {
+    const notes = fileRead()
+    const idx = notes.findIndex(n => n.id === id)
+    if (idx < 0) return false
+    notes.splice(idx, 1)
+    fileWrite(notes)
+    return true
+  }
+  await ensureDB()
+  const { rowCount } = await (await getPool()).query('DELETE FROM notes WHERE id = $1', [id])
+  return (rowCount ?? 0) > 0
+}
+
 export { authorColor }
 export type { Note, NoteCategory, NotePriority }

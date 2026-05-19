@@ -1,23 +1,211 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Note, NoteCategory, NotePriority } from '@/lib/notes'
 import { CATEGORY_LABELS, CATEGORY_COLORS, PRIORITY_COLORS } from '@/lib/notes'
 
-const APPLE_DEVICES = [
-  'iPhone 16 Pro Max', 'iPhone 16 Pro', 'iPhone 16 Plus', 'iPhone 16',
-  'iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15 Plus', 'iPhone 15',
-  'iPhone 14 Pro Max', 'iPhone 14 Pro', 'iPhone 14 Plus', 'iPhone 14',
-  'iPhone 13 Pro Max', 'iPhone 13 Pro', 'iPhone 13 Mini', 'iPhone 13',
-  'iPhone 12 Pro Max', 'iPhone 12 Pro', 'iPhone 12 Mini', 'iPhone 12',
-  'iPhone 11 Pro Max', 'iPhone 11 Pro', 'iPhone 11',
-  'iPhone SE 3', 'iPhone SE 2',
-  'iPad Pro 13"', 'iPad Pro 11"', 'iPad Air 5', 'iPad Air 4',
-  'iPad Mini 6', 'iPad 10', 'iPad 9',
-  'Apple Watch Ultra 2', 'Apple Watch Series 9', 'Apple Watch Series 8',
-  'AirPods Pro 2', 'AirPods 3', 'AirPods 2',
-  'MacBook Pro 16"', 'MacBook Pro 14"', 'MacBook Air M2', 'MacBook Air M1',
+const APPLE_DEVICES_BY_CATEGORY: { label: string; icon: string; models: string[] }[] = [
+  {
+    label: 'iPhone', icon: '📱',
+    models: [
+      'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone 17 Air', 'iPhone 17',
+      'iPhone 16 Pro Max', 'iPhone 16 Pro', 'iPhone 16 Plus', 'iPhone 16',
+      'iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15 Plus', 'iPhone 15',
+      'iPhone 14 Pro Max', 'iPhone 14 Pro', 'iPhone 14 Plus', 'iPhone 14',
+      'iPhone 13 Pro Max', 'iPhone 13 Pro', 'iPhone 13 Mini', 'iPhone 13',
+      'iPhone 12 Pro Max', 'iPhone 12 Pro', 'iPhone 12 Mini', 'iPhone 12',
+      'iPhone 11 Pro Max', 'iPhone 11 Pro', 'iPhone 11',
+      'iPhone SE 3', 'iPhone SE 2', 'iPhone SE 1',
+      'iPhone XS Max', 'iPhone XS', 'iPhone XR', 'iPhone X',
+      'iPhone 8 Plus', 'iPhone 8',
+      'iPhone 7 Plus', 'iPhone 7',
+    ],
+  },
+  {
+    label: 'iPad', icon: '📲',
+    models: [
+      // iPad Pro
+      'iPad Pro 13" (M4)', 'iPad Pro 11" (M4)',
+      'iPad Pro 12.9" (6ta gen)', 'iPad Pro 11" (4ta gen)',
+      'iPad Pro 12.9" (5ta gen)', 'iPad Pro 11" (3ra gen)',
+      'iPad Pro 12.9" (4ta gen)', 'iPad Pro 11" (2da gen)',
+      'iPad Pro 12.9" (3ra gen)', 'iPad Pro 11" (1ra gen)',
+      'iPad Pro 12.9" (2da gen)', 'iPad Pro 12.9" (1ra gen)',
+      'iPad Pro 10.5"', 'iPad Pro 9.7"',
+      // iPad Air
+      'iPad Air M2', 'iPad Air 5', 'iPad Air 4',
+      'iPad Air 3', 'iPad Air 2', 'iPad Air 1',
+      // iPad Mini
+      'iPad Mini 6', 'iPad Mini 5', 'iPad Mini 4',
+      'iPad Mini 3', 'iPad Mini 2',
+      // iPad estándar
+      'iPad 10', 'iPad 9', 'iPad 8', 'iPad 7', 'iPad 6', 'iPad 5',
+    ],
+  },
+  {
+    label: 'Apple Watch', icon: '⌚',
+    models: [
+      'Apple Watch Ultra 2', 'Apple Watch Ultra',
+      'Apple Watch Series 10',
+      'Apple Watch Series 9', 'Apple Watch Series 8', 'Apple Watch Series 7',
+      'Apple Watch Series 6', 'Apple Watch Series 5', 'Apple Watch Series 4',
+      'Apple Watch Series 3',
+      'Apple Watch SE 2', 'Apple Watch SE',
+    ],
+  },
+  {
+    label: 'Mac', icon: '💻',
+    models: [
+      // MacBook Pro 16"
+      'MacBook Pro 16" M3 Max', 'MacBook Pro 16" M3 Pro', 'MacBook Pro 16" M3',
+      'MacBook Pro 16" M2 Max', 'MacBook Pro 16" M2 Pro',
+      'MacBook Pro 16" M1 Max', 'MacBook Pro 16" M1 Pro',
+      'MacBook Pro 16" 2019', 'MacBook Pro 16" 2020',
+      // MacBook Pro 15"
+      'MacBook Pro 15" 2019', 'MacBook Pro 15" 2018',
+      'MacBook Pro 15" 2017', 'MacBook Pro 15" 2016', 'MacBook Pro 15" 2015',
+      // MacBook Pro 14"
+      'MacBook Pro 14" M3 Max', 'MacBook Pro 14" M3 Pro', 'MacBook Pro 14" M3',
+      'MacBook Pro 14" M2 Max', 'MacBook Pro 14" M2 Pro',
+      'MacBook Pro 14" M1 Max', 'MacBook Pro 14" M1 Pro',
+      // MacBook Pro 13"
+      'MacBook Pro 13" M2', 'MacBook Pro 13" M1',
+      'MacBook Pro 13" 2020', 'MacBook Pro 13" 2019',
+      'MacBook Pro 13" 2018', 'MacBook Pro 13" 2017',
+      'MacBook Pro 13" 2016', 'MacBook Pro 13" 2015',
+      // MacBook Air
+      'MacBook Air 15" M3', 'MacBook Air 13" M3',
+      'MacBook Air 15" M2', 'MacBook Air 13" M2',
+      'MacBook Air M1',
+      'MacBook Air 2020', 'MacBook Air 2019', 'MacBook Air 2018',
+      'MacBook Air 2017', 'MacBook Air 2015',
+      // MacBook 12"
+      'MacBook 12" 2019', 'MacBook 12" 2018',
+      'MacBook 12" 2017', 'MacBook 12" 2016', 'MacBook 12" 2015',
+      // iMac
+      'iMac 24" M3', 'iMac 24" M1',
+      'iMac 27" 2020', 'iMac 27" 2019', 'iMac 27" 2017',
+      'iMac 21.5" 2019', 'iMac 21.5" 2017',
+      'iMac 21.5" 2015', 'iMac 27" 2015',
+      // Mac mini
+      'Mac mini M2 Pro', 'Mac mini M2',
+      'Mac mini M1', 'Mac mini 2020', 'Mac mini 2018',
+    ],
+  },
 ]
+
+// ─── Apple Device Dropdown ───────────────────────────────────────────────────
+function AppleDeviceDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const inputStyle: React.CSSProperties = {
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 8, color: '#E5E5E3', fontSize: 13, outline: 'none',
+    width: '100%', padding: '8px 12px', boxSizing: 'border-box', cursor: 'pointer',
+  }
+
+  const q = search.toLowerCase()
+  const filtered = APPLE_DEVICES_BY_CATEGORY.map(cat => ({
+    ...cat,
+    models: cat.models.filter(m => m.toLowerCase().includes(q)),
+  })).filter(cat => cat.models.length > 0)
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <input
+        readOnly
+        value={value}
+        onClick={() => setOpen(o => !o)}
+        placeholder="Seleccionar modelo..."
+        style={{ ...inputStyle, caretColor: 'transparent' }}
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); onChange(''); setOpen(false) }}
+          style={{
+            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+            background: 'none', border: 'none', color: '#484848', cursor: 'pointer',
+            fontSize: 16, lineHeight: 1, padding: '0 2px',
+          }}
+        >×</button>
+      )}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10,
+          zIndex: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          maxHeight: 320, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        }}>
+          {/* Search inside dropdown */}
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar modelo..."
+              style={{
+                ...inputStyle, cursor: 'text', fontSize: 12,
+                padding: '6px 10px', borderRadius: 6,
+              }}
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+          {/* Category list */}
+          <div style={{ overflowY: 'auto', padding: '6px 0' }}>
+            {filtered.map(cat => (
+              <div key={cat.label}>
+                <div style={{
+                  padding: '6px 12px 3px',
+                  fontSize: 11, fontWeight: 700, color: '#F5C400',
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                }}>
+                  {cat.icon} {cat.label}
+                </div>
+                {cat.models.map(model => (
+                  <button
+                    key={model}
+                    type="button"
+                    onClick={() => { onChange(model); setOpen(false); setSearch('') }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '7px 14px 7px 24px', fontSize: 13,
+                      background: value === model ? 'rgba(245,196,0,0.10)' : 'transparent',
+                      color: value === model ? '#F5C400' : '#E5E5E3',
+                      border: 'none', cursor: 'pointer',
+                      fontWeight: value === model ? 600 : 400,
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { if (value !== model) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                    onMouseLeave={e => { if (value !== model) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    {model}
+                  </button>
+                ))}
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ padding: '16px', textAlign: 'center', color: '#484848', fontSize: 13 }}>
+                Sin resultados
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Add Note Modal ──────────────────────────────────────────────────────────
 function AddNoteModal({
@@ -29,7 +217,7 @@ function AddNoteModal({
 }: {
   author: string
   onAuthorChange: (v: string) => void
-  onSubmit: (data: { content: string; category: NoteCategory; priority: NotePriority; product: string }) => void
+  onSubmit: (data: { content: string; category: NoteCategory; priority: NotePriority; product: string; reminderAt?: string }) => void
   onClose: () => void
   loading: boolean
 }) {
@@ -37,20 +225,29 @@ function AddNoteModal({
   const [category, setCategory] = useState<NoteCategory>('repuesto')
   const [priority, setPriority] = useState<NotePriority>('media')
   const [product, setProduct] = useState('')
+  const [reminderEnabled, setReminderEnabled] = useState(false)
+  const [reminderDate, setReminderDate] = useState(() => {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() + 30, 0, 0)
+    return now.toISOString().slice(0, 16)
+  })
   const textRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => { textRef.current?.focus() }, [])
 
   const submit = () => {
     if (!content.trim() || !author.trim()) return
-    onSubmit({ content, category, priority, product })
+    const reminderAt = reminderEnabled && reminderDate
+      ? new Date(reminderDate).toISOString()
+      : undefined
+    onSubmit({ content, category, priority, product, reminderAt })
   }
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 8,
-    color: '#e2e8f0',
+    color: '#E5E5E3',
     fontSize: 13,
     outline: 'none',
     width: '100%',
@@ -86,8 +283,8 @@ function AddNoteModal({
         {/* Modal header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 17, color: '#e2e8f0' }}>Agregar nota</div>
-            <div style={{ fontSize: 12, color: '#7c85a2', marginTop: 2 }}>Completá los campos y guardá</div>
+            <div style={{ fontWeight: 700, fontSize: 17, color: '#E5E5E3' }}>Agregar nota</div>
+            <div style={{ fontSize: 12, color: '#676767', marginTop: 2 }}>Completá los campos y guardá</div>
           </div>
           <button
             onClick={onClose}
@@ -95,14 +292,14 @@ function AddNoteModal({
               background: 'var(--surface)', border: '1px solid var(--border)',
               borderRadius: 8, width: 32, height: 32,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#7c85a2', fontSize: 18, cursor: 'pointer',
+              color: '#676767', fontSize: 18, cursor: 'pointer',
             }}
           >×</button>
         </div>
 
         {/* Author */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, color: '#7c85a2', display: 'block', marginBottom: 5 }}>Tu nombre</label>
+          <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Tu nombre</label>
           <input
             value={author}
             onChange={e => onAuthorChange(e.target.value)}
@@ -114,7 +311,7 @@ function AddNoteModal({
         {/* Category + Priority */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div>
-            <label style={{ fontSize: 12, color: '#7c85a2', display: 'block', marginBottom: 5 }}>Tipo</label>
+            <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Tipo</label>
             <select
               value={category}
               onChange={e => setCategory(e.target.value as NoteCategory)}
@@ -127,7 +324,7 @@ function AddNoteModal({
             </select>
           </div>
           <div>
-            <label style={{ fontSize: 12, color: '#7c85a2', display: 'block', marginBottom: 5 }}>Prioridad</label>
+            <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Prioridad</label>
             <select
               value={priority}
               onChange={e => setPriority(e.target.value as NotePriority)}
@@ -142,37 +339,76 @@ function AddNoteModal({
 
         {/* Product */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, color: '#7c85a2', display: 'block', marginBottom: 5 }}>
-            Equipo Apple <span style={{ color: '#475569' }}>(opcional)</span>
+          <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>
+            Equipo Apple <span style={{ color: '#484848' }}>(opcional)</span>
           </label>
-          <input
-            value={product}
-            onChange={e => setProduct(e.target.value)}
-            placeholder="Ej: iPhone 15 Pro, iPad Air 5..."
-            style={inputStyle}
-          />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-            {APPLE_DEVICES.map(d => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setProduct(prev => prev === d ? '' : d)}
-                style={{
-                  padding: '2px 8px', borderRadius: 12, fontSize: 11, cursor: 'pointer',
-                  border: `1px solid ${product === d ? '#6366f1' : 'var(--border)'}`,
-                  background: product === d ? 'rgba(99,102,241,0.2)' : 'var(--surface)',
-                  color: product === d ? '#818cf8' : '#7c85a2',
-                  transition: 'all 0.12s',
-                  fontWeight: product === d ? 600 : 400,
-                }}
-              >{d}</button>
-            ))}
+          <AppleDeviceDropdown value={product} onChange={setProduct} />
+        </div>
+
+        {/* Reminder */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 8 }}>
+            Recordatorio
+          </label>
+          <div style={{
+            border: `1px solid ${reminderEnabled ? '#F5C400' : 'var(--border)'}`,
+            borderRadius: 8, overflow: 'hidden',
+            transition: 'border-color 0.15s',
+          }}>
+            {/* Toggle row */}
+            <div
+              onClick={() => setReminderEnabled(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '9px 12px', cursor: 'pointer',
+                background: reminderEnabled ? 'rgba(245,196,0,0.07)' : 'transparent',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 15 }}>⏰</span>
+                <span style={{ fontSize: 13, color: reminderEnabled ? '#F5C400' : '#676767' }}>
+                  {reminderEnabled ? 'Recordatorio activado' : 'Agregar recordatorio'}
+                </span>
+              </div>
+              {/* toggle switch */}
+              <div style={{
+                width: 36, height: 20, borderRadius: 10,
+                background: reminderEnabled ? '#F5C400' : '#2E2E2E',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}>
+                <span style={{
+                  position: 'absolute', top: 2,
+                  left: reminderEnabled ? 18 : 2,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: '#fff', transition: 'left 0.2s',
+                }} />
+              </div>
+            </div>
+            {/* Datetime picker */}
+            {reminderEnabled && (
+              <div style={{ padding: '0 12px 12px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: '#676767', padding: '8px 0 6px' }}>
+                  Fecha y hora del recordatorio
+                </div>
+                <input
+                  type="datetime-local"
+                  value={reminderDate}
+                  onChange={e => setReminderDate(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  style={{
+                    ...inputStyle,
+                    colorScheme: 'dark',
+                    cursor: 'pointer',
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Description */}
         <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, color: '#7c85a2', display: 'block', marginBottom: 5 }}>Descripción</label>
+          <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Descripción</label>
           <textarea
             ref={textRef}
             value={content}
@@ -182,7 +418,7 @@ function AddNoteModal({
             rows={4}
             style={{ ...inputStyle, resize: 'vertical', minHeight: 90, fontFamily: 'inherit' }}
           />
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Ctrl+Enter para guardar</div>
+          <div style={{ fontSize: 11, color: '#484848', marginTop: 3 }}>Ctrl+Enter para guardar</div>
         </div>
 
         {/* Actions */}
@@ -192,7 +428,7 @@ function AddNoteModal({
             style={{
               flex: 1, padding: '10px 0', borderRadius: 8, fontWeight: 600, fontSize: 13,
               background: 'var(--surface)', border: '1px solid var(--border)',
-              color: '#7c85a2', cursor: 'pointer',
+              color: '#676767', cursor: 'pointer',
             }}
           >Cancelar</button>
           <button
@@ -200,9 +436,9 @@ function AddNoteModal({
             disabled={loading || !content.trim() || !author.trim()}
             style={{
               flex: 2, padding: '10px 0', borderRadius: 8, fontWeight: 600, fontSize: 13,
-              background: loading || !content.trim() || !author.trim() ? 'var(--surface2)' : '#6366f1',
+              background: loading || !content.trim() || !author.trim() ? 'var(--surface2)' : '#F5C400',
               border: 'none',
-              color: loading || !content.trim() || !author.trim() ? '#475569' : '#fff',
+              color: loading || !content.trim() || !author.trim() ? '#484848' : '#0c0d0f',
               cursor: loading || !content.trim() || !author.trim() ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s',
             }}
@@ -230,13 +466,16 @@ function fmtTime(iso: string) {
 }
 
 function NoteCard({
-  note, onToggle, onDelete,
+  note, onToggle, onDelete, onPermanentDelete, isSuperAdmin,
 }: {
   note: Note
   onToggle: (id: string) => void
   onDelete: (id: string) => void
+  onPermanentDelete?: (id: string) => void
+  isSuperAdmin?: boolean
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmPerm, setConfirmPerm] = useState(false)
   const cat = CATEGORY_COLORS[note.category]
   const isDeleted = !!note.deleted
 
@@ -266,8 +505,8 @@ function NoteCard({
           {note.author.slice(0, 2).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{note.author}</div>
-          <div style={{ fontSize: 11, color: '#7c85a2' }}>Creada: {fmtTime(note.createdAt)}</div>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#E5E5E3' }}>{note.author}</div>
+          <div style={{ fontSize: 11, color: '#676767' }}>Creada: {fmtTime(note.createdAt)}</div>
         </div>
         <span title={`Prioridad: ${note.priority}`} style={{ fontSize: 16 }}>
           {note.priority === 'alta' ? '🔴' : note.priority === 'media' ? '🟡' : '🟢'}
@@ -286,10 +525,19 @@ function NoteCard({
         {note.product && (
           <span style={{
             fontSize: 11, padding: '2px 8px', borderRadius: 20,
-            background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
+            background: 'rgba(255,255,255,0.05)', color: '#8A8A8A',
             border: '1px solid var(--border)',
           }}>
             📱 {note.product}
+          </span>
+        )}
+        {note.reminderAt && !note.resolved && !note.deleted && (
+          <span style={{
+            fontSize: 11, padding: '2px 8px', borderRadius: 20,
+            background: 'rgba(250,204,21,0.1)', color: '#fbbf24',
+            border: '1px solid rgba(250,204,21,0.3)',
+          }}>
+            ⏰ {new Date(note.reminderAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
         {isDeleted && (
@@ -305,7 +553,7 @@ function NoteCard({
 
       {/* Content */}
       <p style={{
-        fontSize: 13, color: '#e2e8f0', lineHeight: 1.6,
+        fontSize: 13, color: '#E5E5E3', lineHeight: 1.6,
         textDecoration: note.resolved || isDeleted ? 'line-through' : 'none',
         whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
       }}>
@@ -338,7 +586,7 @@ function NoteCard({
             fontSize: 12, padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
             background: note.resolved ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)',
             border: `1px solid ${note.resolved ? '#22c55e' : 'var(--border)'}`,
-            color: note.resolved ? '#4ade80' : '#7c85a2',
+            color: note.resolved ? '#4ade80' : '#676767',
             fontWeight: 500, transition: 'all 0.15s',
           }}
         >
@@ -353,7 +601,7 @@ function NoteCard({
                 style={{
                   fontSize: 11, padding: '5px 10px', borderRadius: 7, cursor: 'pointer',
                   background: 'transparent', border: '1px solid var(--border)',
-                  color: '#7c85a2',
+                  color: '#676767',
                 }}
               >Cancelar</button>
               <button
@@ -371,7 +619,7 @@ function NoteCard({
               style={{
                 fontSize: 12, padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
                 background: 'transparent', border: '1px solid var(--border)',
-                color: '#475569', transition: 'all 0.15s',
+                color: '#484848', transition: 'all 0.15s',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = '#ef4444'
@@ -379,12 +627,46 @@ function NoteCard({
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.borderColor = 'var(--border)'
-                e.currentTarget.style.color = '#475569'
+                e.currentTarget.style.color = '#484848'
               }}
             >Eliminar</button>
           )}
         </div>
       </div>
+      )}
+
+      {/* Permanent delete — only for deleted notes, only for superadmin */}
+      {isDeleted && isSuperAdmin && onPermanentDelete && (
+        <div style={{ borderTop: '1px solid rgba(239,68,68,0.2)', paddingTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+          {confirmPerm ? (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => setConfirmPerm(false)}
+                style={{
+                  fontSize: 11, padding: '5px 10px', borderRadius: 7, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid var(--border)', color: '#676767',
+                }}
+              >Cancelar</button>
+              <button
+                onClick={() => onPermanentDelete(note.id)}
+                style={{
+                  fontSize: 11, padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
+                  background: '#ef4444', border: 'none',
+                  color: '#fff', fontWeight: 700,
+                }}
+              >Sí, eliminar para siempre</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmPerm(true)}
+              style={{
+                fontSize: 11, padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
+                background: 'rgba(239,68,68,0.12)', border: '1px solid #ef444466',
+                color: '#f87171', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >🗑 Eliminar definitivamente</button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -398,29 +680,96 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
       borderRadius: 10, padding: '14px 18px', flex: '1 1 120px',
     }}>
       <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 12, color: '#7c85a2', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 12, color: '#676767', marginTop: 2 }}>{label}</div>
     </div>
   )
 }
 
 // ─── Main Board ───────────────────────────────────────────────────────────────
-export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending: number) => void }) {
+export default function NotasBoard({
+  onNotesChange,
+  currentUserName,
+  isSuperAdmin,
+}: {
+  onNotesChange?: (pending: number) => void
+  currentUserName?: string
+  isSuperAdmin?: boolean
+}) {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [author, setAuthor] = useState('')
-  const [filter, setFilter] = useState<'pending' | 'all' | 'deleted' | NoteCategory>('pending')
+  const [filter, setFilter] = useState<'pending' | 'resolved' | 'all' | 'deleted' | NoteCategory>('pending')
+  const firedReminders = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    const saved = localStorage.getItem('ms-author')
-    if (saved) setAuthor(saved)
-  }, [])
+    if (currentUserName) {
+      setAuthor(currentUserName)
+    } else {
+      const saved = localStorage.getItem('ms-author')
+      if (saved) setAuthor(saved)
+    }
+  }, [currentUserName])
 
   const handleAuthorChange = (v: string) => {
     setAuthor(v)
-    localStorage.setItem('ms-author', v)
+    if (!currentUserName) localStorage.setItem('ms-author', v)
   }
+
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default')
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return
+    setNotifPermission(Notification.permission)
+  }, [])
+
+  const requestNotifPermission = async () => {
+    if (!('Notification' in window)) return
+    const result = await Notification.requestPermission()
+    setNotifPermission(result)
+  }
+
+  // Load already-fired reminder IDs from localStorage so reloads don't re-fire
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ms-fired-reminders') ?? '[]') as string[]
+      saved.forEach(id => firedReminders.current.add(id))
+    } catch { /* ignore */ }
+  }, [])
+
+  // Check reminders every 15 seconds
+  useEffect(() => {
+    const check = () => {
+      if (typeof window === 'undefined' || !('Notification' in window)) return
+      if (Notification.permission !== 'granted') return
+      const now = Date.now()
+      notes.forEach(note => {
+        if (!note.reminderAt || note.resolved || note.deleted) return
+        if (firedReminders.current.has(note.id)) return
+        const due = new Date(note.reminderAt).getTime()
+        // Fire within a 5-minute window after the due time
+        if (now >= due && now < due + 5 * 60 * 1000) {
+          firedReminders.current.add(note.id)
+          // Persist to localStorage so reloads don't re-fire
+          try {
+            const saved = JSON.parse(localStorage.getItem('ms-fired-reminders') ?? '[]') as string[]
+            localStorage.setItem('ms-fired-reminders', JSON.stringify([...saved, note.id]))
+          } catch { /* ignore */ }
+          const n = new Notification(`⏰ Recordatorio — ${note.author}`, {
+            body: `${note.product ? `[${note.product}] ` : ''}${note.content}`,
+            icon: '/favicon.ico',
+            tag: note.id,
+            requireInteraction: true,
+          })
+          n.onclick = () => { window.focus(); n.close() }
+        }
+      })
+    }
+    check()
+    const id = setInterval(check, 15_000)
+    return () => clearInterval(id)
+  }, [notes])
 
   const fetchNotes = useCallback(async () => {
     setLoading(true)
@@ -438,13 +787,13 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
     return () => clearInterval(id)
   }, [fetchNotes])
 
-  const handleSubmit = async (data: { content: string; category: NoteCategory; priority: NotePriority; product: string }) => {
+  const handleSubmit = async (data: { content: string; category: NoteCategory; priority: NotePriority; product: string; reminderAt?: string }) => {
     setSubmitting(true)
     try {
       const res = await fetch('/api/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ author, ...data }),
+        body: JSON.stringify({ author, ...data, reminderAt: data.reminderAt }),
       })
       if (res.ok) {
         const note: Note = await res.json()
@@ -482,6 +831,17 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
     }
   }
 
+  const handlePermanentDelete = async (id: string) => {
+    const res = await fetch(`/api/notes/${id}/permanent`, { method: 'DELETE' })
+    if (res.ok) {
+      setNotes(prev => {
+        const next = prev.filter(n => n.id !== id)
+        onNotesChange?.(next.filter(n => !n.resolved && !n.deleted).length)
+        return next
+      })
+    }
+  }
+
   const active = notes.filter(n => !n.deleted)
   const pending = active.filter(n => !n.resolved)
   const highPriority = active.filter(n => !n.resolved && n.priority === 'alta')
@@ -492,8 +852,9 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
     if (filter === 'deleted') return !!n.deleted
     if (n.deleted) return false
     if (filter === 'pending') return !n.resolved
+    if (filter === 'resolved') return !!n.resolved
     if (filter === 'all') return true
-    return n.category === filter
+    return n.category === filter && !n.resolved
   })
 
   return (
@@ -501,21 +862,48 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#e2e8f0', margin: 0 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#E5E5E3', margin: 0 }}>
             📋 Notas del equipo
           </h2>
-          <p style={{ fontSize: 13, color: '#7c85a2', margin: '4px 0 0' }}>
+          <p style={{ fontSize: 13, color: '#676767', margin: '4px 0 0' }}>
             Pedidos de repuestos, información de reparaciones y notas generales
           </p>
+          {/* Notification permission banner */}
+          {'Notification' in (typeof window !== 'undefined' ? window : {}) && notifPermission !== 'granted' && (
+            <div style={{
+              marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '6px 12px', borderRadius: 8, fontSize: 12,
+              background: notifPermission === 'denied'
+                ? 'rgba(239,68,68,0.1)' : 'rgba(250,204,21,0.08)',
+              border: `1px solid ${notifPermission === 'denied' ? '#ef444455' : 'rgba(250,204,21,0.3)'}`,
+              color: notifPermission === 'denied' ? '#f87171' : '#fbbf24',
+            }}>
+              {notifPermission === 'denied' ? (
+                <>⚠️ Notificaciones bloqueadas — habilitá los permisos en la configuración del navegador</>
+              ) : (
+                <>
+                  🔔 Activá notificaciones para recibir recordatorios
+                  <button
+                    onClick={requestNotifPermission}
+                    style={{
+                      padding: '3px 10px', borderRadius: 6, border: 'none',
+                      background: '#fbbf24', color: '#1e1b2e',
+                      fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >Activar</button>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <button
           onClick={() => setShowForm(true)}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '10px 20px', borderRadius: 9, fontWeight: 700, fontSize: 14,
-            background: '#6366f1', border: 'none', color: '#fff',
+            background: '#F5C400', border: 'none', color: '#0c0d0f',
             cursor: 'pointer', flexShrink: 0,
-            boxShadow: '0 2px 8px rgba(99,102,241,0.35)',
+            boxShadow: '0 2px 8px rgba(245,196,0,0.30)',
             transition: 'opacity 0.15s',
           }}
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
@@ -527,7 +915,7 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
 
       {/* Stat cards */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <Stat label="Pendientes" value={pending.length} color="#818cf8" />
+        <Stat label="Pendientes" value={pending.length} color="#F5C400" />
         <Stat label="Alta prioridad" value={highPriority.length} color="#f87171" />
         <Stat label="Resueltas" value={resolvedNotes.length} color="#4ade80" />
         <Stat label="Eliminadas" value={deletedNotes.length} color="#f87171" />
@@ -535,9 +923,10 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
 
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, color: '#475569', marginRight: 4 }}>Mostrar:</span>
+        <span style={{ fontSize: 12, color: '#484848', marginRight: 4 }}>Mostrar:</span>
         {([
           ['pending', `Pendientes (${pending.length})`],
+          ['resolved', `✓ Resueltas (${resolvedNotes.length})`],
           ['all', 'Todas'],
           ['repuesto', '🔧 Repuestos'],
           ['reparacion-cf', '🛠️ Rep. CF'],
@@ -551,9 +940,9 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
             style={{
               padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500,
               cursor: 'pointer',
-              border: `1px solid ${filter === val ? '#6366f1' : 'var(--border)'}`,
-              background: filter === val ? 'rgba(99,102,241,0.15)' : 'var(--surface)',
-              color: filter === val ? '#818cf8' : '#7c85a2',
+              border: `1px solid ${filter === val ? (val === 'resolved' ? '#22c55e' : '#F5C400') : 'var(--border)'}`,
+              background: filter === val ? (val === 'resolved' ? 'rgba(34,197,94,0.10)' : 'rgba(245,196,0,0.10)') : 'var(--surface)',
+              color: filter === val ? (val === 'resolved' ? '#4ade80' : '#F5C400') : '#676767',
               transition: 'all 0.15s',
             }}
           >{label}</button>
@@ -568,7 +957,7 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
             marginLeft: 'auto',
             padding: '5px 12px', borderRadius: 20, fontSize: 12,
             background: 'var(--surface)', border: '1px solid var(--border)',
-            color: '#7c85a2', cursor: 'pointer',
+            color: '#676767', cursor: 'pointer',
           }}
         >{loading ? '⟳ Actualizando...' : '↻ Actualizar'}</button>
       </div>
@@ -577,19 +966,19 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
       {filtered.length === 0 ? (
         <div style={{
           textAlign: 'center', padding: '60px 20px',
-          border: '1px dashed var(--border)', borderRadius: 12, color: '#475569',
+          border: '1px dashed var(--border)', borderRadius: 12, color: '#484848',
         }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-          <div style={{ fontSize: 14, color: '#7c85a2' }}>
-            {filter === 'pending' ? 'No hay notas pendientes' : 'No hay notas en esta categoría'}
+          <div style={{ fontSize: 14, color: '#676767' }}>
+            {filter === 'pending' ? 'No hay notas pendientes' : filter === 'resolved' ? 'No hay tareas resueltas todavía' : 'No hay notas en esta categoría'}
           </div>
           {filter === 'pending' && (
             <button
               onClick={() => setShowForm(true)}
               style={{
                 marginTop: 16, padding: '8px 20px', borderRadius: 8,
-                background: 'rgba(99,102,241,0.15)', border: '1px solid #6366f1',
-                color: '#818cf8', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                background: 'rgba(245,196,0,0.10)', border: '1px solid #F5C400',
+                color: '#F5C400', fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}
             >+ Agregar la primera nota</button>
           )}
@@ -606,6 +995,8 @@ export default function NotasBoard({ onNotesChange }: { onNotesChange?: (pending
               note={note}
               onToggle={handleToggle}
               onDelete={handleDelete}
+              onPermanentDelete={handlePermanentDelete}
+              isSuperAdmin={isSuperAdmin}
             />
           ))}
         </div>

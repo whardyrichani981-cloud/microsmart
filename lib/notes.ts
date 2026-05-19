@@ -16,6 +16,7 @@ export interface Note {
   deleted?: boolean
   deletedAt?: string
   createdAt: string
+  reminderAt?: string
 }
 
 export function authorColor(name: string): string {

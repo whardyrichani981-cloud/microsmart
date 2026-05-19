@@ -28,9 +28,16 @@ function parsePrice(v: unknown): number {
 }
 
 // ─── BH Tech ────────────────────────────────────────────────────────────────
-// Structure: complex spreadsheet with navigation block at top,
-// then category headers (ALLCAPS in col 0) followed by product rows.
-// Product rows contain: SKU | model | description | quality | brand | $price | stock
+// All sections share the same column layout, with two variants:
+//
+// Layout A (row has "Ver Producto" link or empty col0):
+//   col0: link | col1: SKU | col2: model | col3: description | col4: quality/brand | [col5: brand] | [col6: empty] | colN: price | colN+1: stock
+//
+// Layout B (row has SKU directly in col0, no link):
+//   col0: SKU | col1: model | col2: description | col3: quality/brand | [col4: brand] | [col5: empty] | colN: price | colN+1: stock
+//
+// Module sections (Incell/OLED) have price at col7 (A) or col6 (B) → quality in col4/col3 is useful to append.
+// Other sections (cameras, flex, batteries) have price at col5–col6 → description alone is the name.
 export function parseBhTech(rows: Row[]): SupplierItem[] {
   const items: SupplierItem[] = []
   let category = ''
@@ -40,10 +47,20 @@ export function parseBhTech(rows: Row[]): SupplierItem[] {
     const nonEmpty = cells.filter(c => c.length > 0)
     if (nonEmpty.length === 0) continue
 
-    // Find the price column – a cell matching `$ number`
+    // Category header: all-caps text, no price, few non-empty cells
+    if (nonEmpty.length <= 3 && !nonEmpty.some(c => /\$\s*\d/.test(c))) {
+      const candidate = nonEmpty[0]
+      if (candidate.length > 4 && candidate === candidate.toUpperCase() && /[A-Z]/.test(candidate)) {
+        category = candidate
+        continue
+      }
+    }
+
+    // Find price searching RIGHT-TO-LEFT — avoids false positives like "$ 11"
+    // that appear when a model number (11) is exported as "$ 11" by Google Sheets
     let priceIdx = -1
     let price = NaN
-    for (let i = 0; i < cells.length; i++) {
+    for (let i = cells.length - 1; i >= 0; i--) {
       if (/\$\s*\d/.test(cells[i])) {
         const p = parsePrice(cells[i])
         if (!isNaN(p) && p > 0) {
@@ -53,37 +70,50 @@ export function parseBhTech(rows: Row[]): SupplierItem[] {
         }
       }
     }
+    if (priceIdx === -1) continue
 
-    if (priceIdx === -1) {
-      // No price found – could be a category header
-      if (nonEmpty.length <= 3) {
-        const candidate = nonEmpty[0]
-        // Heuristic: all-caps and length > 5 → section header
-        if (candidate.length > 5 && candidate === candidate.toUpperCase() && /[A-Z]/.test(candidate)) {
-          category = candidate
-        }
+    // Detect layout by checking col0
+    const hasLink = /^ver\s*producto$/i.test(cells[0]) || cells[0] === ''
+    const skuCol  = hasLink ? 1 : 0
+    const descCol = hasLink ? 3 : 2
+    const qualCol = hasLink ? 4 : 3
+
+    // SKU/code — accept numeric codes and codes with a single letter prefix (e.g. C107...)
+    const skuVal = cells[skuCol] ?? ''
+    const code = /^[A-Za-z]?\d{6,}$/.test(skuVal) ? skuVal : ''
+
+    // Primary name: description column
+    let desc = (cells[descCol] ?? '').trim()
+    // If description looks like a bare price (e.g. "$ 11" for model 11), fall back to model col
+    if (/^\$\s*[\d.]+$/.test(desc)) {
+      desc = (cells[hasLink ? 2 : 1] ?? '').trim()
+    }
+    if (!desc) continue
+
+    // Module rows have more columns → append quality type (Incell-AM, Soft Oled-X07, etc.)
+    // to distinguish products of the same model. Other sections (cameras, flex, batteries) don't need it.
+    const isModuleRow = (hasLink && priceIdx >= 7) || (!hasLink && priceIdx >= 6)
+    let name = desc
+    if (isModuleRow) {
+      const quality = (cells[qualCol] ?? '').trim()
+      // Only append if quality adds new information not already in the description
+      if (quality && !desc.toLowerCase().includes(quality.toLowerCase().split(' ')[0])) {
+        name = `${desc} - ${quality}`
       }
-      continue
     }
 
-    // Extract name and code from cells before price (skip column B = index 1)
-    let name = ''
-    let code = ''
-    for (let i = 0; i < priceIdx; i++) {
-      if (i === 1) continue
-      const c = cells[i]
-      if (!c) continue
-      if (/^\d{6,}$/.test(c)) {
-        code = c
-      } else if (c.length > name.length) {
-        name = c
-      }
+    // Prepend the model/category header (e.g. "IPHONE 13") to the name so that
+    // searching "iphone" or "iphone 13" finds parts in BH Tech whose descriptions
+    // are just component names ("PANTALLA INCELL") without the model in them.
+    if (category) {
+      name = `${category} ${name}`
     }
 
-    if (!name) continue
-
-    const stockCell = cells[priceIdx + 1] ?? ''
-    const stock = /sin\s*stock/i.test(stockCell) ? 'Sin stock' : 'En stock'
+    // Stock status
+    const stockCell = (cells[priceIdx + 1] ?? '').toLowerCase()
+    const stock = /sin\s*stock/.test(stockCell) ? 'Sin stock'
+      : /ingresando/.test(stockCell) ? 'Ingresando'
+      : 'En stock'
 
     const cat = normalizeCategory(category)
     items.push({ name, code, price, stock, category: cat === 'otros' ? normalizeCategory(name) : cat })

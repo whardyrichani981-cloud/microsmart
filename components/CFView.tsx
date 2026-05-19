@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import type { CFItem } from '@/lib/gremio-parser'
@@ -11,11 +11,11 @@ function matches(text: string, q: string) {
 }
 
 function fmtARS(n: number | null) {
-  if (n === null) return <span style={{ color: '#475569', fontSize: 12 }}>—</span>
+  if (n === null) return <span style={{ color: '#484848', fontSize: 12 }}>—</span>
   return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
 }
 function fmtUSD(n: number | null) {
-  if (n === null) return <span style={{ color: '#475569', fontSize: 12 }}>—</span>
+  if (n === null) return <span style={{ color: '#484848', fontSize: 12 }}>—</span>
   return `US$ ${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
@@ -38,7 +38,7 @@ function Highlight({ text, q }: { text: string; q: string }) {
 
 const th: React.CSSProperties = {
   padding: '7px 12px', fontSize: 11, fontWeight: 600,
-  color: '#7c85a2', letterSpacing: 0.4, textTransform: 'uppercase',
+  color: '#676767', letterSpacing: 0.4, textTransform: 'uppercase',
   border: '1px solid rgba(255,255,255,0.06)', textAlign: 'right',
 }
 const td: React.CSSProperties = {
@@ -79,7 +79,7 @@ export default function CFView() {
           <h2 style={{ fontSize: 18, fontWeight: 800, color: '#facc15', margin: 0 }}>
             Lista Consumidor Final
           </h2>
-          <p style={{ fontSize: 12, color: '#7c85a2', margin: '4px 0 0' }}>
+          <p style={{ fontSize: 12, color: '#676767', margin: '4px 0 0' }}>
             {items ? `${items.length} reparaciones · ${categories.length} categorías` : 'Cargando...'}
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function CFView() {
         {/* Search */}
         <div style={{ position: 'relative', flex: 1, maxWidth: 380, minWidth: 200 }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 24 24"
-            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#7c85a2', pointerEvents: 'none' }}>
+            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#676767', pointerEvents: 'none' }}>
             <path d="M21.707 20.293l-5.387-5.387A8 8 0 1 0 15 16.31l5.387 5.397a1 1 0 0 0 1.414-1.414zM10 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" />
           </svg>
           <input
@@ -97,13 +97,13 @@ export default function CFView() {
             style={{
               width: '100%', padding: '8px 32px 8px 32px', boxSizing: 'border-box',
               background: 'var(--surface2)', border: '1px solid var(--border)',
-              borderRadius: 8, color: '#e2e8f0', fontSize: 13, outline: 'none',
+              borderRadius: 8, color: '#E5E5E3', fontSize: 13, outline: 'none',
             }}
           />
           {search && (
             <button onClick={() => setSearch('')} style={{
               position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', color: '#7c85a2', cursor: 'pointer', fontSize: 16,
+              background: 'none', border: 'none', color: '#676767', cursor: 'pointer', fontSize: 16,
             }}>×</button>
           )}
         </div>
@@ -116,15 +116,15 @@ export default function CFView() {
         </div>
       )}
       {!items && !error && (
-        <div style={{ padding: 40, textAlign: 'center', color: '#7c85a2', fontSize: 14 }}>Cargando lista...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#676767', fontSize: 14 }}>Cargando lista...</div>
       )}
       {items && filtered.length === 0 && (
-        <div style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 14 }}>Sin resultados</div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#484848', fontSize: 14 }}>Sin resultados</div>
       )}
 
       {/* Results count when searching */}
       {q && filtered.length > 0 && (
-        <div style={{ marginBottom: 12, fontSize: 12, color: '#7c85a2' }}>
+        <div style={{ marginBottom: 12, fontSize: 12, color: '#676767' }}>
           {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
         </div>
       )}
@@ -138,7 +138,7 @@ export default function CFView() {
             letterSpacing: 0.3, textTransform: 'uppercase',
           }}>
             {cat}
-            <span style={{ fontWeight: 400, marginLeft: 8, fontSize: 11, color: '#7c85a2' }}>
+            <span style={{ fontWeight: 400, marginLeft: 8, fontSize: 11, color: '#676767' }}>
               ({grouped[cat].length})
             </span>
           </div>
@@ -155,10 +155,10 @@ export default function CFView() {
             <tbody>
               {grouped[cat].map((item, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <td style={{ ...td, color: '#e2e8f0', fontWeight: 500 }}>
+                  <td style={{ ...td, color: '#E5E5E3', fontWeight: 500 }}>
                     <Highlight text={item.name} q={q} />
                   </td>
-                  <td style={{ ...td, textAlign: 'right', color: '#818cf8', fontWeight: 600 }}>
+                  <td style={{ ...td, textAlign: 'right', color: '#F5C400', fontWeight: 600 }}>
                     {fmtUSD(item.usdRepuesto)}
                   </td>
                   <td style={{ ...td, textAlign: 'right', color: '#fbbf24', fontWeight: 600 }}>
@@ -177,7 +177,7 @@ export default function CFView() {
         </div>
       ))}
 
-      <style>{`input::placeholder{color:#475569}input:focus{border-color:#eab308!important}`}</style>
+      <style>{`input::placeholder{color:#484848}input:focus{border-color:#eab308!important}`}</style>
     </div>
   )
 }

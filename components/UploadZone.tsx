@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useRef, useState, useCallback } from 'react'
 import type { Supplier } from '@/lib/types'
@@ -93,8 +93,8 @@ export default function UploadZone({ onSupplierAdd, supplierCount }: Props) {
         onDrop={onDrop}
         className="rounded-xl text-center cursor-pointer transition-all"
         style={{
-          border: `2px dashed ${dragging ? '#6366f1' : 'var(--border)'}`,
-          background: dragging ? 'rgba(99,102,241,0.05)' : 'var(--surface)',
+          border: `2px dashed ${dragging ? '#F5C400' : 'var(--border)'}`,
+          background: dragging ? 'rgba(245,196,0,0.04)' : 'var(--surface)',
           padding: '20px 24px',
         }}
         onClick={() => inputRef.current?.click()}
@@ -114,20 +114,20 @@ export default function UploadZone({ onSupplierAdd, supplierCount }: Props) {
         <div className="flex items-center justify-center gap-3">
           {loading ? (
             <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-              fill="none" viewBox="0 0 24 24" style={{ color: '#6366f1' }}>
+              fill="none" viewBox="0 0 24 24" style={{ color: '#F5C400' }}>
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
             </svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"
-              viewBox="0 0 24 24" style={{ color: '#6366f1' }}>
+              viewBox="0 0 24 24" style={{ color: '#F5C400' }}>
               <path d="M12 2a1 1 0 0 1 .707.293l4 4a1 1 0 0 1-1.414 1.414L13 5.414V16a1 1 0 0 1-2 0V5.414L8.707 7.707A1 1 0 0 1 7.293 6.293l4-4A1 1 0 0 1 12 2zM4 17a1 1 0 0 1 1 1v1h14v-1a1 1 0 0 1 2 0v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1z" />
             </svg>
           )}
-          <span className="text-sm font-medium" style={{ color: '#e2e8f0' }}>
+          <span className="text-sm font-medium" style={{ color: '#E5E5E3' }}>
             {loading ? 'Procesando...' : 'Agregar otro proveedor'}
           </span>
-          <span className="text-xs" style={{ color: '#7c85a2' }}>
+          <span className="text-xs" style={{ color: '#676767' }}>
             Arrastrá o hacé clic · Excel (.xlsx) o CSV
           </span>
         </div>

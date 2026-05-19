@@ -4,6 +4,7 @@ import { getUserFromToken, COOKIE_NAME } from '@/lib/session'
 import { getUserName } from '@/lib/user-names-server'
 import { getRole } from '@/lib/roles'
 import { getUserPermissions } from '@/lib/permissions-server'
+import { getModulos } from '@/lib/sistema-db'
 import PriceComparator from '@/components/PriceComparator'
 
 export const revalidate = 0
@@ -16,6 +17,7 @@ export default async function Home() {
   const role = getRole(username)
   const permissions = username ? await getUserPermissions(username) : null
   const suppliers = await fetchBuiltinSuppliers()
+  const modulosConfig = getModulos()
   return (
     <PriceComparator
       initialSuppliers={suppliers}
@@ -23,6 +25,7 @@ export default async function Home() {
       initialDisplayName={displayName}
       role={role}
       permissions={permissions}
+      modulosConfig={modulosConfig}
     />
   )
 }

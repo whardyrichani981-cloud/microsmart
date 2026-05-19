@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import type { UserRole, Permissions } from '@/lib/roles'
@@ -16,15 +16,15 @@ interface Props {
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', boxSizing: 'border-box',
   background: 'var(--surface2)', border: '1px solid var(--border)',
-  borderRadius: 8, color: '#e2e8f0', fontSize: 14, outline: 'none',
+  borderRadius: 8, color: '#E5E5E3', fontSize: 14, outline: 'none',
 }
 const btnSecondary: React.CSSProperties = {
   padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)',
-  background: 'var(--surface2)', color: '#7c85a2', cursor: 'pointer', fontSize: 13,
+  background: 'var(--surface2)', color: '#676767', cursor: 'pointer', fontSize: 13,
 }
 const btnPrimary: React.CSSProperties = {
   padding: '9px 18px', borderRadius: 8, border: 'none',
-  background: '#6366f1', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+  background: '#F5C400', color: '#0c0d0f', cursor: 'pointer', fontSize: 13, fontWeight: 600,
 }
 
 // ── Toggle switch ─────────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       onClick={() => onChange(!checked)}
       style={{
         width: 40, height: 22, borderRadius: 11, border: 'none',
-        background: checked ? '#6366f1' : '#334155',
+        background: checked ? '#F5C400' : '#2E2E2E',
         position: 'relative', cursor: 'pointer', flexShrink: 0,
         transition: 'background 0.2s',
       }}
@@ -90,7 +90,7 @@ function PermissionsPanel() {
     } finally { setSaving(null) }
   }
 
-  if (loading) return <div style={{ padding: 20, color: '#7c85a2', fontSize: 13 }}>Cargando...</div>
+  if (loading) return <div style={{ padding: 20, color: '#676767', fontSize: 13 }}>Cargando...</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -102,15 +102,15 @@ function PermissionsPanel() {
           }}>
             {/* Header */}
             <div style={{
-              padding: '12px 16px', background: 'rgba(99,102,241,0.08)',
+              padding: '12px 16px', background: 'rgba(245,196,0,0.07)',
               borderBottom: '1px solid var(--border)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#E5E5E3' }}>
                   {EMPLOYEE_DISPLAY[username] ?? username}
                 </div>
-                <div style={{ fontSize: 11, color: '#7c85a2', marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: '#676767', marginTop: 2 }}>
                   @{username} · Empleado
                 </div>
               </div>
@@ -122,7 +122,7 @@ function PermissionsPanel() {
                   padding: '6px 14px', fontSize: 12,
                   opacity: saving === username ? 0.7 : 1,
                   cursor: saving === username ? 'not-allowed' : 'pointer',
-                  background: saved === username ? '#059669' : '#6366f1',
+                  background: saved === username ? '#059669' : '#F5C400',
                 }}
               >
                 {saved === username ? '✓ Guardado' : saving === username ? 'Guardando…' : 'Guardar'}
@@ -136,7 +136,7 @@ function PermissionsPanel() {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)',
                 }}>
-                  <span style={{ fontSize: 13, color: '#e2e8f0' }}>{PERM_LABELS[key]}</span>
+                  <span style={{ fontSize: 13, color: '#E5E5E3' }}>{PERM_LABELS[key]}</span>
                   <Toggle checked={p[key]} onChange={v => handleToggle(username, key, v)} />
                 </div>
               ))}
@@ -196,13 +196,13 @@ export default function SettingsModal({ currentUser, displayName, role, onNameCh
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#818cf8" viewBox="0 0 24 24">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#F5C400" viewBox="0 0 24 24">
               <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.02 7.02 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.36 2.54a7.37 7.37 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.63 8.48a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.05.24.26.42.49.42h4c.25 0 .46-.18.49-.42l.36-2.54a7.37 7.37 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
             </svg>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>Configuración</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#E5E5E3' }}>Configuración</span>
           </div>
           <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: '#7c85a2',
+            background: 'none', border: 'none', color: '#676767',
             cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4,
           }}>×</button>
         </div>
@@ -217,8 +217,8 @@ export default function SettingsModal({ currentUser, displayName, role, onNameCh
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
                 fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-                background: tab === t.id ? '#6366f1' : 'var(--surface2)',
-                color: tab === t.id ? '#fff' : '#7c85a2',
+                background: tab === t.id ? '#F5C400' : 'var(--surface2)',
+                color: tab === t.id ? '#fff' : '#676767',
                 transition: 'all 0.15s',
               }}>
                 {t.label}
@@ -235,20 +235,20 @@ export default function SettingsModal({ currentUser, displayName, role, onNameCh
               {/* Role badge */}
               <div style={{
                 padding: '12px 16px', borderRadius: 10,
-                background: isSuperAdmin ? 'rgba(99,102,241,0.08)' : 'rgba(74,222,128,0.06)',
-                border: `1px solid ${isSuperAdmin ? 'rgba(99,102,241,0.25)' : 'rgba(74,222,128,0.2)'}`,
+                background: isSuperAdmin ? 'rgba(245,196,0,0.07)' : 'rgba(74,222,128,0.06)',
+                border: `1px solid ${isSuperAdmin ? 'rgba(245,196,0,0.25)' : 'rgba(74,222,128,0.2)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ fontSize: 12, color: '#7c85a2' }}>
-                    Usuario: <span style={{ color: '#818cf8', fontWeight: 600 }}>@{currentUser}</span>
+                  <div style={{ fontSize: 12, color: '#676767' }}>
+                    Usuario: <span style={{ color: '#F5C400', fontWeight: 600 }}>@{currentUser}</span>
                   </div>
                 </div>
                 <span style={{
                   fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                  background: isSuperAdmin ? 'rgba(99,102,241,0.2)' : 'rgba(74,222,128,0.15)',
-                  color: isSuperAdmin ? '#818cf8' : '#4ade80',
-                  border: `1px solid ${isSuperAdmin ? 'rgba(99,102,241,0.3)' : 'rgba(74,222,128,0.3)'}`,
+                  background: isSuperAdmin ? 'rgba(245,196,0,0.12)' : 'rgba(74,222,128,0.15)',
+                  color: isSuperAdmin ? '#F5C400' : '#4ade80',
+                  border: `1px solid ${isSuperAdmin ? 'rgba(245,196,0,0.28)' : 'rgba(74,222,128,0.3)'}`,
                 }}>
                   {isSuperAdmin ? '⭐ Super Admin' : '👷 Empleado'}
                 </span>
@@ -256,7 +256,7 @@ export default function SettingsModal({ currentUser, displayName, role, onNameCh
 
               {/* Name field */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#8A8A8A', display: 'block', marginBottom: 8 }}>
                   Nombre para mostrar
                 </label>
                 <input
@@ -286,7 +286,7 @@ export default function SettingsModal({ currentUser, displayName, role, onNameCh
                     ...btnPrimary,
                     opacity: nameSaving ? 0.7 : 1,
                     cursor: nameSaving ? 'not-allowed' : 'pointer',
-                    background: nameSaved ? '#059669' : '#6366f1',
+                    background: nameSaved ? '#059669' : '#F5C400',
                   }}
                 >
                   {nameSaved ? '✓ Guardado' : nameSaving ? 'Guardando…' : 'Guardar'}
@@ -300,7 +300,7 @@ export default function SettingsModal({ currentUser, displayName, role, onNameCh
         </div>
       </div>
 
-      <style>{`input::placeholder{color:#475569}input:focus{border-color:#6366f1!important}`}</style>
+      <style>{`input::placeholder{color:#484848}input:focus{border-color:#F5C400!important}`}</style>
     </div>
   )
 }

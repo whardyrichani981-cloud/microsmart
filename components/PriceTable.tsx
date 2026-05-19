@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import type { Supplier, MergedRow } from '@/lib/types'
@@ -28,14 +28,14 @@ function highlight(text: string, search: string) {
   if (idx === -1) return text
   return (
     text.slice(0, idx) +
-    `<mark style="background:rgba(99,102,241,0.4);color:inherit;border-radius:2px">${text.slice(idx, idx + search.length)}</mark>` +
+    `<mark style="background:rgba(245,196,0,0.35);color:inherit;border-radius:2px">${text.slice(idx, idx + search.length)}</mark>` +
     text.slice(idx + search.length)
   )
 }
 
 function SortIcon({ col, sort }: { col: string; sort: SortState }) {
   if (sort.col !== col) return <span style={{ opacity: 0.3, marginLeft: 4 }}>↕</span>
-  return <span style={{ color: '#818cf8', marginLeft: 4 }}>{sort.dir === 1 ? '↑' : '↓'}</span>
+  return <span style={{ color: '#F5C400', marginLeft: 4 }}>{sort.dir === 1 ? '↑' : '↓'}</span>
 }
 
 // ─── Product row ─────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ function ProductRow({
         <div className="font-medium leading-snug"
           dangerouslySetInnerHTML={{ __html: highlight(row.name, search) }} />
         {row.code && (
-          <div className="text-xs mt-0.5" style={{ color: '#7c85a2' }}
+          <div className="text-xs mt-0.5" style={{ color: '#676767' }}
             dangerouslySetInnerHTML={{ __html: highlight(row.code, search) }} />
         )}
       </td>
@@ -75,19 +75,19 @@ function ProductRow({
 
         if (price == null || isNaN(price)) {
           return <td key={s.id} className="px-4 py-2.5 text-right"
-            style={{ color: '#3e4370', fontSize: 12 }}>—</td>
+            style={{ color: '#363636', fontSize: 12 }}>—</td>
         }
         return (
           <td key={s.id} className="px-4 py-2.5 text-right font-mono tabular-nums"
             style={{
-              color: isBest ? '#4ade80' : isOut ? '#7c85a2' : '#e2e8f0',
+              color: isBest ? '#4ade80' : isOut ? '#676767' : '#E5E5E3',
               fontWeight: isBest ? 700 : 400,
               background: isBest ? 'rgba(34,197,94,0.05)' : undefined,
               fontSize: 13,
             }}>
             {isBest && <span style={{ marginRight: 3, fontSize: 10 }}>🏆</span>}
             {fmt(price)}
-            {isOut && <div style={{ fontSize: 10, color: '#7c85a2', fontWeight: 400 }}>Sin stock</div>}
+            {isOut && <div style={{ fontSize: 10, color: '#676767', fontWeight: 400 }}>Sin stock</div>}
           </td>
         )
       })}
@@ -106,7 +106,7 @@ function ProductRow({
                 </div>
               )}
             </>
-          ) : <span style={{ color: '#3e4370' }}>—</span>}
+          ) : <span style={{ color: '#363636' }}>—</span>}
         </td>
       )}
     </tr>
@@ -175,9 +175,9 @@ export default function PriceTable({ rows, suppliers, sort, onSort, search }: Pr
   if (suppliers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 rounded-xl"
-        style={{ border: '1px dashed var(--border)', color: '#7c85a2' }}>
+        style={{ border: '1px dashed var(--border)', color: '#676767' }}>
         <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>📋</div>
-        <p className="font-medium" style={{ color: '#e2e8f0' }}>Sin datos cargados</p>
+        <p className="font-medium" style={{ color: '#E5E5E3' }}>Sin datos cargados</p>
         <p className="text-sm mt-1">Los proveedores se están cargando...</p>
       </div>
     )
@@ -186,14 +186,15 @@ export default function PriceTable({ rows, suppliers, sort, onSort, search }: Pr
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 rounded-xl"
-        style={{ border: '1px dashed var(--border)', color: '#7c85a2' }}>
-        <p className="font-medium" style={{ color: '#e2e8f0' }}>Sin resultados</p>
+        style={{ border: '1px dashed var(--border)', color: '#676767' }}>
+        <p className="font-medium" style={{ color: '#E5E5E3' }}>Sin resultados</p>
         <p className="text-sm mt-1">Probá con otro término o categoría</p>
       </div>
     )
   }
 
   // Group rows by normalized category, preserving CATEGORY_ORDER
+  // Within each category, sort respects the passed-in sort (price/name) OR falls back to name A-Z
   const grouped = new Map<AppleCategory, MergedRow[]>()
   for (const cat of CATEGORY_ORDER) grouped.set(cat, [])
 
@@ -201,6 +202,13 @@ export default function PriceTable({ rows, suppliers, sort, onSort, search }: Pr
     const cat = (row.category ?? 'otros') as AppleCategory
     const key = grouped.has(cat) ? cat : 'otros'
     grouped.get(key)!.push(row)
+  }
+
+  // Always sort alphabetically within each category when sort.col === 'name'
+  if (sort.col === 'name') {
+    for (const [, catRows] of grouped) {
+      catRows.sort((a, b) => sort.dir * a.name.localeCompare(b.name, 'es'))
+    }
   }
 
   const showBest = suppliers.length > 1
@@ -213,7 +221,7 @@ export default function PriceTable({ rows, suppliers, sort, onSort, search }: Pr
         <thead>
           <tr style={{ background: 'var(--surface2)' }}>
             <th className="text-left px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap"
-              style={{ color: '#7c85a2', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}
+              style={{ color: '#676767', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}
               onClick={() => onSort('name')}>
               Producto <SortIcon col="name" sort={sort} />
             </th>

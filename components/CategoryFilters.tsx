@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { CATEGORY_META, CATEGORY_ORDER, type AppleCategory } from '@/lib/categories'
 import type { MergedRow } from '@/lib/types'
@@ -44,9 +44,9 @@ export default function CategoryFilters({ rows, active, onChange }: Props) {
           fontSize: 12,
           fontWeight: allActive ? 700 : 500,
           cursor: 'pointer',
-          border: `1px solid ${allActive ? '#6366f1' : 'var(--border)'}`,
-          background: allActive ? 'rgba(99,102,241,0.15)' : 'var(--surface)',
-          color: allActive ? '#818cf8' : '#7c85a2',
+          border: `1px solid ${allActive ? '#F5C400' : 'var(--border)'}`,
+          background: allActive ? 'rgba(245,196,0,0.10)' : 'var(--surface)',
+          color: allActive ? '#F5C400' : '#676767',
           transition: 'all 0.15s',
           whiteSpace: 'nowrap',
         }}
@@ -54,8 +54,8 @@ export default function CategoryFilters({ rows, active, onChange }: Props) {
         Todas
         <span style={{
           marginLeft: 5, fontSize: 10,
-          background: allActive ? '#6366f1' : 'var(--surface2)',
-          color: allActive ? '#fff' : '#7c85a2',
+          background: allActive ? '#F5C400' : 'var(--surface2)',
+          color: allActive ? '#0c0d0f' : '#676767',
           borderRadius: 10, padding: '1px 5px',
         }}>
           {rows.length}
@@ -79,7 +79,7 @@ export default function CategoryFilters({ rows, active, onChange }: Props) {
               cursor: 'pointer',
               border: `1px solid ${isOn ? meta.color : 'var(--border)'}`,
               background: isOn ? meta.bg : 'var(--surface)',
-              color: isOn ? meta.color : '#7c85a2',
+              color: isOn ? meta.color : '#676767',
               transition: 'all 0.15s',
               whiteSpace: 'nowrap',
               display: 'flex',
@@ -92,7 +92,7 @@ export default function CategoryFilters({ rows, active, onChange }: Props) {
             <span style={{
               fontSize: 10,
               background: isOn ? meta.color + '33' : 'var(--surface2)',
-              color: isOn ? meta.color : '#7c85a2',
+              color: isOn ? meta.color : '#676767',
               borderRadius: 10, padding: '1px 5px',
             }}>
               {count}

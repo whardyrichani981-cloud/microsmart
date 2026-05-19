@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Note, NoteCategory, NotePriority } from '@/lib/notes'
@@ -59,10 +59,10 @@ function NoteCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-semibold" style={{ color: '#e2e8f0' }}>
+            <span className="text-xs font-semibold" style={{ color: '#E5E5E3' }}>
               {note.author}
             </span>
-            <span className="text-xs" style={{ color: '#7c85a2' }}>{timeStr}</span>
+            <span className="text-xs" style={{ color: '#676767' }}>{timeStr}</span>
           </div>
         </div>
 
@@ -82,7 +82,7 @@ function NoteCard({
         </span>
         {note.product && (
           <span className="text-xs px-2 py-0.5 rounded-full" style={{
-            background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
+            background: 'rgba(255,255,255,0.05)', color: '#8A8A8A',
             border: '1px solid var(--border)',
           }}>
             📱 {note.product}
@@ -92,7 +92,7 @@ function NoteCard({
 
       {/* Content */}
       <p className="text-sm leading-relaxed" style={{
-        color: '#e2e8f0',
+        color: '#E5E5E3',
         textDecoration: note.resolved ? 'line-through' : 'none',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
@@ -108,7 +108,7 @@ function NoteCard({
           style={{
             background: note.resolved ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
             border: `1px solid ${note.resolved ? '#22c55e' : 'var(--border)'}`,
-            color: note.resolved ? '#4ade80' : '#7c85a2',
+            color: note.resolved ? '#4ade80' : '#676767',
             cursor: 'pointer',
           }}
         >
@@ -122,7 +122,7 @@ function NoteCard({
             style={{
               background: 'transparent',
               border: '1px solid transparent',
-              color: '#475569',
+              color: '#484848',
               cursor: 'pointer',
               marginLeft: 'auto',
             }}
@@ -134,7 +134,7 @@ function NoteCard({
             onMouseLeave={e => {
               const t = e.currentTarget
               t.style.borderColor = 'transparent'
-              t.style.color = '#475569'
+              t.style.color = '#484848'
             }}
           >
             Eliminar
@@ -190,7 +190,7 @@ function NoteForm({
     background: 'var(--bg)',
     border: '1px solid var(--border)',
     borderRadius: 7,
-    color: '#e2e8f0',
+    color: '#E5E5E3',
     fontSize: 13,
     outline: 'none',
     width: '100%',
@@ -198,7 +198,7 @@ function NoteForm({
   }
 
   const label = (text: string) => (
-    <div className="text-xs mb-1" style={{ color: '#7c85a2' }}>{text}</div>
+    <div className="text-xs mb-1" style={{ color: '#676767' }}>{text}</div>
   )
 
   return (
@@ -208,7 +208,7 @@ function NoteForm({
       borderRadius: 12,
       padding: 16,
     }}>
-      <div className="text-sm font-semibold mb-3" style={{ color: '#e2e8f0' }}>
+      <div className="text-sm font-semibold mb-3" style={{ color: '#E5E5E3' }}>
         Nueva nota
       </div>
 
@@ -271,9 +271,9 @@ function NoteForm({
                 borderRadius: 12,
                 fontSize: 11,
                 cursor: 'pointer',
-                border: `1px solid ${product === d ? '#6366f1' : 'var(--border)'}`,
-                background: product === d ? 'rgba(99,102,241,0.2)' : 'var(--bg)',
-                color: product === d ? '#818cf8' : '#7c85a2',
+                border: `1px solid ${product === d ? '#F5C400' : 'var(--border)'}`,
+                background: product === d ? 'rgba(245,196,0,0.12)' : 'var(--bg)',
+                color: product === d ? '#F5C400' : '#676767',
                 transition: 'all 0.15s',
                 fontWeight: product === d ? 600 : 400,
               }}
@@ -298,7 +298,7 @@ function NoteForm({
           }}
           style={{ ...inputStyle, resize: 'vertical', minHeight: 72, fontFamily: 'inherit' }}
         />
-        <div className="text-xs mt-0.5" style={{ color: '#475569' }}>Ctrl+Enter para guardar</div>
+        <div className="text-xs mt-0.5" style={{ color: '#484848' }}>Ctrl+Enter para guardar</div>
       </div>
 
       <button
@@ -307,10 +307,10 @@ function NoteForm({
         style={{
           width: '100%',
           padding: '9px 0',
-          background: loading || !content.trim() || !author.trim() ? 'var(--surface2)' : '#6366f1',
+          background: loading || !content.trim() || !author.trim() ? 'var(--surface2)' : '#F5C400',
           border: 'none',
           borderRadius: 8,
-          color: loading || !content.trim() || !author.trim() ? '#475569' : '#fff',
+          color: loading || !content.trim() || !author.trim() ? '#484848' : '#fff',
           fontWeight: 600,
           fontSize: 13,
           cursor: loading || !content.trim() || !author.trim() ? 'not-allowed' : 'pointer',
@@ -445,10 +445,10 @@ export default function NotesPanel({ open, onClose }: Props) {
         }}>
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-bold text-base" style={{ color: '#e2e8f0' }}>
+              <div className="font-bold text-base" style={{ color: '#E5E5E3' }}>
                 📋 Notas del equipo
               </div>
-              <div className="text-xs mt-0.5" style={{ color: '#7c85a2' }}>
+              <div className="text-xs mt-0.5" style={{ color: '#676767' }}>
                 {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
                 {highPriorityCount > 0 && (
                   <span style={{ color: '#f87171', marginLeft: 6 }}>
@@ -465,7 +465,7 @@ export default function NotesPanel({ open, onClose }: Props) {
                 style={{
                   background: 'var(--surface2)', border: '1px solid var(--border)',
                   borderRadius: 6, padding: '5px 8px', cursor: 'pointer',
-                  color: '#7c85a2', fontSize: 13,
+                  color: '#676767', fontSize: 13,
                 }}
               >
                 {loading ? '⟳' : '↻'}
@@ -474,7 +474,7 @@ export default function NotesPanel({ open, onClose }: Props) {
                 onClick={onClose}
                 style={{
                   background: 'none', border: 'none',
-                  color: '#7c85a2', fontSize: 20, cursor: 'pointer',
+                  color: '#676767', fontSize: 20, cursor: 'pointer',
                   padding: '2px 6px',
                 }}
               >
@@ -501,9 +501,9 @@ export default function NotesPanel({ open, onClose }: Props) {
                   fontSize: 11,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  border: `1px solid ${filter === val ? '#6366f1' : 'var(--border)'}`,
-                  background: filter === val ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  color: filter === val ? '#818cf8' : '#7c85a2',
+                  border: `1px solid ${filter === val ? '#F5C400' : 'var(--border)'}`,
+                  background: filter === val ? 'rgba(245,196,0,0.10)' : 'transparent',
+                  color: filter === val ? '#F5C400' : '#676767',
                   transition: 'all 0.15s',
                 }}
               >
@@ -511,7 +511,7 @@ export default function NotesPanel({ open, onClose }: Props) {
                 {val === 'pending' && pendingCount > 0 && (
                   <span style={{
                     marginLeft: 5,
-                    background: '#6366f1',
+                    background: '#F5C400',
                     color: '#fff',
                     borderRadius: 10,
                     padding: '1px 5px',
@@ -535,7 +535,7 @@ export default function NotesPanel({ open, onClose }: Props) {
 
           {/* Notes list */}
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#475569' }}>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: '#484848' }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
               <div style={{ fontSize: 13 }}>
                 {filter === 'pending' ? 'No hay notas pendientes' : 'No hay notas en esta categoría'}

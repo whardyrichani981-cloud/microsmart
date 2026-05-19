@@ -46,6 +46,7 @@ export const CATEGORY_ORDER: AppleCategory[] = [
 
 // Keyword rules — first match wins
 const RULES: [AppleCategory, RegExp][] = [
+  ['accesorios',  /adhesivo/i],
   ['apple-watch', /apple.?watch|watch/i],
   ['ipad',        /ipad|tactil.?ipad/i],
   ['modulos',     /modulo|\bmod\b|pantalla|incell|oled|lcd|display/i],
