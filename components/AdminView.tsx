@@ -20,14 +20,14 @@ const SECTIONS = [
   },
 ]
 
-export default function AdminView() {
+export default function AdminView({ onModulosSaved }: { onModulosSaved?: () => void }) {
   const [section, setSection] = useState<'usuarios' | 'configuracion' | null>(null)
 
   if (section === 'usuarios') {
     return <UsuariosView onBack={() => setSection(null)} />
   }
   if (section === 'configuracion') {
-    return <ConfiguracionView onBack={() => setSection(null)} />
+    return <ConfiguracionView onBack={() => setSection(null)} onModulosSaved={onModulosSaved} />
   }
 
   return (

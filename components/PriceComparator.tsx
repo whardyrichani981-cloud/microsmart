@@ -69,11 +69,22 @@ export default function PriceComparator({
 }: Props) {
   const p = permissions ?? SUPERADMIN_PERMISSIONS
   const isSuperAdmin = role === 'superadmin'
+
+  // ── Módulos reactivos — se actualizan cuando el admin guarda cambios ──────
+  const [modulesCfg, setModulesCfg] = useState<Record<string, boolean> | null>(modulosConfig ?? null)
+
+  const refreshModules = async () => {
+    try {
+      const res = await fetch('/api/sistema/modulos')
+      if (res.ok) setModulesCfg(await res.json())
+    } catch { /* ignore */ }
+  }
+
   const NAV = ALL_NAV.filter(item => {
     if (item.adminOnly && !isSuperAdmin) return false
     if (item.permKey && !p[item.permKey]) return false
     // Respetar configuración de módulos (solo para no-protegidos)
-    if (modulosConfig && !PROTECTED_MODULES.has(item.id) && modulosConfig[item.id] === false) return false
+    if (modulesCfg && !PROTECTED_MODULES.has(item.id) && modulesCfg[item.id] === false) return false
     return true
   })
   const router = useRouter()
@@ -889,7 +900,7 @@ export default function PriceComparator({
               {contableSubTab === 'reportes'   && <ReportesMainView key="reportes" />}
             </div>
           )}
-          {activeNav === 'administracion' && <AdminView key="administracion" />}
+          {activeNav === 'administracion' && <AdminView key="administracion" onModulosSaved={refreshModules} />}
         </main>
       </div>
 

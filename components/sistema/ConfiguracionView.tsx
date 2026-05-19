@@ -1137,7 +1137,7 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
 }
 
 // ─── Main ConfiguracionView ───────────────────────────────────────────────────
-export default function ConfiguracionView({ onBack }: { onBack?: () => void }) {
+export default function ConfiguracionView({ onBack, onModulosSaved }: { onBack?: () => void; onModulosSaved?: () => void }) {
   const [config, setConfig] = useState<Record<string, boolean> | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -1163,6 +1163,7 @@ export default function ConfiguracionView({ onBack }: { onBack?: () => void }) {
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
+      onModulosSaved?.()
     } finally { setSaving(false) }
   }
 
