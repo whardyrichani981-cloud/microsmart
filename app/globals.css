@@ -7,7 +7,9 @@
   --bg: #F5F5F7;
   --surface: #FFFFFF;
   --surface2: #F5F5F7;
+  --surface3: #EBEBF0;
   --border: #D1D1D6;
+  --border-light: #E8E8ED;
   --accent: #0066CC;
   --accent-dim: rgba(0,102,204,0.08);
   --accent-glow: rgba(0,102,204,0.20);
@@ -19,69 +21,161 @@
 
   /* Utilities */
   --shadow: rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
   --hover-bg: rgba(0,0,0,0.04);
   --row-border: #F2F2F7;
   --row-hover: rgba(0,0,0,0.025);
+
+  /* Nav */
+  --nav-bg: rgba(255,255,255,0.85);
+  --nav-blur: blur(20px) saturate(180%);
+  --sidebar-bg: rgba(255,255,255,0.92);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
 }
 
 /* ─── Dark theme ────────────────────────────────────────────────────────────── */
 html.dark {
-  --bg: #0A0A0A;
+  --bg: #000000;
   --surface: #1C1C1E;
   --surface2: #2C2C2E;
+  --surface3: #3A3A3C;
   --border: #3A3A3C;
-  --accent: #0066CC;
-  --accent-dim: rgba(0,102,204,0.12);
-  --accent-glow: rgba(0,102,204,0.25);
+  --border-light: #2C2C2E;
+  --accent: #0A84FF;
+  --accent-dim: rgba(10,132,255,0.14);
+  --accent-glow: rgba(10,132,255,0.28);
 
   /* Text */
-  --text-primary: #F2F2F7;
-  --text-secondary: #AEAEB2;
+  --text-primary: #F5F5F7;
+  --text-secondary: #98989D;
   --text-dim: #636366;
 
   /* Utilities */
-  --shadow: rgba(0,0,0,0.5);
+  --shadow: rgba(0,0,0,0.6);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4);
   --hover-bg: rgba(255,255,255,0.06);
   --row-border: rgba(255,255,255,0.05);
   --row-hover: rgba(255,255,255,0.03);
+
+  /* Nav */
+  --nav-bg: rgba(28,28,30,0.88);
+  --nav-blur: blur(20px) saturate(180%);
+  --sidebar-bg: rgba(28,28,30,0.95);
 }
 
-* { box-sizing: border-box; }
+/* ─── Reset & base ──────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background: var(--bg);
   color: var(--text-primary);
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  transition: background 0.2s, color 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+               'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* Scrollbar — light */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+/* ─── Typography scale ──────────────────────────────────────────────────────── */
+h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; }
+h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+h3 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #C7C7CC; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #C7C7CC; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #AEAEB2; }
+html.dark ::-webkit-scrollbar-thumb { background: #48484A; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #636366; }
 
-/* Scrollbar — dark */
-html.dark ::-webkit-scrollbar-thumb { background: #3A3A3C; }
-html.dark ::-webkit-scrollbar-thumb:hover { background: #48484A; }
+/* ─── Focus ring ────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
-/* Table sticky header */
+/* ─── Apple-style pill button ───────────────────────────────────────────────── */
+.btn-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 22px; border-radius: var(--radius-pill); border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.btn-pill-primary {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 2px 8px rgba(0,102,204,0.28);
+}
+.btn-pill-primary:hover { filter: brightness(1.1); }
+.btn-pill-ghost {
+  background: transparent; color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.btn-pill-ghost:hover { background: var(--accent-dim); }
+
+/* ─── Apple-style card ──────────────────────────────────────────────────────── */
+.apple-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* ─── Table sticky header ───────────────────────────────────────────────────── */
 .table-scroll { overflow: auto; max-height: calc(100vh - 280px); }
 .table-scroll thead th { position: sticky; top: 0; z-index: 10; }
 
-/* Price highlight animation */
+/* ─── Glassmorphism ─────────────────────────────────────────────────────────── */
+.glass {
+  background: var(--nav-bg);
+  backdrop-filter: var(--nav-blur);
+  -webkit-backdrop-filter: var(--nav-blur);
+}
+
+/* ─── Tech grid pattern (subtle) ────────────────────────────────────────────── */
+.tech-grid {
+  background-image:
+    linear-gradient(var(--border-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: -1px -1px;
+}
+
+/* ─── Animations ────────────────────────────────────────────────────────────── */
 @keyframes flash-green {
-  0% { background-color: rgba(34,197,94,0.2); }
+  0%   { background-color: rgba(34,197,94,0.18); }
   100% { background-color: transparent; }
 }
 .price-best { animation: flash-green 1s ease-out; }
 
 @keyframes spin {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  to   { transform: rotate(360deg); }
 }
-
 @keyframes mic-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50%       { opacity: 0.45; }
 }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.4s ease-out both; }
+
+/* ─── Input global focus ────────────────────────────────────────────────────── */
+input::placeholder { color: var(--text-dim); }
+input:focus { border-color: var(--accent) !important; outline: none; }
+select:focus { border-color: var(--accent) !important; outline: none; }

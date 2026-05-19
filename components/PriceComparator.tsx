@@ -277,60 +277,63 @@ export default function PriceComparator({
   const Sidebar = (
     <aside style={{
       width: SIDEBAR_W, minHeight: '100vh',
-      background: 'var(--surface)',
-      borderRight: '1px solid var(--border)',
+      background: 'var(--sidebar-bg)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderRight: '1px solid var(--border-light)',
       display: 'flex', flexDirection: 'column',
-      transition: 'width 0.22s ease',
+      transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
       flexShrink: 0, position: 'sticky', top: 0, alignSelf: 'flex-start',
       overflow: 'hidden',
     }}>
       {/* Logo */}
       <div style={{
-        height: 56, display: 'flex', alignItems: 'center',
-        padding: sidebarOpen ? '0 16px' : '0', justifyContent: sidebarOpen ? 'space-between' : 'center',
-        borderBottom: '1px solid var(--border)', flexShrink: 0,
-        background: 'var(--surface)',
+        height: 60, display: 'flex', alignItems: 'center',
+        padding: sidebarOpen ? '0 18px' : '0', justifyContent: sidebarOpen ? 'space-between' : 'center',
+        borderBottom: '1px solid var(--border-light)', flexShrink: 0,
       }}>
         {sidebarOpen ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap' }}>
-            {/* Brand mark */}
             <div style={{
-              width: 30, height: 30, borderRadius: 8,
-              background: '#0066CC',
+              width: 32, height: 32, borderRadius: 10,
+              background: 'linear-gradient(135deg, #0066CC 0%, #0A84FF 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
+              flexShrink: 0, boxShadow: '0 2px 8px rgba(0,102,204,0.35)',
             }}>
-              <span style={{ fontSize: 16, lineHeight: 1 }}>🍎</span>
+              <span style={{ fontSize: 17, lineHeight: 1 }}>🍎</span>
             </div>
-            <div style={{ lineHeight: 1.15 }}>
-              <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: '0.10em', color: '#0066CC', textTransform: 'uppercase' }}>MICRO</div>
-              <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.14em', color: '#AEAEB2', textTransform: 'uppercase' }}>smart</div>
+            <div style={{ lineHeight: 1.1 }}>
+              <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '0.06em', color: 'var(--text-primary)', textTransform: 'uppercase' }}>Microsmart</div>
+              <div style={{ fontWeight: 400, fontSize: 10, letterSpacing: '0.02em', color: 'var(--text-dim)' }}>Especialistas Apple</div>
             </div>
           </div>
         ) : (
           <div style={{
-            width: 30, height: 30, borderRadius: 8, background: '#0066CC',
+            width: 32, height: 32, borderRadius: 10,
+            background: 'linear-gradient(135deg, #0066CC 0%, #0A84FF 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,102,204,0.35)',
           }}>
-            <span style={{ fontSize: 16, lineHeight: 1 }}>🍎</span>
+            <span style={{ fontSize: 17, lineHeight: 1 }}>🍎</span>
           </div>
         )}
         {sidebarOpen && (
           <button onClick={() => setSidebarOpen(o => !o)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-dim)', fontSize: 14, padding: '4px 6px', lineHeight: 1,
-            display: 'flex', alignItems: 'center', borderRadius: 4,
-            transition: 'color 0.15s',
+            width: 26, height: 26, borderRadius: '50%',
+            background: 'var(--surface2)', border: '1px solid var(--border-light)',
+            cursor: 'pointer', color: 'var(--text-dim)', fontSize: 11,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s', flexShrink: 0,
           }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface3)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text-dim)' }}
           >◀</button>
         )}
         {!sidebarOpen && (
           <button onClick={() => setSidebarOpen(o => !o)} style={{
-            position: 'absolute', bottom: 60, left: 0, right: 0,
+            position: 'absolute', bottom: 72, left: 0, right: 0,
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-dim)', fontSize: 14, padding: '8px 0', lineHeight: 1,
+            color: 'var(--text-dim)', fontSize: 11, padding: '8px 0',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'color 0.15s',
           }}
@@ -341,7 +344,7 @@ export default function PriceComparator({
       </div>
 
       {/* Nav items */}
-      <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+      <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
         {orderedNAV.map(item => {
           const isActive = activeNav === item.id
           const isFixed = NAV_FIXED.has(item.id)
@@ -368,44 +371,63 @@ export default function PriceComparator({
               onDragEnd={() => { setDragId(null); setDropId(null) }}
               onDragLeave={() => { if (dropId === item.id) setDropId(null) }}
               style={{
-                borderTop: isDropTarget ? '2px solid #0066CC' : '2px solid transparent',
-                opacity: isDragging ? 0.35 : 1,
-                transition: 'opacity 0.12s, border-color 0.1s',
+                borderTop: isDropTarget ? '2px solid var(--accent)' : '2px solid transparent',
+                opacity: isDragging ? 0.3 : 1,
+                transition: 'opacity 0.15s, border-color 0.1s',
               }}
             >
               <button
                 onClick={() => handleNav(item.id)}
+                title={!sidebarOpen ? item.label : undefined}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center',
-                  gap: 10, padding: sidebarOpen ? '9px 14px 9px 18px' : '9px 0',
+                  gap: 9, padding: sidebarOpen ? '8px 10px 8px 10px' : '9px 0',
                   justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                  background: isActive && selectedSupplierIds.size === 0 ? 'rgba(0,102,204,0.08)' : 'transparent',
+                  background: isActive && selectedSupplierIds.size === 0
+                    ? 'var(--accent-dim)' : 'transparent',
                   border: 'none',
-                  borderLeft: isActive && selectedSupplierIds.size === 0 ? '3px solid #0066CC' : '3px solid transparent',
+                  borderRadius: 10,
                   cursor: !isFixed && sidebarOpen ? 'grab' : 'pointer',
                   transition: 'all 0.15s',
-                  color: isActive ? '#0066CC' : 'var(--text-secondary)',
+                  color: isActive && selectedSupplierIds.size === 0 ? 'var(--accent)' : 'var(--text-secondary)',
                   position: 'relative',
+                  marginBottom: 2,
                 }}
-                onMouseEnter={e => { if (!(isActive && selectedSupplierIds.size === 0)) e.currentTarget.style.background = 'var(--hover-bg)' }}
-                onMouseLeave={e => { if (!(isActive && selectedSupplierIds.size === 0)) e.currentTarget.style.background = 'transparent' }}
+                onMouseEnter={e => {
+                  if (!(isActive && selectedSupplierIds.size === 0))
+                    e.currentTarget.style.background = 'var(--hover-bg)'
+                }}
+                onMouseLeave={e => {
+                  if (!(isActive && selectedSupplierIds.size === 0))
+                    e.currentTarget.style.background = 'transparent'
+                }}
               >
                 {!isFixed && sidebarOpen && (
-                  <span style={{ fontSize: 9, color: 'var(--text-dim)', position: 'absolute', left: 6, lineHeight: 1, letterSpacing: '-1px' }}>⠿</span>
+                  <span style={{ fontSize: 8, color: 'var(--text-dim)', position: 'absolute', left: 2, lineHeight: 1, letterSpacing: '-1px', opacity: 0.5 }}>⠿</span>
                 )}
-                <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
+                <span style={{
+                  fontSize: 16, flexShrink: 0, lineHeight: 1,
+                  filter: isActive && selectedSupplierIds.size === 0 ? 'none' : 'grayscale(0.3)',
+                  transition: 'filter 0.15s',
+                }}>{item.icon}</span>
                 {sidebarOpen && (
-                  <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, whiteSpace: 'nowrap' }}>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: isActive && selectedSupplierIds.size === 0 ? 600 : 400,
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '-0.01em',
+                  }}>
                     {item.label}
                   </span>
                 )}
                 {item.id === 'notasdash' && pendingNotes > 0 && (
                   <span style={{
-                    background: '#0066CC', color: '#FFFFFF', borderRadius: 10,
-                    fontSize: 10, fontWeight: 700, padding: '1px 6px',
+                    background: 'var(--accent)', color: '#FFFFFF',
+                    borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px',
                     marginLeft: sidebarOpen ? 'auto' : undefined,
                     position: sidebarOpen ? 'relative' : 'absolute',
-                    top: sidebarOpen ? undefined : 6, right: sidebarOpen ? undefined : 6,
+                    top: sidebarOpen ? undefined : 4, right: sidebarOpen ? undefined : 4,
+                    minWidth: 18, textAlign: 'center',
                   }}>
                     {pendingNotes}
                   </span>
@@ -417,24 +439,24 @@ export default function PriceComparator({
       </nav>
 
       {/* Bottom: theme toggle + logout */}
-      <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+      <div style={{ padding: '8px 8px', borderTop: '1px solid var(--border-light)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          title={isDark ? 'Modo claro' : 'Modo oscuro'}
           style={{
             width: '100%', display: 'flex', alignItems: 'center',
-            gap: 8, padding: sidebarOpen ? '10px 18px' : '10px 0',
+            gap: 9, padding: sidebarOpen ? '8px 10px' : '9px 0',
             justifyContent: sidebarOpen ? 'flex-start' : 'center',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-secondary)', transition: 'all 0.15s',
+            background: 'transparent', border: 'none', borderRadius: 10,
+            cursor: 'pointer', color: 'var(--text-secondary)', transition: 'all 0.15s',
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
           <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>{isDark ? '☀️' : '🌙'}</span>
           {sidebarOpen && (
-            <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 400, whiteSpace: 'nowrap' }}>
               {isDark ? 'Modo claro' : 'Modo oscuro'}
             </span>
           )}
@@ -443,27 +465,28 @@ export default function PriceComparator({
         {/* Logout */}
         <button
           onClick={handleLogout}
+          title="Cerrar sesión"
           style={{
             width: '100%', display: 'flex', alignItems: 'center',
-            gap: 8, padding: sidebarOpen ? '10px 18px' : '10px 0',
+            gap: 9, padding: sidebarOpen ? '8px 10px' : '9px 0',
             justifyContent: sidebarOpen ? 'flex-start' : 'center',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-secondary)', transition: 'all 0.15s',
+            background: 'transparent', border: 'none', borderRadius: 10,
+            cursor: 'pointer', color: 'var(--text-secondary)', transition: 'all 0.15s',
           }}
           onMouseEnter={e => {
             e.currentTarget.style.background = 'rgba(255,59,48,0.07)'
             e.currentTarget.style.color = '#FF3B30'
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.background = 'none'
+            e.currentTarget.style.background = 'transparent'
             e.currentTarget.style.color = 'var(--text-secondary)'
           }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
             <path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3H9a2 2 0 0 0-2 2v4h2V5h11v14H9v-4H7v4a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
           </svg>
           {sidebarOpen && (
-            <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' }}>Cerrar sesión</span>
+            <span style={{ fontSize: 13, fontWeight: 400, whiteSpace: 'nowrap' }}>Cerrar sesión</span>
           )}
         </button>
       </div>
@@ -473,15 +496,22 @@ export default function PriceComparator({
   // ─── TOP BAR ──────────────────────────────────────────────────────────────
   const TopBar = (
     <header style={{
-      height: 52, background: 'var(--surface)',
-      borderBottom: '1px solid var(--border)',
+      height: 56,
+      background: 'var(--nav-bg)',
+      backdropFilter: 'var(--nav-blur)',
+      WebkitBackdropFilter: 'var(--nav-blur)',
+      borderBottom: '1px solid var(--border-light)',
       display: 'flex', alignItems: 'center',
       padding: '0 20px', gap: 12, flexShrink: 0,
+      position: 'sticky', top: 0, zIndex: 50,
     }}>
-      {/* Search */}
-      <div style={{ position: 'relative', flex: 1, maxWidth: 440 }}>
+      {/* Search — pill style */}
+      <div style={{ position: 'relative', flex: 1, maxWidth: 420 }}>
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"
-          viewBox="0 0 24 24" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none' }}>
+          viewBox="0 0 24 24" style={{
+            position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--text-dim)', pointerEvents: 'none',
+          }}>
           <path d="M21.707 20.293l-5.387-5.387A8 8 0 1 0 15 16.31l5.387 5.397a1 1 0 0 0 1.414-1.414zM10 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" />
         </svg>
         <input
@@ -489,72 +519,48 @@ export default function PriceComparator({
           onChange={e => { setSearch(e.target.value); if (activeNav !== 'comparador') setActiveNav('comparador') }}
           placeholder="Buscar producto, código, modelo..."
           style={{
-            width: '100%', padding: '7px 12px 7px 32px',
-            background: 'var(--surface2)', border: '1px solid var(--border)',
-            borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+            width: '100%', padding: '8px 36px 8px 36px',
+            background: 'var(--surface2)', border: '1px solid var(--border-light)',
+            borderRadius: 999, color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+            transition: 'border-color 0.15s, box-shadow 0.15s',
+          }}
+          onFocus={e => {
+            e.currentTarget.style.borderColor = 'var(--accent)'
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-dim)'
+          }}
+          onBlur={e => {
+            e.currentTarget.style.borderColor = 'var(--border-light)'
+            e.currentTarget.style.boxShadow = 'none'
           }}
         />
         {search && (
           <button onClick={() => setSearch('')} style={{
-            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-            background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14,
+            position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+            background: 'var(--surface3)', border: 'none', color: 'var(--text-secondary)',
+            cursor: 'pointer', fontSize: 12, width: 18, height: 18, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
           }}>×</button>
         )}
       </div>
 
       {/* Date */}
-      <div style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
-        📅 {today}
+      <div style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+        {today}
       </div>
-
-      {/* Current user + settings */}
-      {displayName && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '4px 12px', borderRadius: 20,
-            background: 'rgba(0,102,204,0.08)', border: '1px solid rgba(0,102,204,0.20)',
-            whiteSpace: 'nowrap',
-          }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: '50%',
-              background: '#0066CC', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#FFFFFF',
-              flexShrink: 0,
-            }}>
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#0066CC' }}>{displayName}</span>
-          </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            title="Configuración"
-            style={{
-              width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)',
-              background: 'var(--surface2)', color: 'var(--text-secondary)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.15s', flexShrink: 0,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#0066CC'; e.currentTarget.style.borderColor = '#0066CC' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.02 7.02 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.36 2.54a7.37 7.37 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.63 8.48a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.36 1.04.67 1.62.94l.36 2.54c.05.24.26.42.49.42h4c.25 0 .46-.18.49-.42l.36-2.54a7.37 7.37 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
-            </svg>
-          </button>
-        </div>
-      )}
-
 
       {/* Refresh */}
       <button onClick={handleRefresh} disabled={refreshing} style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 500,
-        background: 'var(--surface2)', border: '1px solid var(--border)',
-        color: refreshing ? 'var(--text-dim)' : 'var(--text-primary)', cursor: refreshing ? 'not-allowed' : 'pointer',
-        whiteSpace: 'nowrap',
-      }}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500,
+        background: 'var(--surface2)', border: '1px solid var(--border-light)',
+        color: refreshing ? 'var(--text-dim)' : 'var(--text-secondary)',
+        cursor: refreshing ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+        transition: 'all 0.15s',
+      }}
+        onMouseEnter={e => { if (!refreshing) e.currentTarget.style.borderColor = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-light)' }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor"
           viewBox="0 0 24 24" style={{ animation: refreshing ? 'spin 0.7s linear infinite' : 'none' }}>
           <path d="M12 4V1L8 5l4 4V6a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z" />
         </svg>
@@ -563,22 +569,52 @@ export default function PriceComparator({
 
       {/* Notes btn */}
       <button onClick={() => setActiveNav('notasdash')} style={{
-        position: 'relative', display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 500,
-        background: activeNav === 'notasdash' ? 'rgba(0,102,204,0.08)' : 'var(--surface2)',
-        border: `1px solid ${activeNav === 'notasdash' ? '#0066CC' : 'var(--border)'}`,
-        color: activeNav === 'notasdash' ? '#0066CC' : 'var(--text-primary)', cursor: 'pointer', whiteSpace: 'nowrap',
+        position: 'relative', display: 'flex', alignItems: 'center', gap: 5,
+        padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500,
+        background: activeNav === 'notasdash' ? 'var(--accent-dim)' : 'var(--surface2)',
+        border: `1px solid ${activeNav === 'notasdash' ? 'var(--accent)' : 'var(--border-light)'}`,
+        color: activeNav === 'notasdash' ? 'var(--accent)' : 'var(--text-secondary)',
+        cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
       }}>
         📋 Notas
         {pendingNotes > 0 && (
           <span style={{
             position: 'absolute', top: -5, right: -5,
-            background: '#0066CC', color: '#FFFFFF', borderRadius: 10,
+            background: 'var(--accent)', color: '#FFFFFF', borderRadius: 99,
             fontSize: 9, fontWeight: 700, padding: '1px 5px',
-            border: '2px solid var(--surface)',
+            border: '2px solid var(--nav-bg)',
           }}>{pendingNotes}</span>
         )}
       </button>
+
+      {/* Current user + settings */}
+      {displayName && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={() => setShowSettings(true)}
+            title="Configuración"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '5px 12px 5px 5px', borderRadius: 999,
+              background: 'var(--accent-dim)', border: '1px solid var(--accent-glow)',
+              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,102,204,0.14)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-dim)'}
+          >
+            <div style={{
+              width: 24, height: 24, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #0066CC, #0A84FF)',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#FFFFFF',
+              flexShrink: 0,
+            }}>
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{displayName}</span>
+          </button>
+        </div>
+      )}
     </header>
   )
 
@@ -870,8 +906,6 @@ export default function PriceComparator({
 
 <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        input::placeholder { color: var(--text-dim); }
-        input:focus { border-color: #0066CC !important; }
       `}</style>
     </div>
   )
