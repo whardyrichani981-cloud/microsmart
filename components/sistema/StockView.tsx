@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import type { StockItem, TipoStock, CategoriaStock, Moneda } from '@/lib/sistema-types'
+import type { StockItem, TipoStock, CategoriaStock, Moneda, Proveedor } from '@/lib/sistema-types'
 import {
   useApi, fmtARS,
   C, Modal, Field, FormGrid, SectionDivider, PageHeader, Badge, KPICard,
@@ -10,6 +10,9 @@ import { MODELOS_DISPOSITIVOS } from './modelos'
 
 const CATEGORIAS: CategoriaStock[] = ['Accesorios', 'Altavoz', 'Batería', 'Cámara', 'Chasis', 'Flex', 'Otro', 'Pantalla/Módulo', 'Parlante', 'Vidrio trasero']
 const MONEDAS: Moneda[] = ['ARS $', 'USD $']
+
+// Proveedores que nunca deben aparecer en el selector de stock
+const EXCLUIR_PROVEEDORES = new Set(['cf', 'gremio', 'ampsentrix'])
 
 interface StockViewProps { tipo: TipoStock }
 
@@ -46,12 +49,22 @@ interface StockGroup {
 export default function StockView({ tipo }: StockViewProps) {
   const config = TIPO_CONFIG[tipo]
   const { data: stockData, loading, refresh } = useApi<{ items: StockItem[]; dolar: number }>(`/api/sistema/stock?tipo=${tipo}`, [tipo])
+  const { data: proveedoresData } = useApi<Proveedor[]>('/api/sistema/proveedores')
   const [modal, setModal]     = useState<false | 'new' | 'edit'>(false)
   const [form, setForm]       = useState<FormState>(buildEmpty())
   const [editId, setEditId]   = useState<string | null>(null)
   const [saving, setSaving]   = useState(false)
   const [search, setSearch]   = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  // Lista de proveedores filtrada (sin cf, gremio ni ampsentrix)
+  const proveedoresOpciones = useMemo(() => {
+    const lista = proveedoresData ?? []
+    return lista
+      .filter(p => !EXCLUIR_PROVEEDORES.has(p.nombre.toLowerCase().trim()))
+      .map(p => p.nombre)
+      .sort((a, b) => a.localeCompare(b, 'es'))
+  }, [proveedoresData])
 
   const dolar = stockData?.dolar ?? 1200
   const list  = stockData?.items ?? []
@@ -392,7 +405,13 @@ export default function StockView({ tipo }: StockViewProps) {
               <SearchableSelect value={form.modelo} onChange={v => set('modelo', v)} options={MODELOS_DISPOSITIVOS} emptyOption="— Seleccionar modelo —" placeholder="Buscar modelo..." />
             </Field>
             <Field label="Proveedor" col={2}>
-              <AutoCapInput value={form.proveedor} onChange={e => set('proveedor', e.target.value)} placeholder="Nombre del proveedor" style={inputSt} />
+              <SearchableSelect
+                value={form.proveedor}
+                onChange={v => set('proveedor', v)}
+                options={proveedoresOpciones}
+                emptyOption="— Sin proveedor —"
+                placeholder="Buscar proveedor..."
+              />
             </Field>
           </FormGrid>
 
