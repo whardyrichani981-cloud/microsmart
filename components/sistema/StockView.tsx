@@ -12,7 +12,7 @@ const CATEGORIAS: CategoriaStock[] = ['Accesorios', 'Altavoz', 'Batería', 'Cám
 const MONEDAS: Moneda[] = ['ARS $', 'USD $']
 
 // Proveedores que nunca deben aparecer en el selector de stock
-const EXCLUIR_PROVEEDORES = new Set(['cf', 'gremio', 'ampsentrix'])
+const EXCLUIR_PROVEEDORES = new Set(['cf', 'gremio', 'ampsentrix', 'originales'])
 
 interface StockViewProps { tipo: TipoStock }
 
