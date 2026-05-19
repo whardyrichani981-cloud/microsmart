@@ -1156,13 +1156,10 @@ export default function ConfiguracionView({
   }, [])
 
   const toggle = (id: string) => {
-    setConfig(prev => {
-      if (!prev) return prev
-      const next = { ...prev, [id]: !prev[id] }
-      // Notifica al sidebar en tiempo real — sin esperar al guardado
-      onModulosChange?.(next)
-      return next
-    })
+    if (!config) return
+    const next = { ...config, [id]: !config[id] }
+    setConfig(next)
+    onModulosChange?.(next)   // ← fuera del updater para evitar doble ejecución en Strict Mode
     setSaved(false)
   }
 
