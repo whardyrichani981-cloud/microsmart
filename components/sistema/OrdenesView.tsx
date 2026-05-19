@@ -2767,6 +2767,8 @@ export default function OrdenesView() {
   const [accionMenu, setAccionMenu] = useState<{ id: string; top: number; left: number } | null>(null)
   const [entregaListOrdenId, setEntregaListOrdenId] = useState<string | null>(null)
   const [entregaListLoading, setEntregaListLoading] = useState(false)
+  const [entregaListMonto, setEntregaListMonto] = useState(0)
+  const [entregaListMetodoPago, setEntregaListMetodoPago] = useState<MetodoPago>('Efectivo')
   const [imeiCheck, setImeiCheck] = useState<{ status: 'idle' | 'loading' | 'ok' | 'bad' | 'error'; msg: string }>({ status: 'idle', msg: '' })
   const [detailId, setDetailId] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<string>(() => {
@@ -2946,11 +2948,14 @@ export default function OrdenesView() {
     const orden = list.find(o => o.id === entregaListOrdenId)
     if (!orden) return
     setEntregaListLoading(true)
+    // Usar monto y método editados en el modal
+    const montoFinal   = entregaListMonto
+    const metodoFinal  = entregaListMetodoPago
     try {
       if (orden.tipo === 'Cliente final') {
         const dolarActual = data?.dolar ?? 1200
-        const equivARS = orden.moneda === 'USD $' ? Math.round(orden.montoCobrado * dolarActual) : orden.montoCobrado
-        const comisionMP = orden.metodoPago === 'Mercado Pago' ? Math.round(equivARS * 0.045) : 0
+        const equivARS = orden.moneda === 'USD $' ? Math.round(montoFinal * dolarActual) : montoFinal
+        const comisionMP = metodoFinal === 'Mercado Pago' ? Math.round(equivARS * 0.045) : 0
         const iibb = Math.round(equivARS * 0.04)
         await fetch('/api/sistema/ventas-csf', {
           method: 'POST',
@@ -2965,13 +2970,13 @@ export default function OrdenesView() {
             comisionVendedora: orden.comisionVendedora ?? 0,
             comisionTecnico: orden.comisionTecnico ?? 0,
             gananciaReal: equivARS - Math.round((orden.costoRepuestoUSD ?? 0) * dolarActual) - comisionMP - iibb - (orden.comisionVendedora ?? 0) - (orden.comisionTecnico ?? 0),
-            metodoPago: orden.metodoPago,
+            metodoPago: metodoFinal,
           }),
         })
       } else {
         const dolarActual = data?.dolar ?? 1200
-        const equivARS = orden.moneda === 'USD $' ? Math.round(orden.montoCobrado * dolarActual) : orden.montoCobrado
-        const comisionMP = orden.metodoPago === 'Mercado Pago' ? Math.round(equivARS * 0.045) : 0
+        const equivARS = orden.moneda === 'USD $' ? Math.round(montoFinal * dolarActual) : montoFinal
+        const comisionMP = metodoFinal === 'Mercado Pago' ? Math.round(equivARS * 0.045) : 0
         const iibb = Math.round(equivARS * 0.04)
         await fetch('/api/sistema/ventas-gremio', {
           method: 'POST',
@@ -2980,12 +2985,12 @@ export default function OrdenesView() {
             fecha: orden.fecha, nOrden: orden.nOrden,
             nombreCliente: orden.nombreCliente, modeloEquipo: orden.modeloEquipo,
             tipoServicio: orden.tipoServicio ?? '',
-            montoCobrado: orden.montoCobrado, moneda: orden.moneda ?? 'ARS $',
+            montoCobrado: montoFinal, moneda: orden.moneda ?? 'ARS $',
             equivARS, montoNeto: equivARS, comisionMP, iibb,
             comisionTecnico: orden.comisionTecnico ?? 0,
             costoRepuestos: orden.costoRepuestos ?? 0,
             gananciaReal: equivARS - (orden.costoRepuestos ?? 0) - comisionMP - iibb - (orden.comisionTecnico ?? 0),
-            metodoPago: orden.metodoPago,
+            metodoPago: metodoFinal,
           }),
         })
       }
@@ -2999,7 +3004,7 @@ export default function OrdenesView() {
       await fetch(`/api/sistema/ordenes/${orden.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...orden, estado: 'Entregado' as EstadoOrden, historial: [...(orden.historial ?? []), entrada] }),
+        body: JSON.stringify({ ...orden, montoCobrado: montoFinal, metodoPago: metodoFinal, estado: 'Entregado' as EstadoOrden, historial: [...(orden.historial ?? []), entrada] }),
       })
       setEntregaListOrdenId(null)
       await refresh()
@@ -3916,7 +3921,10 @@ export default function OrdenesView() {
             <button
               onClick={() => {
                 const id = accionMenu.id
+                const o = list.find(x => x.id === id)
                 setAccionMenu(null)
+                setEntregaListMonto(o?.montoCobrado ?? 0)
+                setEntregaListMetodoPago(o?.metodoPago ?? 'Efectivo')
                 setEntregaListOrdenId(id)
               }}
               style={{
@@ -3965,12 +3973,11 @@ export default function OrdenesView() {
                 </div>
               </div>
               <div style={{ padding: '18px 22px' }}>
+                {/* Info fija */}
                 {[
-                  { label: 'Cliente',        value: orden.nombreCliente },
-                  { label: 'Equipo',         value: orden.modeloEquipo  },
-                  { label: 'Orden',          value: `#${orden.nOrden}`  },
-                  { label: 'Monto cobrado',  value: fmtARS2(orden.montoCobrado) },
-                  { label: 'Método de pago', value: orden.metodoPago    },
+                  { label: 'Cliente', value: orden.nombreCliente },
+                  { label: 'Equipo',  value: orden.modeloEquipo  },
+                  { label: 'Orden',   value: `#${orden.nOrden}`  },
                 ].map(({ label, value }) => (
                   <div key={label} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -3980,6 +3987,48 @@ export default function OrdenesView() {
                     <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{value || '—'}</span>
                   </div>
                 ))}
+
+                {/* Monto cobrado — editable */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '8px 0', borderBottom: '1px solid var(--row-border)', fontSize: 12, gap: 12,
+                }}>
+                  <span style={{ color: C.muted, fontWeight: 500, flexShrink: 0 }}>Monto cobrado</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={entregaListMonto}
+                    onChange={e => setEntregaListMonto(Number(e.target.value))}
+                    style={{
+                      width: 120, padding: '5px 8px', borderRadius: 6, textAlign: 'right',
+                      background: 'var(--surface2)', border: '1px solid var(--border)',
+                      color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* Método de pago — selector */}
+                <div style={{
+                  padding: '10px 0', borderBottom: '1px solid var(--row-border)', fontSize: 12,
+                }}>
+                  <div style={{ color: C.muted, fontWeight: 500, marginBottom: 8 }}>Método de pago</div>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    {(['Efectivo', 'Transferencia', 'Mercado Pago', 'Tarjeta Débito', 'Tarjeta Crédito'] as MetodoPago[]).map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setEntregaListMetodoPago(m)}
+                        style={{
+                          padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          border: `1px solid ${entregaListMetodoPago === m ? '#4ade80' : 'var(--border)'}`,
+                          background: entregaListMetodoPago === m ? 'rgba(74,222,128,0.15)' : 'var(--surface2)',
+                          color: entregaListMetodoPago === m ? '#4ade80' : 'var(--text-secondary)',
+                          transition: 'all 0.12s',
+                        }}
+                      >{m}</button>
+                    ))}
+                  </div>
+                </div>
+
                 <div style={{
                   marginTop: 14, padding: '10px 12px', borderRadius: 8,
                   background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)',
