@@ -213,7 +213,7 @@ export default function HomeView({ displayName, currentUser }: Props) {
       {/* ── Hero banner ── */}
       <div style={{
         borderRadius: 24, overflow: 'hidden', position: 'relative',
-        background: 'linear-gradient(135deg, #f0f6ff 0%, #e8f0fb 40%, #f5f5f7 100%)',
+        background: 'var(--hero-bg)',
         border: '1px solid var(--border-light)',
         padding: '36px 40px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
@@ -221,8 +221,8 @@ export default function HomeView({ displayName, currentUser }: Props) {
       }}>
         {/* Subtle tech grid overlay */}
         <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.35,
-          backgroundImage: 'linear-gradient(var(--border-light) 1px, transparent 1px), linear-gradient(90deg, var(--border-light) 1px, transparent 1px)',
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: 'linear-gradient(var(--hero-grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--hero-grid-color) 1px, transparent 1px)',
           backgroundSize: '32px 32px',
         }} />
 
@@ -298,7 +298,7 @@ export default function HomeView({ displayName, currentUser }: Props) {
             <div style={{ padding: '36px 20px', textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
               <div style={{ fontSize: 15, color: '#22C55E', fontWeight: 600, marginBottom: 4 }}>¡Sin tareas pendientes!</div>
-              <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Estás al día.</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Estás al día.</div>
             </div>
           ) : (
             <div style={{ maxHeight: 380, overflowY: 'auto' }}>
@@ -386,7 +386,7 @@ export default function HomeView({ displayName, currentUser }: Props) {
             {myReminders.length === 0 ? (
               <div style={{ padding: '28px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: 30, marginBottom: 10 }}>📅</div>
-                <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Sin recordatorios programados</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Sin recordatorios programados</div>
               </div>
             ) : (
               <div style={{ maxHeight: 240, overflowY: 'auto' }}>
