@@ -101,7 +101,7 @@ export default function StockView({ tipo }: StockViewProps) {
   const toggleExpand = (key: string) =>
     setExpanded(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
 
-  // Agrupar por repuesto+modelo — ocultar proveedores sin stock y grupos vacíos
+  // Agrupar por repuesto+modelo
   const groups = useMemo<StockGroup[]>(() => {
     const map = new Map<string, StockGroup>()
     for (const item of list) {
@@ -111,13 +111,14 @@ export default function StockView({ tipo }: StockViewProps) {
       g.totalStock += item.stock
       g.items.push(item)
     }
-    return [...map.values()]
-      // Filtrar proveedores sin stock dentro de cada grupo
-      .map(g => ({ ...g, items: g.items.filter(i => i.stock > 0) }))
-      // Ocultar grupos donde todos los proveedores están en 0
-      .filter(g => g.items.length > 0)
-      .sort((a, b) => a.repuesto.localeCompare(b.repuesto, 'es'))
+    return [...map.values()].sort((a, b) => a.repuesto.localeCompare(b.repuesto, 'es'))
   }, [list])
+
+  // En el detalle expandido, ocultar proveedores agotados solo si hay al menos uno con stock
+  const visibleItems = (g: StockGroup) => {
+    const conStock = g.items.filter(i => i.stock > 0)
+    return conStock.length > 0 ? conStock : g.items   // si todos en 0, mostrarlos igual
+  }
 
   // Filtro de búsqueda
   const q = search.toLowerCase()
@@ -291,13 +292,13 @@ export default function StockView({ tipo }: StockViewProps) {
                       <span />
                     </div>
 
-                    {g.items.map((item, ii) => (
+                    {visibleItems(g).map((item, ii) => (
                       <div
                         key={item.id}
                         style={{
                           display: 'grid', gridTemplateColumns: '28px 1fr 80px 100px 100px 110px 80px',
                           padding: '9px 14px 9px 28px', alignItems: 'center',
-                          borderBottom: ii < g.items.length - 1 ? '1px solid var(--border-light, var(--border))' : 'none',
+                          borderBottom: ii < visibleItems(g).length - 1 ? '1px solid var(--border-light, var(--border))' : 'none',
                           background: 'var(--surface)',
                         }}
                       >
