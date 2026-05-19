@@ -101,7 +101,7 @@ export default function StockView({ tipo }: StockViewProps) {
   const toggleExpand = (key: string) =>
     setExpanded(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
 
-  // Agrupar por repuesto+modelo
+  // Agrupar por repuesto+modelo — ocultar proveedores sin stock y grupos vacíos
   const groups = useMemo<StockGroup[]>(() => {
     const map = new Map<string, StockGroup>()
     for (const item of list) {
@@ -111,7 +111,12 @@ export default function StockView({ tipo }: StockViewProps) {
       g.totalStock += item.stock
       g.items.push(item)
     }
-    return [...map.values()].sort((a, b) => a.repuesto.localeCompare(b.repuesto, 'es'))
+    return [...map.values()]
+      // Filtrar proveedores sin stock dentro de cada grupo
+      .map(g => ({ ...g, items: g.items.filter(i => i.stock > 0) }))
+      // Ocultar grupos donde todos los proveedores están en 0
+      .filter(g => g.items.length > 0)
+      .sort((a, b) => a.repuesto.localeCompare(b.repuesto, 'es'))
   }, [list])
 
   // Filtro de búsqueda
