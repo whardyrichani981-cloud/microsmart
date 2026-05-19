@@ -75,10 +75,22 @@ export default function PriceComparator({
 
   const refreshModules = async () => {
     try {
-      const res = await fetch('/api/sistema/modulos')
-      if (res.ok) setModulesCfg(await res.json())
+      const res = await fetch('/api/sistema/modulos', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setModulesCfg(data)
+      }
     } catch { /* ignore */ }
   }
+
+  // Sync navOrder whenever modulesCfg changes — purge any IDs that are now disabled
+  useEffect(() => {
+    if (!modulesCfg) return
+    setNavOrder(prev => prev.filter(id => {
+      if (PROTECTED_MODULES.has(id)) return true
+      return modulesCfg[id] !== false
+    }))
+  }, [modulesCfg])
 
   const NAV = ALL_NAV.filter(item => {
     if (item.adminOnly && !isSuperAdmin) return false
@@ -875,10 +887,10 @@ export default function PriceComparator({
               {/* Sub-pestañas: Ventas / Gastos / Reportes */}
               <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)' }}>
                 {([
-                  { id: 'ventas'     as const, label: '💵 Ventas',      show: p.canViewVentas      && (modulosConfig ? modulosConfig['ventas']      !== false : true) },
-                  { id: 'gastos'     as const, label: '🧾 Gastos',      show: p.canViewGastos      && (modulosConfig ? modulosConfig['gastos']      !== false : true) },
-                  { id: 'comisiones' as const, label: '👤 Comisiones',  show: p.canViewComisiones  && (modulosConfig ? modulosConfig['comisiones']  !== false : true) },
-                  { id: 'reportes'   as const, label: '📊 Reportes',    show: p.canViewReportes    && (modulosConfig ? modulosConfig['reportes']    !== false : true) },
+                  { id: 'ventas'     as const, label: '💵 Ventas',      show: p.canViewVentas      && (modulesCfg ? modulesCfg['ventas']      !== false : true) },
+                  { id: 'gastos'     as const, label: '🧾 Gastos',      show: p.canViewGastos      && (modulesCfg ? modulesCfg['gastos']      !== false : true) },
+                  { id: 'comisiones' as const, label: '👤 Comisiones',  show: p.canViewComisiones  && (modulesCfg ? modulesCfg['comisiones']  !== false : true) },
+                  { id: 'reportes'   as const, label: '📊 Reportes',    show: p.canViewReportes    && (modulesCfg ? modulesCfg['reportes']    !== false : true) },
                 ] as const).filter(t => t.show).map(tab => (
                   <button
                     key={tab.id}
