@@ -70,27 +70,22 @@ export default function PriceComparator({
   const p = permissions ?? SUPERADMIN_PERMISSIONS
   const isSuperAdmin = role === 'superadmin'
 
-  // ── Módulos reactivos — se actualizan cuando el admin guarda cambios ──────
+  // ── Módulos reactivos — se actualizan en tiempo real cuando el admin cambia toggles ──
   const [modulesCfg, setModulesCfg] = useState<Record<string, boolean> | null>(modulosConfig ?? null)
 
-  const refreshModules = async () => {
+  // Llamado en tiempo real cuando el admin cambia un toggle (antes de guardar)
+  const handleModulosChange = useCallback((config: Record<string, boolean>) => {
+    setModulesCfg(config)
+  }, [])
+
+  // Llamado después de guardar — refresca desde el servidor para confirmar persistencia
+  const handleModulosSaved = useCallback(async (config: Record<string, boolean>) => {
+    setModulesCfg(config)
     try {
       const res = await fetch('/api/sistema/modulos', { cache: 'no-store' })
-      if (res.ok) {
-        const data = await res.json()
-        setModulesCfg(data)
-      }
+      if (res.ok) setModulesCfg(await res.json())
     } catch { /* ignore */ }
-  }
-
-  // Sync navOrder whenever modulesCfg changes — purge any IDs that are now disabled
-  useEffect(() => {
-    if (!modulesCfg) return
-    setNavOrder(prev => prev.filter(id => {
-      if (PROTECTED_MODULES.has(id)) return true
-      return modulesCfg[id] !== false
-    }))
-  }, [modulesCfg])
+  }, [])
 
   const NAV = ALL_NAV.filter(item => {
     if (item.adminOnly && !isSuperAdmin) return false
@@ -912,7 +907,7 @@ export default function PriceComparator({
               {contableSubTab === 'reportes'   && <ReportesMainView key="reportes" />}
             </div>
           )}
-          {activeNav === 'administracion' && <AdminView key="administracion" onModulosSaved={refreshModules} />}
+          {activeNav === 'administracion' && <AdminView key="administracion" onModulosChange={handleModulosChange} onModulosSaved={handleModulosSaved} />}
         </main>
       </div>
 

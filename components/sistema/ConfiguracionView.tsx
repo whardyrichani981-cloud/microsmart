@@ -1137,18 +1137,32 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
 }
 
 // ─── Main ConfiguracionView ───────────────────────────────────────────────────
-export default function ConfiguracionView({ onBack, onModulosSaved }: { onBack?: () => void; onModulosSaved?: () => void }) {
+export default function ConfiguracionView({
+  onBack,
+  onModulosChange,
+  onModulosSaved,
+}: {
+  onBack?: () => void
+  onModulosChange?: (config: Record<string, boolean>) => void
+  onModulosSaved?: (config: Record<string, boolean>) => void
+}) {
   const [config, setConfig] = useState<Record<string, boolean> | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [subPanel, setSubPanel] = useState<'ordenes-estados' | 'comisiones-config' | null>(null)
 
   useEffect(() => {
-    fetch('/api/sistema/modulos').then(r => r.json()).then(setConfig).catch(() => {})
+    fetch('/api/sistema/modulos', { cache: 'no-store' }).then(r => r.json()).then(setConfig).catch(() => {})
   }, [])
 
   const toggle = (id: string) => {
-    setConfig(prev => prev ? { ...prev, [id]: !prev[id] } : prev)
+    setConfig(prev => {
+      if (!prev) return prev
+      const next = { ...prev, [id]: !prev[id] }
+      // Notifica al sidebar en tiempo real — sin esperar al guardado
+      onModulosChange?.(next)
+      return next
+    })
     setSaved(false)
   }
 
@@ -1163,7 +1177,7 @@ export default function ConfiguracionView({ onBack, onModulosSaved }: { onBack?:
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
-      onModulosSaved?.()
+      onModulosSaved?.(config)
     } finally { setSaving(false) }
   }
 
