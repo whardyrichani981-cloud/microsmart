@@ -11,8 +11,6 @@ import { MODELOS_DISPOSITIVOS } from './modelos'
 const CATEGORIAS: CategoriaStock[] = ['Accesorios', 'Altavoz', 'Batería', 'Cámara', 'Chasis', 'Flex', 'Otro', 'Pantalla/Módulo', 'Parlante', 'Vidrio trasero']
 const MONEDAS: Moneda[] = ['ARS $', 'USD $']
 
-// Proveedores que nunca deben aparecer en el selector de stock
-const EXCLUIR_PROVEEDORES = new Set(['cf', 'gremio', 'ampsentrix', 'originales'])
 
 interface StockViewProps { tipo: TipoStock }
 
@@ -57,14 +55,10 @@ export default function StockView({ tipo }: StockViewProps) {
   const [search, setSearch]   = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  // Lista de proveedores filtrada (sin cf, gremio ni ampsentrix)
-  const proveedoresOpciones = useMemo(() => {
-    const lista = proveedoresData ?? []
-    return lista
-      .filter(p => !EXCLUIR_PROVEEDORES.has(p.nombre.toLowerCase().trim()))
-      .map(p => p.nombre)
-      .sort((a, b) => a.localeCompare(b, 'es'))
-  }, [proveedoresData])
+  // Nombres de proveedores del sistema para el selector
+  const proveedoresOpciones = useMemo(() =>
+    (proveedoresData ?? []).map(p => p.nombre).sort((a, b) => a.localeCompare(b, 'es'))
+  , [proveedoresData])
 
   const dolar = stockData?.dolar ?? 1200
   const list  = stockData?.items ?? []

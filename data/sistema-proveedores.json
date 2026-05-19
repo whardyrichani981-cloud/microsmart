@@ -1,49 +1,5 @@
 [
   {
-    "id": "prov-001",
-    "nombre": "Microsmart",
-    "contacto": "",
-    "telefono": "",
-    "mail": "",
-    "web": "",
-    "condicionesPago": "",
-    "notas": "",
-    "createdAt": "2026-05-18T12:00:00.000Z"
-  },
-  {
-    "id": "prov-002",
-    "nombre": "Ampsentrix",
-    "contacto": "",
-    "telefono": "",
-    "mail": "",
-    "web": "",
-    "condicionesPago": "",
-    "notas": "",
-    "createdAt": "2026-05-18T12:00:00.000Z"
-  },
-  {
-    "id": "prov-003",
-    "nombre": "Originales",
-    "contacto": "",
-    "telefono": "",
-    "mail": "",
-    "web": "",
-    "condicionesPago": "",
-    "notas": "",
-    "createdAt": "2026-05-18T12:00:00.000Z"
-  },
-  {
-    "id": "prov-004",
-    "nombre": "CF",
-    "contacto": "",
-    "telefono": "",
-    "mail": "",
-    "web": "",
-    "condicionesPago": "",
-    "notas": "",
-    "createdAt": "2026-05-18T12:00:00.000Z"
-  },
-  {
     "id": "prov-005",
     "nombre": "BH Tech",
     "contacto": "",
