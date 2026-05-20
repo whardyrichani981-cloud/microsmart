@@ -15,6 +15,7 @@ const VentasEquiposView = lazy(() => import('./sistema/VentasEquiposView'))
 const DashboardView  = lazy(() => import('./sistema/DashboardView'))
 const ChatSoporteView = lazy(() => import('./sistema/ChatSoporteView'))
 const GarantiasView  = lazy(() => import('./sistema/GarantiasView'))
+const CajaDiariaView = lazy(() => import('./sistema/CajaDiariaView'))
 
 type SectionId =
   | 'ordenes'
@@ -30,6 +31,7 @@ type SectionId =
   | 'dashboard'
   | 'chat'
   | 'garantias'
+  | 'caja-diaria'
 
 interface NavItem { id: SectionId; label: string; icon: string; desc?: string }
 interface NavGroup { group: string; icon: string; color: string; items: NavItem[] }
@@ -59,6 +61,7 @@ const NAV: NavGroup[] = [
   {
     group: 'Finanzas', icon: '💰', color: '#F5C400',
     items: [
+      { id: 'caja-diaria', label: 'Caja Diaria', icon: '🏧', desc: 'Resumen y cierre de caja por día' },
       { id: 'gastos', label: 'Gastos', icon: '🧾', desc: 'Control de egresos' },
       { id: 'stock', label: 'Stock', icon: '📦', desc: 'Inventario de repuestos' },
       { id: 'comisiones', label: 'Comisiones', icon: '👥', desc: 'Ronald · Sharon · Saddi' },
@@ -109,6 +112,7 @@ function SectionContent({ id }: { id: SectionId }) {
     case 'dashboard':      return <DashboardView />
     case 'chat':           return <ChatSoporteView />
     case 'garantias':      return <GarantiasView />
+    case 'caja-diaria':    return <CajaDiariaView />
   }
 }
 

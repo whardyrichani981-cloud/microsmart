@@ -443,6 +443,20 @@ export interface VentaCaja {
   observaciones?: string
 }
 
+// ─── Cierre de Caja ──────────────────────────────────────────────────────────
+export interface CierreCaja {
+  id: string
+  fecha: string          // YYYY-MM-DD
+  fechaHoraCierre: string // ISO timestamp
+  totalGeneral: number
+  cantidadVentas: number
+  desglosePorMetodo: Record<string, number>  // metodoPago → total
+  ventaIds: string[]     // IDs de VentaCaja incluidas
+  observaciones?: string
+  abiertoPor?: string
+  cerradoPor?: string
+}
+
 // ─── Dashboard (computed) ─────────────────────────────────────────────────────
 export interface DashboardData {
   // Ingresos

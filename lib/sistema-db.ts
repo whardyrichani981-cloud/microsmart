@@ -4,7 +4,7 @@ import path from 'path'
 import type {
   Turno, VentaCSF, VentaGremio, Gasto, Comision, StockItem,
   ClienteB2B, ClientePersona, Proveedor, TipoCambio, DashboardData, TipoGasto, TipoStock,
-  Orden, Servicio, ReglaComision, ReglaComisionGremio, EquipoUsado, ProveedorEquipo, CompraCliente, VentaCaja,
+  Orden, Servicio, ReglaComision, ReglaComisionGremio, EquipoUsado, ProveedorEquipo, CompraCliente, VentaCaja, CierreCaja,
 } from './sistema-types'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -449,6 +449,18 @@ export function updateVentaCaja(id: string, data: Partial<VentaCaja>): VentaCaja
 }
 export function deleteVentaCaja(id: string): void {
   write('ventas-caja', getVentasCaja().filter(i => i.id !== id))
+}
+
+// ── Cierre de Caja ────────────────────────────────────────────────────────────
+export function getCierresCaja(): CierreCaja[] { return read<CierreCaja>('caja-diaria') }
+export function addCierreCaja(data: Omit<CierreCaja, 'id'>): CierreCaja {
+  const items = getCierresCaja()
+  const item: CierreCaja = { id: uid(), ...data }
+  write('caja-diaria', [...items, item])
+  return item
+}
+export function deleteCierreCaja(id: string): void {
+  write('caja-diaria', getCierresCaja().filter(i => i.id !== id))
 }
 
 // ── Listas de precios (meta) ──────────────────────────────────────────────────
