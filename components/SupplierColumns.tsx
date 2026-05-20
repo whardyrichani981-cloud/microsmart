@@ -4,6 +4,10 @@ import { useMemo, useState, useEffect } from 'react'
 import type { Supplier, SupplierItem } from '@/lib/types'
 import { CATEGORY_META, CATEGORY_ORDER, type AppleCategory } from '@/lib/categories'
 import { expandQuery, matchesQuery } from '@/lib/search'
+import { detectDevice } from '@/lib/parsers'
+import { detectQualities } from '@/lib/quality'
+
+const DEVICE_ORDER = ['iphone', 'ipad', 'apple-watch', 'mac', 'otros'] as const
 
 interface Props {
   suppliers: Supplier[]
@@ -15,6 +19,13 @@ function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency', currency: 'USD',
     currencyDisplay: 'symbol', maximumFractionDigits: 2,
+  }).format(n)
+}
+
+function fmtARS(n: number) {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency', currency: 'ARS',
+    currencyDisplay: 'symbol', maximumFractionDigits: 0,
   }).format(n)
 }
 
@@ -51,6 +62,26 @@ function ItemCard({ item, terms }: { item: SupplierItem; terms: string[][] }) {
         dangerouslySetInnerHTML={{ __html: highlight(item.name, terms) }}
       />
 
+      {/* Quality badges */}
+      {(() => {
+        const badges = detectQualities(item.name ?? '')
+        if (!badges.length) return null
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 4 }}>
+            {badges.map(q => (
+              <span key={q.label} style={{
+                fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                background: q.bg, color: q.color,
+                border: `1px solid ${q.border}`,
+                fontWeight: 600, whiteSpace: 'nowrap',
+              }}>
+                {q.label}
+              </span>
+            ))}
+          </div>
+        )
+      })()}
+
       {/* Code */}
       {item.code && (
         <div style={{ fontSize: 11, color: '#484848', marginBottom: 4 }}
@@ -59,13 +90,20 @@ function ItemCard({ item, terms }: { item: SupplierItem; terms: string[][] }) {
 
       {/* Price + stock */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{
-          fontSize: 15, fontWeight: 700, fontFamily: 'monospace',
-          color: isOut ? '#484848' : '#4ade80',
-          textDecoration: isOut ? 'line-through' : 'none',
-        }}>
-          {fmt(item.price)}
-        </span>
+        <div>
+          <span style={{
+            fontSize: 15, fontWeight: 700, fontFamily: 'monospace',
+            color: isOut ? '#484848' : '#4ade80',
+            textDecoration: isOut ? 'line-through' : 'none',
+          }}>
+            {fmt(item.price)}
+          </span>
+          {item.priceARS != null && item.priceARS > 0 && (
+            <div style={{ fontSize: 11, fontWeight: 600, fontFamily: 'monospace', color: '#facc15', marginTop: 1 }}>
+              {fmtARS(item.priceARS)}
+            </div>
+          )}
+        </div>
         {isOut && (
           <span style={{
             fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
@@ -100,9 +138,14 @@ function CategorySection({
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
   const meta = CATEGORY_META[cat]
 
-  // Sort items alphabetically within each category
+  // Sort items: iPhone first → iPad → Apple Watch → Mac → otros, then A-Z
   const sorted = useMemo(() =>
-    [...items].sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    [...items].sort((a, b) => {
+      const ad = DEVICE_ORDER.indexOf(detectDevice(a.name))
+      const bd = DEVICE_ORDER.indexOf(detectDevice(b.name))
+      if (ad !== bd) return ad - bd
+      return a.name.localeCompare(b.name, 'es')
+    }),
     [items]
   )
 

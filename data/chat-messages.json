@@ -1,0 +1,184 @@
+[
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779235084780-r1ntqq",
+    "createdAt": "2026-05-19T23:58:04.780Z"
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "bot",
+    "text": "Gracias por tu mensaje. Te respondemos a la brevedad.",
+    "id": "1779235084781-tlgs1l",
+    "createdAt": "2026-05-19T23:58:04.781Z"
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "owner",
+    "text": "hola",
+    "telegramMsgId": 2,
+    "id": "1779235135978-cb4il0",
+    "createdAt": "2026-05-19T23:58:55.978Z"
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "hola",
+    "id": "1779235174403-i4wyl7",
+    "createdAt": "2026-05-19T23:59:34.403Z",
+    "telegramMsgId": 4
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "owner",
+    "text": "en qué puedo ayudarte ?",
+    "telegramMsgId": 5,
+    "id": "1779235186500-u2k005",
+    "createdAt": "2026-05-19T23:59:46.500Z"
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779237889483-fy757t",
+    "createdAt": "2026-05-20T00:44:49.483Z",
+    "telegramMsgId": 6
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779237906781-02wrq8",
+    "createdAt": "2026-05-20T00:45:06.781Z",
+    "telegramMsgId": 7
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779238107675-3ftup3",
+    "createdAt": "2026-05-20T00:48:27.675Z",
+    "telegramMsgId": 8
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779238273601-rlk209",
+    "createdAt": "2026-05-20T00:51:13.601Z",
+    "telegramMsgId": 9
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779238374503-z434dh",
+    "createdAt": "2026-05-20T00:52:54.503Z",
+    "telegramMsgId": 10
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779238389481-x53gva",
+    "createdAt": "2026-05-20T00:53:09.481Z",
+    "telegramMsgId": 11
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779238999780-eto3h3",
+    "createdAt": "2026-05-20T01:03:19.780Z",
+    "telegramMsgId": 12
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779239290664-6tv9qw",
+    "createdAt": "2026-05-20T01:08:10.664Z",
+    "telegramMsgId": 13
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779240818937-o1dq6e",
+    "createdAt": "2026-05-20T01:33:38.937Z",
+    "telegramMsgId": 14
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779243139140-ql2qmr",
+    "createdAt": "2026-05-20T02:12:19.140Z",
+    "telegramMsgId": 16
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779243139192-5iw4cx",
+    "createdAt": "2026-05-20T02:12:19.192Z",
+    "telegramMsgId": 15
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779243354967-ti6r4r",
+    "createdAt": "2026-05-20T02:15:54.967Z",
+    "telegramMsgId": 17
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779243469371-qm9iwu",
+    "createdAt": "2026-05-20T02:17:49.371Z",
+    "telegramMsgId": 18
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779243732109-tbppv8",
+    "createdAt": "2026-05-20T02:22:12.109Z",
+    "telegramMsgId": 19
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779243827486-ajt6ne",
+    "createdAt": "2026-05-20T02:23:47.486Z",
+    "telegramMsgId": 20
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779244100568-4k2x2h",
+    "createdAt": "2026-05-20T02:28:20.568Z",
+    "telegramMsgId": 21
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779244315812-g05jym",
+    "createdAt": "2026-05-20T02:31:55.812Z",
+    "telegramMsgId": 22
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779246460616-z7gt1j",
+    "createdAt": "2026-05-20T03:07:40.616Z",
+    "telegramMsgId": 23
+  }
+]

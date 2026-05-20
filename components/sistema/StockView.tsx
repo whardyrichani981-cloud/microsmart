@@ -22,7 +22,7 @@ const TIPO_CONFIG: Record<TipoStock, { title: string; icon: string; color: strin
 type FormState = Omit<StockItem, 'id' | 'updatedAt' | 'tipo'>
 
 function buildEmpty(): FormState {
-  return { repuesto: '', categoria: 'Otro', modelo: '', proveedor: '', stock: 0, costoUnitario: 0, moneda: 'ARS $', costoTotalARS: 0, notas: '' }
+  return { repuesto: '', categoria: 'Otro', modelo: '', proveedor: '', stock: 0, stockMinimo: 2, costoUnitario: 0, moneda: 'ARS $', costoTotalARS: 0, notas: '' }
 }
 
 function recalc(f: FormState, dolar: number): FormState {
@@ -41,6 +41,7 @@ interface StockGroup {
   categoria: CategoriaStock
   modelo: string
   totalStock: number
+  stockMinimo: number
   items: StockItem[]
 }
 
@@ -113,9 +114,11 @@ export default function StockView({ tipo }: StockViewProps) {
     const map = new Map<string, StockGroup>()
     for (const item of list) {
       const k = groupKey(item)
-      if (!map.has(k)) map.set(k, { key: k, repuesto: item.repuesto, categoria: item.categoria, modelo: item.modelo, totalStock: 0, items: [] })
+      if (!map.has(k)) map.set(k, { key: k, repuesto: item.repuesto, categoria: item.categoria, modelo: item.modelo, totalStock: 0, stockMinimo: item.stockMinimo ?? 2, items: [] })
       const g = map.get(k)!
       g.totalStock += item.stock
+      // Usar el stockMinimo más alto del grupo
+      g.stockMinimo = Math.max(g.stockMinimo, item.stockMinimo ?? 2)
       g.items.push(item)
     }
     return [...map.values()].sort((a, b) => a.repuesto.localeCompare(b.repuesto, 'es'))
@@ -141,7 +144,7 @@ export default function StockView({ tipo }: StockViewProps) {
   // KPIs (sobre items individuales)
   const totalProductos  = groups.length
   const valorTotal      = list.reduce((s, i) => s + i.costoTotalARS, 0)
-  const lowStock        = groups.filter(g => g.totalStock < 2).length
+  const lowStock        = groups.filter(g => g.totalStock > 0 && g.totalStock <= g.stockMinimo).length
   const sinStock        = groups.filter(g => g.totalStock === 0).length
 
   const COLOR = config.color
@@ -246,8 +249,8 @@ export default function StockView({ tipo }: StockViewProps) {
                   <div style={{ textAlign: 'right' }}>
                     <span style={{
                       fontFamily: 'monospace', fontWeight: 800, fontSize: 14,
-                      color: g.totalStock === 0 ? C.red : g.totalStock < 2 ? '#fb923c' : 'var(--text-primary)',
-                      background: g.totalStock === 0 ? 'rgba(248,113,113,0.1)' : g.totalStock < 2 ? 'rgba(251,146,60,0.1)' : 'transparent',
+                      color: g.totalStock === 0 ? C.red : g.totalStock <= g.stockMinimo ? '#fb923c' : 'var(--text-primary)',
+                      background: g.totalStock === 0 ? 'rgba(248,113,113,0.1)' : g.totalStock <= g.stockMinimo ? 'rgba(251,146,60,0.1)' : 'transparent',
                       padding: '2px 7px', borderRadius: 5,
                     }}>
                       {g.totalStock}
@@ -317,7 +320,7 @@ export default function StockView({ tipo }: StockViewProps) {
                         <div style={{ textAlign: 'right' }}>
                           <span style={{
                             fontFamily: 'monospace', fontWeight: 700,
-                            color: item.stock === 0 ? C.red : item.stock < 2 ? '#fb923c' : 'var(--text-primary)',
+                            color: item.stock === 0 ? C.red : item.stock <= (item.stockMinimo ?? 2) ? '#fb923c' : 'var(--text-primary)',
                           }}>{item.stock}</span>
                         </div>
                         <div style={{ textAlign: 'right', fontFamily: 'monospace', fontSize: 12 }}>
@@ -415,13 +418,16 @@ export default function StockView({ tipo }: StockViewProps) {
             <Field label="Stock (unidades)" required>
               <input type="number" min={0} value={form.stock} onChange={e => set('stock', parseInt(e.target.value) || 0)} style={inputSt} />
             </Field>
-            <Field label="Costo Unitario">
-              <input type="number" min={0} value={form.costoUnitario} onChange={e => set('costoUnitario', parseFloat(e.target.value) || 0)} style={inputSt} />
+            <Field label="Stock mínimo ⚠️">
+              <input type="number" min={0} value={form.stockMinimo ?? 2} onChange={e => set('stockMinimo', parseInt(e.target.value) || 0)} style={inputSt} title="Alerta cuando el stock total baje de este número" />
             </Field>
             <Field label="Moneda">
               <SearchableSelect value={form.moneda} onChange={v => set('moneda', v as Moneda)} options={MONEDAS} placeholder="Seleccionar moneda..." />
             </Field>
-            <Field label="Costo Total ARS" calc col={3}>
+            <Field label="Costo Unitario">
+              <input type="number" min={0} value={form.costoUnitario} onChange={e => set('costoUnitario', parseFloat(e.target.value) || 0)} style={inputSt} />
+            </Field>
+            <Field label="Costo Total ARS" calc col={2}>
               <input readOnly value={fmtARS(form.costoTotalARS)} style={calcSt} />
             </Field>
           </FormGrid>

@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import type { Supplier, MergedRow } from '@/lib/types'
-import type { SortState } from './PriceComparator'
+import type { SortState } from '@/lib/types'
 import { CATEGORY_META, CATEGORY_ORDER, type AppleCategory } from '@/lib/categories'
+import { detectDevice } from '@/lib/parsers'
+import { detectQualities } from '@/lib/quality'
 
 interface Props {
   rows: MergedRow[]
@@ -19,6 +21,15 @@ function fmt(n: number) {
     currency: 'USD',
     currencyDisplay: 'symbol',
     maximumFractionDigits: 2,
+  }).format(n)
+}
+
+function fmtARS(n: number) {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    currencyDisplay: 'symbol',
+    maximumFractionDigits: 0,
   }).format(n)
 }
 
@@ -66,28 +77,55 @@ function ProductRow({
           <div className="text-xs mt-0.5" style={{ color: '#676767' }}
             dangerouslySetInnerHTML={{ __html: highlight(row.code, search) }} />
         )}
+        {(() => {
+          const badges = detectQualities(row.name ?? '')
+          if (!badges.length) return null
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 4 }}>
+              {badges.map(q => (
+                <span key={q.label} style={{
+                  fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                  background: q.bg, color: q.color,
+                  border: `1px solid ${q.border}`,
+                  fontWeight: 600, whiteSpace: 'nowrap',
+                }}>
+                  {q.label}
+                </span>
+              ))}
+            </div>
+          )
+        })()}
       </td>
 
       {suppliers.map((s, i) => {
-        const price = prices[i]
-        const isBest = price != null && price === minPrice && valid.length > 1
-        const isOut = /sin\s*stock/i.test(row.stocks[s.id] ?? '')
+        const price    = prices[i]
+        const priceARS = row.pricesARS?.[s.id]
+        const isBest   = price != null && price === minPrice && valid.length > 1
+        const isOut    = /sin\s*stock/i.test(row.stocks[s.id] ?? '')
 
         if (price == null || isNaN(price)) {
           return <td key={s.id} className="px-4 py-2.5 text-right"
             style={{ color: '#363636', fontSize: 12 }}>—</td>
         }
         return (
-          <td key={s.id} className="px-4 py-2.5 text-right font-mono tabular-nums"
+          <td key={s.id} className="px-4 py-2.5 text-right"
             style={{
+              background: isBest ? 'rgba(34,197,94,0.05)' : undefined,
+            }}>
+            <div className="font-mono tabular-nums" style={{
               color: isBest ? '#4ade80' : isOut ? '#676767' : '#E5E5E3',
               fontWeight: isBest ? 700 : 400,
-              background: isBest ? 'rgba(34,197,94,0.05)' : undefined,
               fontSize: 13,
             }}>
-            {isBest && <span style={{ marginRight: 3, fontSize: 10 }}>🏆</span>}
-            {fmt(price)}
-            {isOut && <div style={{ fontSize: 10, color: '#676767', fontWeight: 400 }}>Sin stock</div>}
+              {isBest && <span style={{ marginRight: 3, fontSize: 10 }}>🏆</span>}
+              {fmt(price)}
+            </div>
+            {priceARS != null && priceARS > 0 && (
+              <div className="font-mono tabular-nums" style={{ fontSize: 11, color: '#facc15', marginTop: 1 }}>
+                {fmtARS(priceARS)}
+              </div>
+            )}
+            {isOut && <div style={{ fontSize: 10, color: '#676767' }}>Sin stock</div>}
           </td>
         )
       })}
@@ -100,6 +138,11 @@ function ProductRow({
               <div className="font-bold tabular-nums font-mono" style={{ color: '#4ade80', fontSize: 13 }}>
                 {fmt(minPrice)}
               </div>
+              {bestSupplier && row.pricesARS?.[bestSupplier.id] != null && (
+                <div className="font-mono tabular-nums" style={{ fontSize: 11, color: '#facc15', marginTop: 1 }}>
+                  {fmtARS(row.pricesARS[bestSupplier.id])}
+                </div>
+              )}
               {bestSupplier && (
                 <div className="text-xs mt-0.5" style={{ color: bestSupplier.color.text }}>
                   {bestSupplier.name}
@@ -204,10 +247,17 @@ export default function PriceTable({ rows, suppliers, sort, onSort, search }: Pr
     grouped.get(key)!.push(row)
   }
 
-  // Always sort alphabetically within each category when sort.col === 'name'
+  // Within each category: sort by device (iPhone → iPad → Apple Watch → Mac → otros),
+  // then alphabetically. Respects sort.dir when sort.col === 'name'.
+  const DEVICE_ORDER = ['iphone', 'ipad', 'apple-watch', 'mac', 'otros'] as const
   if (sort.col === 'name') {
     for (const [, catRows] of grouped) {
-      catRows.sort((a, b) => sort.dir * a.name.localeCompare(b.name, 'es'))
+      catRows.sort((a, b) => {
+        const ad = DEVICE_ORDER.indexOf(detectDevice(a.name))
+        const bd = DEVICE_ORDER.indexOf(detectDevice(b.name))
+        if (ad !== bd) return sort.dir * (ad - bd)
+        return sort.dir * a.name.localeCompare(b.name, 'es')
+      })
     }
   }
 

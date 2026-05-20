@@ -77,6 +77,108 @@ export interface VentaGremio {
   createdAt: string
 }
 
+// ─── Equipos usados ──────────────────────────────────────────────────────────
+export type EstadoEquipo = 'En stock' | 'Vendido' | 'Reservado' | 'En reparación'
+
+export interface ChecklistFunciones {
+  pantalla: boolean
+  placa: boolean                    // placa lógica (logic board)
+  microfonoNotas: boolean           // micrófono principal / notas de voz
+  microfonoSelfie: boolean          // micrófono frontal / selfie
+  microfonoCamaraZoom: boolean      // micrófono trasero / cámara zoom
+  altavoz: boolean                  // auricular (earpiece)
+  speaker: boolean                  // bocina inferior
+  botonesVolumen: boolean
+  botonPower: boolean
+  faceId: boolean
+  wifi: boolean
+  senal: boolean                    // señal celular
+  camaras: string[]                 // cámaras traseras OK: e.g. ['0.5x', '1x', '2x']
+  camaraSelfie: boolean             // cámara frontal
+  camaraRetratoSelfie: boolean      // modo retrato cámara selfie
+  camaraRetratoPrincipal: boolean   // modo retrato cámara trasera principal
+}
+
+export interface EquipoUsado {
+  id: string
+  nOrden: number                // auto-incremental
+  fecha: string
+  modelo: string
+  color: string
+  capacidad: string
+  imei: string
+  bateria: number               // % de batería (0-100)
+  funciones: ChecklistFunciones
+  estado: EstadoEquipo          // siempre 'En stock' al crear
+  precioCompra: number
+  monedaCompra: 'ARS' | 'USD'
+  precioVenta: number
+  monedaVenta: 'ARS' | 'USD'
+  proveedorId: string           // ref a ProveedorEquipo
+  detallesFisicos: string       // estado físico del equipo
+  fotos: string[]               // base64 data URIs
+  // Venta (se rellenan al marcar como Vendido)
+  vendidoA?: string
+  vendidoTelefono?: string
+  vendidoMail?: string
+  vendidoTipoCliente?: string   // 'Persona' | 'Gremio' | 'Proveedor equipo' | 'Proveedor'
+  fechaVenta?: string
+  metodoPagoVenta?: MetodoPago
+  createdAt: string
+}
+
+// ─── Compras a clientes particulares ─────────────────────────────────────────
+export interface ReparacionEstimada {
+  falla: string
+  costoEstimado: number   // en ARS
+}
+
+export interface CompraCliente {
+  id: string
+  nOrden: number
+  fecha: string
+  // Datos del vendedor (cliente particular)
+  nombreCliente: string
+  telefonoCliente: string
+  dniCliente: string
+  fotoDniFrente: string   // base64 data URI
+  fotoDniDorso: string    // base64 data URI
+  // Equipo adquirido (copia de EquipoUsado sin id/createdAt/nOrden)
+  modelo: string
+  color: string
+  capacidad: string
+  imei: string
+  bateria: number
+  funciones: ChecklistFunciones
+  detallesFisicos: string
+  fotos: string[]
+  // Financiero
+  precioCompra: number
+  monedaCompra: 'ARS' | 'USD'
+  tipoCambio: number              // cotización usada
+  reparaciones: ReparacionEstimada[]
+  costoReparacionesARS: number    // suma automática
+  precioVentaEstimado: number
+  monedaVenta: 'ARS' | 'USD'
+  gananciaEstimadaARS: number     // calculado
+  // Referencia al equipo creado en stock/reparación
+  equipoId: string
+  notas: string
+  createdAt: string
+}
+
+// ─── Proveedores de equipos usados ───────────────────────────────────────────
+export interface ProveedorEquipo {
+  id: string
+  nombre: string
+  apellido: string
+  empresa: string          // razón social / nombre comercial
+  cuil: string
+  telefono: string
+  direccion: string
+  createdAt: string
+}
+
 // ─── Gastos ───────────────────────────────────────────────────────────────────
 export type TipoGasto = 'local' | 'oficina' | 'fijos'
 
@@ -147,6 +249,7 @@ export interface StockItem {
   modelo: string
   proveedor: string
   stock: number
+  stockMinimo: number         // alerta cuando totalStock del grupo < stockMinimo (default 2)
   costoUnitario: number
   moneda: Moneda
   costoTotalARS: number       // = stock * costoUnitario * tipoCambio if USD (auto)
@@ -174,8 +277,10 @@ export interface Orden {
   mailCliente: string
   // Equipo
   categoriaDispositivo?: 'iPhone' | 'Mac/iPad'
+  colorEquipo?: string
   imei: string
   modeloEquipo: string
+  funciones?: ChecklistFunciones
   descripcionFalla: string
   accesorios: string
   contrasena: string
@@ -183,6 +288,7 @@ export interface Orden {
   tecnico: string
   fechaEntrega: string
   garantia: boolean
+  diasGarantia: number         // días de garantía desde la entrega (default 90)
   // Financiero
   tipoServicio: TipoServicio
   proveedor: string
@@ -294,6 +400,7 @@ export interface Proveedor {
   web: string
   condicionesPago: string
   notas: string
+  direccion: string
   createdAt: string
 }
 
@@ -304,6 +411,36 @@ export interface TipoCambio {
   valor: number               // ARS por USD
   fuente: string
   notas: string
+}
+
+// ─── Caja de mostrador (POS) ──────────────────────────────────────────────────
+export interface CartItem {
+  id: string
+  nombre: string
+  cantidad: number
+  precioUnitario: number
+  subtotal: number
+  tipo: 'repuesto' | 'accesorio' | 'telefono' | 'orden' | 'manual'
+  refId?: string   // stock item id, equipo id, or orden id
+}
+
+export interface VentaCaja {
+  id: string
+  nVenta: number
+  fecha: string    // YYYY-MM-DD
+  hora: string     // HH:MM
+  items: CartItem[]
+  subtotal: number
+  descuento: number
+  total: number
+  metodoPago: MetodoPago
+  clienteNombre?: string
+  clienteTelefono?: string
+  clienteCuit?: string
+  tipoFactura?: 'A' | 'B' | null
+  tipoCliente?: 'clienteFinal' | 'gremio' | 'empresa'
+  nOrdenRef?: number
+  observaciones?: string
 }
 
 // ─── Dashboard (computed) ─────────────────────────────────────────────────────
@@ -327,6 +464,9 @@ export interface DashboardData {
   totalGastos: number
   // Resultado
   gananciaReal: number
+  // Caja mostrador
+  ventasCaja: number
+  cantidadVentasCaja: number
   // Contadores
   cantidadVentasB2C: number
   cantidadVentasB2B: number

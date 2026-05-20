@@ -4,7 +4,7 @@ import path from 'path'
 import type {
   Turno, VentaCSF, VentaGremio, Gasto, Comision, StockItem,
   ClienteB2B, ClientePersona, Proveedor, TipoCambio, DashboardData, TipoGasto, TipoStock,
-  Orden, Servicio, ReglaComision, ReglaComisionGremio,
+  Orden, Servicio, ReglaComision, ReglaComisionGremio, EquipoUsado, ProveedorEquipo, CompraCliente, VentaCaja,
 } from './sistema-types'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -364,6 +364,155 @@ export function deleteProveedor(id: string): void {
   write('proveedores', getProveedores().filter(i => i.id !== id))
 }
 
+// ── Equipos usados ────────────────────────────────────────────────────────────
+export function getEquipos(): EquipoUsado[] { return read<EquipoUsado>('equipos') }
+export function addEquipo(data: Omit<EquipoUsado, 'id' | 'createdAt' | 'nOrden'>): EquipoUsado {
+  const items = getEquipos()
+  const nOrden = items.length > 0 ? Math.max(...items.map(i => i.nOrden ?? 0)) + 1 : 1
+  const item: EquipoUsado = { id: uid(), nOrden, ...data, createdAt: new Date().toISOString() }
+  write('equipos', [...items, item])
+  return item
+}
+export function updateEquipo(id: string, data: Partial<EquipoUsado>): EquipoUsado | null {
+  const items = getEquipos()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx === -1) return null
+  items[idx] = { ...items[idx], ...data }
+  write('equipos', items)
+  return items[idx]
+}
+export function deleteEquipo(id: string): void {
+  write('equipos', getEquipos().filter(i => i.id !== id))
+}
+
+// ── Proveedores de equipos usados ─────────────────────────────────────────────
+export function getProveedoresEquipos(): ProveedorEquipo[] { return read<ProveedorEquipo>('proveedores-equipos') }
+export function addProveedorEquipo(data: Omit<ProveedorEquipo, 'id' | 'createdAt'>): ProveedorEquipo {
+  const items = getProveedoresEquipos()
+  const item: ProveedorEquipo = { id: uid(), ...data, createdAt: new Date().toISOString() }
+  write('proveedores-equipos', [...items, item])
+  return item
+}
+export function updateProveedorEquipo(id: string, data: Partial<ProveedorEquipo>): ProveedorEquipo | null {
+  const items = getProveedoresEquipos()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx === -1) return null
+  items[idx] = { ...items[idx], ...data }
+  write('proveedores-equipos', items)
+  return items[idx]
+}
+export function deleteProveedorEquipo(id: string): void {
+  write('proveedores-equipos', getProveedoresEquipos().filter(i => i.id !== id))
+}
+
+// ── Compras a clientes particulares ───────────────────────────────────────────
+export function getComprasClientes(): CompraCliente[] { return read<CompraCliente>('compras-clientes') }
+export function addCompraCliente(data: Omit<CompraCliente, 'id' | 'createdAt' | 'nOrden'>): CompraCliente {
+  const items = getComprasClientes()
+  const nOrden = items.length > 0 ? Math.max(...items.map(i => i.nOrden ?? 0)) + 1 : 1
+  const item: CompraCliente = { id: uid(), nOrden, ...data, createdAt: new Date().toISOString() }
+  write('compras-clientes', [...items, item])
+  return item
+}
+export function updateCompraCliente(id: string, data: Partial<CompraCliente>): CompraCliente | null {
+  const items = getComprasClientes()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx === -1) return null
+  items[idx] = { ...items[idx], ...data }
+  write('compras-clientes', items)
+  return items[idx]
+}
+export function deleteCompraCliente(id: string): void {
+  write('compras-clientes', getComprasClientes().filter(i => i.id !== id))
+}
+
+// ── Ventas Caja (POS) ─────────────────────────────────────────────────────────
+export function getVentasCaja(): VentaCaja[] { return read<VentaCaja>('ventas-caja') }
+export function getNextVentaCajaNum(): number {
+  const items = getVentasCaja()
+  if (!items.length) return 1
+  return Math.max(...items.map(v => v.nVenta ?? 0)) + 1
+}
+export function addVentaCaja(data: Omit<VentaCaja, 'id'>): VentaCaja {
+  const items = getVentasCaja()
+  const item: VentaCaja = { id: uid(), ...data }
+  write('ventas-caja', [...items, item])
+  return item
+}
+export function updateVentaCaja(id: string, data: Partial<VentaCaja>): VentaCaja | null {
+  const items = getVentasCaja()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx === -1) return null
+  items[idx] = { ...items[idx], ...data }
+  write('ventas-caja', items)
+  return items[idx]
+}
+export function deleteVentaCaja(id: string): void {
+  write('ventas-caja', getVentasCaja().filter(i => i.id !== id))
+}
+
+// ── Listas de precios (meta) ──────────────────────────────────────────────────
+export interface ListaMeta {
+  filename: string
+  items: number
+  updatedAt: string
+}
+
+export function getListasMeta(): Record<string, ListaMeta> {
+  return readSingle<Record<string, ListaMeta>>('listas-meta', {})
+}
+
+export function setListaMeta(proveedorId: string, meta: ListaMeta): void {
+  const all = getListasMeta()
+  writeSingle('listas-meta', { ...all, [proveedorId]: meta })
+}
+
+export function deleteListaMeta(proveedorId: string): void {
+  const all = getListasMeta()
+  delete all[proveedorId]
+  writeSingle('listas-meta', all)
+}
+
+// ── Listas de precios personalizadas ─────────────────────────────────────────
+export interface ListaCustom {
+  id: string
+  nombre: string
+  filename: string
+  items: number
+  color: string
+  createdAt: string
+  updatedAt: string
+}
+
+export function getListasCustom(): ListaCustom[] {
+  return readSingle<ListaCustom[]>('listas-custom', [])
+}
+
+export function addListaCustom(data: Omit<ListaCustom, 'id' | 'createdAt' | 'updatedAt'>): ListaCustom {
+  const all = getListasCustom()
+  const item: ListaCustom = {
+    id: uid(),
+    ...data,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+  writeSingle('listas-custom', [...all, item])
+  return item
+}
+
+export function updateListaCustom(id: string, data: Partial<Omit<ListaCustom, 'id' | 'createdAt'>>): ListaCustom | null {
+  const all = getListasCustom()
+  const idx = all.findIndex(l => l.id === id)
+  if (idx === -1) return null
+  all[idx] = { ...all[idx], ...data, updatedAt: new Date().toISOString() }
+  writeSingle('listas-custom', all)
+  return all[idx]
+}
+
+export function deleteListaCustom(id: string): void {
+  writeSingle('listas-custom', getListasCustom().filter(l => l.id !== id))
+}
+
 // ── Módulos ───────────────────────────────────────────────────────────────────
 const DEFAULT_MODULOS: Record<string, boolean> = {
   notasdash: true, imei: true,
@@ -421,6 +570,14 @@ export function setGarantiaRetiro(texto: string): void {
   writeSingle<string>('garantia-retiro', texto)
 }
 
+// ── Días de Garantía por Defecto ─────────────────────────────────────────────
+export function getDiasGarantiaDefault(): number {
+  return readSingle<number>('dias-garantia-default', 90)
+}
+export function setDiasGarantiaDefault(dias: number): void {
+  writeSingle<number>('dias-garantia-default', dias)
+}
+
 // ── Estados de Orden ─────────────────────────────────────────────────────────
 const DEFAULT_ESTADOS_ORDEN = ['Entrada', 'Técnico Saddi', 'Laboratorio', 'Salida de laboratorio', 'Salida']
 export function getEstadosOrden(): string[] {
@@ -434,6 +591,7 @@ export function setEstadosOrden(estados: string[]): void {
 export function getDashboard(): DashboardData {
   const ventasCSF = getVentasCSF()
   const ventasGremio = getVentasGremio()
+  const ventasCajaAll = getVentasCaja()
   const gastosAll = getGastos()
   const comisiones = getComisiones()
   const turnos = getTurnos()
@@ -442,7 +600,8 @@ export function getDashboard(): DashboardData {
 
   const ventasB2C = sum(ventasCSF.map(v => v.ticket))
   const ventasB2B = sum(ventasGremio.map(v => v.equivARS))
-  const totalIngresosBrutos = ventasB2C + ventasB2B
+  const ventasCaja = sum(ventasCajaAll.map(v => v.total))
+  const totalIngresosBrutos = ventasB2C + ventasB2B + ventasCaja
 
   const costoRepuestosB2C = sum(ventasCSF.map(v => v.costoRepuestoPesos))
   const costoRepuestosB2B = sum(ventasGremio.map(v => v.costoRepuestos))
@@ -465,6 +624,7 @@ export function getDashboard(): DashboardData {
 
   return {
     totalIngresosBrutos, ventasB2C, ventasB2B,
+    ventasCaja, cantidadVentasCaja: ventasCajaAll.length,
     costoRepuestosB2C, costoRepuestosB2B, comisionesMP, iibbTotal,
     totalComisionesEmpleados, comisionesPorEmpleado,
     gastosLocal, gastosOficina, gastosFijos, totalGastos,

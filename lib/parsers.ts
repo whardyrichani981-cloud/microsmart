@@ -1,5 +1,42 @@
 import type { SupplierItem } from './types'
-import { normalizeCategory } from './categories'
+import { normalizeCategory, CATEGORY_ORDER, type AppleCategory } from './categories'
+
+// ── Device detection ─────────────────────────────────────────────────────────
+// Determines the Apple device a product belongs to, for sorting purposes.
+type DeviceGroup = 'iphone' | 'ipad' | 'apple-watch' | 'mac' | 'otros'
+
+const DEVICE_ORDER: DeviceGroup[] = ['iphone', 'ipad', 'apple-watch', 'mac', 'otros']
+
+export function detectDevice(name: string): DeviceGroup {
+  const n = name.toLowerCase()
+  if (/iphone/.test(n)) return 'iphone'
+  if (/ipad/.test(n)) return 'ipad'
+  if (/apple.?watch|watch\s+s\d|watch\s+ultra|watch\s+se/.test(n)) return 'apple-watch'
+  if (/macbook|imac|mac\s*mini|mac\s*pro|mac\s*studio|\bmac\b/.test(n)) return 'mac'
+  return 'otros'
+}
+
+/**
+ * Sort items by:
+ *   1. Category order (modulos → baterias → camaras → …)
+ *   2. Device group within each category (iPhone → iPad → Apple Watch → Mac → otros)
+ *   3. Alphabetically within each device group
+ * Applied after every parse so all lists are consistently ordered.
+ */
+export function sortByCategory(items: SupplierItem[]): SupplierItem[] {
+  return [...items].sort((a, b) => {
+    // 1. Category
+    const ai = CATEGORY_ORDER.indexOf((a.category ?? 'otros') as AppleCategory)
+    const bi = CATEGORY_ORDER.indexOf((b.category ?? 'otros') as AppleCategory)
+    if (ai !== bi) return ai - bi
+    // 2. Device
+    const ad = DEVICE_ORDER.indexOf(detectDevice(a.name))
+    const bd = DEVICE_ORDER.indexOf(detectDevice(b.name))
+    if (ad !== bd) return ad - bd
+    // 3. Alphabetical
+    return a.name.localeCompare(b.name, 'es')
+  })
+}
 
 type Row = (string | number | boolean | null | undefined)[]
 
@@ -122,6 +159,59 @@ export function parseBhTech(rows: Row[]): SupplierItem[] {
   return items
 }
 
+// ─── Pineapple ───────────────────────────────────────────────────────────────
+// Structure: single sheet "LISTA", NO header row.
+//   Col A (0): product name OR category header (all-caps text, no price)
+//   Col B (1): optional status flag (⬇ NEW etc.)
+//   Col C (2): unit price in USD (numeric) — empty on category header rows
+//   Col D (3): optional bulk promo text
+// Category context is tracked by reading header rows (col C empty, col A non-empty).
+export function parsePineapple(rows: Row[]): SupplierItem[] {
+  const items: SupplierItem[] = []
+  let currentCategory = 'otros'
+
+  for (const row of rows) {
+    const cells = row.map(clean)
+    const nameRaw  = cells[0]?.trim() ?? ''
+    const priceRaw = cells[2]?.trim() ?? ''
+
+    if (!nameRaw) continue
+
+    const price = parsePrice(priceRaw)
+
+    // Category header row: has a name but no valid price
+    if (isNaN(price) || price <= 0) {
+      // Update category from the header text
+      const cat = normalizeCategory(nameRaw)
+      if (cat !== 'otros') currentCategory = cat
+      else {
+        // Use full text to map well-known Pineapple sections
+        const n = nameRaw.toLowerCase()
+        if (/pantalla|lcd|oled|incell|modulo|screen/i.test(n)) currentCategory = 'modulos'
+        else if (/bater/i.test(n))                              currentCategory = 'baterias'
+        else if (/camara|camera/i.test(n))                     currentCategory = 'camaras'
+        else if (/flex|cable/i.test(n))                        currentCategory = 'flex'
+        else if (/chasis|carcasa|housing/i.test(n))            currentCategory = 'chasis'
+        else if (/vidrio|glass|cristal|tapa/i.test(n))         currentCategory = 'vidrios'
+        else if (/herramienta|tool/i.test(n))                  currentCategory = 'herramientas'
+        else if (/accesorio|accessory|baseus/i.test(n))        currentCategory = 'accesorios'
+        else if (/integrado|conector|placa|ic\b/i.test(n))     currentCategory = 'circuitos'
+        else if (/macbook|teclado|keyboard/i.test(n))          currentCategory = 'otros'
+        // Keep currentCategory unchanged for unrecognised headers
+      }
+      continue
+    }
+
+    // Product row — determine category (try name first, fall back to section)
+    const catFromName = normalizeCategory(nameRaw)
+    const category = catFromName !== 'otros' ? catFromName : currentCategory
+
+    items.push({ name: nameRaw, code: '', price, category })
+  }
+
+  return sortByCategory(items)
+}
+
 // ─── Cparts ─────────────────────────────────────────────────────────────────
 // Structure: multiple sections, each starting with a header row where
 // col 0 = "CODIGO", col 1 = category name, col 2 = "STOCK", col 3 = "PRECIO"
@@ -204,21 +294,43 @@ export function parseGremio(rows: Row[]): SupplierItem[] {
 }
 
 // ─── Generic Excel/CSV ───────────────────────────────────────────────────────
-// Auto-detects product name and price columns by header keywords,
+// Auto-detects product name, price, code and category columns by header keywords,
 // with a fallback score-based detection.
-const PROD_KW = ['producto', 'descripcion', 'description', 'nombre', 'item', 'articulo', 'detalle', 'name', 'detail', 'concepto']
+// Supports dual-currency lists (USD + ARS): detects explicit currency columns.
+// Output is always sorted by CATEGORY_ORDER, then alphabetically within each category.
+const PROD_KW  = ['producto', 'descripcion', 'description', 'nombre', 'item', 'articulo', 'detalle', 'name', 'detail', 'concepto']
 const PRICE_KW = ['precio', 'price', 'importe', 'valor', 'monto', 'costo', 'tarifa', 'pvp', 'unit price', 'precio unitario', 'p. unitario']
-const CODE_KW = ['codigo', 'code', 'cod', 'sku', 'referencia', 'ref', 'part']
+const CODE_KW  = ['codigo', 'code', 'cod', 'sku', 'referencia', 'ref', 'part']
+const CAT_KW   = ['categoria', 'category', 'cat', 'seccion', 'section', 'grupo', 'group', 'rubro', 'family', 'familia']
+// "modelo" = the actual product model/name (e.g. "iPhone 13 Pro Max")
+const MODEL_KW = ['modelo', 'model', 'equipo', 'device']
+// "tipo" = product sub-type to be combined with modelo (e.g. "Pantalla Incell AM")
+const TIPO_KW  = ['tipo producto', 'tipo de producto', 'tipo', 'type', 'componente', 'component', 'pieza', 'parte']
+// Currency-specific column keywords (checked before generic PRICE_KW)
+const USD_KW   = ['usd', 'dolar', 'dólar', 'dolares', 'dólares', 'u$s', 'us$', 'divisa']
+const ARS_KW   = ['ars', 'pesos', 'transferencia', 'efectivo', 'contado', 'nacional', '$ ars']
 
 export function parseGeneric(rows: Row[]): SupplierItem[] {
   if (rows.length < 2) return []
 
-  // Find the first row with at least 2 non-empty cells (header row)
+  // Find the header row: scan the first 30 rows and pick the one whose cells
+  // best match known column keywords (handles files with info rows at the top).
+  const ALL_KW_FLAT = [
+    ...PROD_KW, ...PRICE_KW, ...CODE_KW, ...CAT_KW,
+    ...MODEL_KW, ...TIPO_KW, ...USD_KW, ...ARS_KW,
+  ]
   let headerIdx = 0
-  for (let i = 0; i < Math.min(15, rows.length); i++) {
-    if (rows[i].filter(c => clean(c).length > 0).length >= 2) {
-      headerIdx = i
-      break
+  let bestScore = -1
+  for (let i = 0; i < Math.min(30, rows.length); i++) {
+    const cells = rows[i].map(c => clean(c).toLowerCase())
+    if (cells.filter(c => c.length > 0).length < 2) continue
+    const score = cells.filter(c => ALL_KW_FLAT.some(kw => c.includes(kw))).length
+    if (score > bestScore) { bestScore = score; headerIdx = i }
+  }
+  // Fallback: first row with ≥ 2 non-empty cells (if no keyword matched at all)
+  if (bestScore === 0) {
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      if (rows[i].filter(c => clean(c).length > 0).length >= 2) { headerIdx = i; break }
     }
   }
 
@@ -231,15 +343,33 @@ export function parseGeneric(rows: Row[]): SupplierItem[] {
     return -1
   }
 
-  let nameIdx = findCol(PROD_KW)
-  let priceIdx = findCol(PRICE_KW)
-  const codeIdx = findCol(CODE_KW)
+  const codeIdx   = findCol(CODE_KW)
+  const catIdx    = findCol(CAT_KW)
+  const modeloIdx = findCol(MODEL_KW)
+  const prodIdx   = findCol(PROD_KW)
+  // Always search for tipo — it can combine with any name column (modelo OR PROD_KW)
+  const tipoIdx   = findCol(TIPO_KW)
 
-  // Score-based fallback
-  if (priceIdx < 0 || nameIdx < 0) {
+  // Primary name column: modelo takes priority, then generic PROD_KW
+  let nameIdx = modeloIdx >= 0 ? modeloIdx : prodIdx
+
+  // When BOTH producto and modelo columns exist, producto holds the quality/description
+  // (e.g. "Pantalla Incell AM") and modelo holds the device (e.g. "IPHONE 13").
+  // We combine them → "Pantalla Incell AM IPHONE 13".
+  const prodDescIdx = (modeloIdx >= 0 && prodIdx >= 0) ? prodIdx : -1
+
+  // Explicit currency detection takes priority over generic price column
+  const usdIdx = findCol(USD_KW)
+  const arsIdx = findCol(ARS_KW)
+  // Generic price column — used only when no explicit currency column is found
+  let genericPriceIdx = (usdIdx < 0 && arsIdx < 0) ? findCol(PRICE_KW) : -1
+
+  // Score-based fallback for name / generic price
+  const dominated = new Set([modeloIdx, prodIdx, tipoIdx, catIdx, codeIdx, usdIdx, arsIdx, genericPriceIdx].filter(i => i >= 0))
+  if (genericPriceIdx < 0 || nameIdx < 0) {
     const sample = rows.slice(headerIdx + 1, headerIdx + 30)
     const priceScore = new Array(headers.length).fill(0)
-    const textScore = new Array(headers.length).fill(0)
+    const textScore  = new Array(headers.length).fill(0)
     for (const r of sample) {
       for (let j = 0; j < r.length; j++) {
         const v = clean(r[j])
@@ -248,24 +378,102 @@ export function parseGeneric(rows: Row[]): SupplierItem[] {
         if (v.length > 8 && isNaN(Number(v))) textScore[j] += v.length
       }
     }
-    if (priceIdx < 0) priceIdx = priceScore.indexOf(Math.max(...priceScore))
+    if (genericPriceIdx < 0 && usdIdx < 0 && arsIdx < 0)
+      genericPriceIdx = priceScore.indexOf(Math.max(...priceScore))
     if (nameIdx < 0) {
-      const scores = textScore.map((s, i) => (i === priceIdx ? -1 : s))
-      nameIdx = scores.indexOf(Math.max(...scores))
+      // Exclude all already-assigned columns so the score-based fallback
+      // doesn't accidentally pick a notes/conditions column
+      const dominated2 = new Set([...dominated, genericPriceIdx].filter(i => i >= 0))
+      const scores = textScore.map((s, i) => (dominated2.has(i) ? -1 : s))
+      const best = Math.max(...scores)
+      nameIdx = best > 0 ? scores.indexOf(best) : -1
     }
   }
 
+  // Debug: log detected columns so issues are visible in server logs
+  console.log('[parseGeneric] headerIdx:', headerIdx, 'headers:', headers)
+  console.log('[parseGeneric] columns → name:', nameIdx, 'modelo:', modeloIdx, 'prod:', prodIdx, 'prodDesc:', prodDescIdx, 'tipo:', tipoIdx, 'cat:', catIdx, 'code:', codeIdx, 'usd:', usdIdx, 'ars:', arsIdx, 'price:', genericPriceIdx)
+
   const items: SupplierItem[] = []
+  // Forward-fill state: many Excel lists use merged/grouped cells where the
+  // "tipo" (or "categoria") value only appears in the first row of a group.
+  // We carry it forward so every product row gets the correct type descriptor.
+  let lastTipo = ''
+  let lastCat  = ''
+
   for (let i = headerIdx + 1; i < rows.length; i++) {
-    const cells = rows[i].map(clean)
-    const name = nameIdx >= 0 ? cells[nameIdx] : ''
-    const priceStr = priceIdx >= 0 ? cells[priceIdx] : ''
+    const cells  = rows[i].map(clean)
+
+    // ── Forward-fill tipo ────────────────────────────────────────────────────
+    // If this row has a tipo value, update the running value.
+    // Also handle "section header" rows: a row where tipo is present but
+    // modelo/price are empty → just update lastTipo and skip.
+    if (tipoIdx >= 0) {
+      const tipoVal = cells[tipoIdx]?.trim() ?? ''
+      if (tipoVal) lastTipo = tipoVal
+    }
+    // Forward-fill cat too (handles merged categoria cells)
+    if (catIdx >= 0) {
+      const catVal = cells[catIdx]?.trim() ?? ''
+      if (catVal) lastCat = catVal
+    }
+
+    // ── Name resolution ───────────────────────────────────────────────────────
+    // Priority (highest to lowest):
+    //   1. tipo (forward-filled) + prodDesc (quality col) + modelo
+    //   2. prodDesc (quality col) + modelo   ← Cokocell case
+    //   3. tipo (forward-filled) + modelo
+    //   4. modelo (or PROD_KW when no modelo col)
+    let name: string
+    const modelVal = nameIdx    >= 0 ? cells[nameIdx]?.trim()    ?? '' : ''
+    const descVal  = prodDescIdx >= 0 ? cells[prodDescIdx]?.trim() ?? '' : ''
+    const tipoVal  = tipoIdx >= 0 ? lastTipo : ''
+
+    if (tipoVal && descVal && modelVal) {
+      name = `${tipoVal} ${descVal} ${modelVal}`
+    } else if (tipoVal && modelVal) {
+      name = `${tipoVal} ${modelVal}`
+    } else if (descVal && modelVal) {
+      // producto + modelo (e.g. "Pantalla Incell AM IPHONE 13")
+      name = `${descVal} ${modelVal}`
+    } else {
+      name = modelVal || descVal || tipoVal
+    }
+
     const code = codeIdx >= 0 ? cells[codeIdx] : ''
-    if (!name || !priceStr) continue
-    const price = parsePrice(priceStr)
+    // Use forward-filled category (handles merged cells in categoria column)
+    const rawCat = catIdx >= 0 ? (cells[catIdx]?.trim() || lastCat) : lastCat
+    if (!name) continue
+
+    // ── Price resolution ────────────────────────────────────────────────────
+    let price: number
+    let priceARS: number | undefined
+
+    if (usdIdx >= 0 && arsIdx >= 0) {
+      price = parsePrice(cells[usdIdx])
+      const ars = parsePrice(cells[arsIdx])
+      priceARS = !isNaN(ars) && ars > 0 ? ars : undefined
+    } else if (usdIdx >= 0) {
+      price = parsePrice(cells[usdIdx])
+    } else if (arsIdx >= 0) {
+      price = parsePrice(cells[arsIdx])
+    } else {
+      price = genericPriceIdx >= 0 ? parsePrice(cells[genericPriceIdx]) : NaN
+    }
+
     if (isNaN(price) || price <= 0) continue
-    items.push({ name, code, price, category: normalizeCategory(name) })
+
+    // ── Category resolution ─────────────────────────────────────────────────
+    // Try category column first, then forward-filled tipo, finally the name
+    let category = rawCat ? normalizeCategory(rawCat) : 'otros'
+    if (category === 'otros' && lastTipo) {
+      category = normalizeCategory(lastTipo)
+    }
+    if (category === 'otros') category = normalizeCategory(name)
+
+    items.push({ name, code, price, ...(priceARS ? { priceARS } : {}), category })
   }
 
-  return items
+  // Always return sorted by category order, then A-Z within each category
+  return sortByCategory(items)
 }

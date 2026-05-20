@@ -71,7 +71,7 @@ function buildEmptyReglaGremio(): ReglaGremioForm {
 }
 
 // ─── Panel: Configuración de Comisiones ──────────────────────────────────────
-function ComisionesConfigPanel({ onBack }: { onBack: () => void }) {
+export function ComisionesConfigPanel({ onBack, backLabel = '← Volver a Configuración' }: { onBack: () => void; backLabel?: string }) {
   // ── Reglas CF ────────────────────────────────────────────────────────────
   const { data: reglasList, refresh: refreshReglas } = useApi<ReglaComision[]>('/api/sistema/reglas-comision')
   const reglas = reglasList ?? []
@@ -162,7 +162,7 @@ function ComisionesConfigPanel({ onBack }: { onBack: () => void }) {
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#1D1D1F'; e.currentTarget.style.borderColor = '#6E6E73' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#6E6E73'; e.currentTarget.style.borderColor = 'var(--border)' }}
-      >← Volver a Configuración</button>
+      >{backLabel}</button>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
@@ -441,7 +441,7 @@ function ComisionesConfigPanel({ onBack }: { onBack: () => void }) {
 }
 
 // ─── Panel: Pestañas de Órdenes de Trabajo ────────────────────────────────────
-function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
+export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configuración' }: { onBack: () => void; backLabel?: string }) {
   const [activeTab, setActiveTab] = useState<'estados' | 'terminos' | 'garantia'>('estados')
 
   const [estados, setEstados] = useState<string[]>([])
@@ -473,6 +473,11 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
   const [garantiaSaving, setGarantiaSaving] = useState(false)
   const [garantiaSaved, setGarantiaSaved] = useState(false)
 
+  // Días de garantía por defecto
+  const [diasGarantiaDefault, setDiasGarantiaDefault] = useState(90)
+  const [diasGarantiaSaving, setDiasGarantiaSaving] = useState(false)
+  const [diasGarantiaSaved, setDiasGarantiaSaved] = useState(false)
+
   useEffect(() => {
     fetch('/api/sistema/estados-orden')
       .then(r => r.json())
@@ -490,6 +495,10 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
       .then(r => r.json())
       .then((d: { garantia: string }) => { setGarantia(d.garantia ?? ''); setGarantiaLoading(false) })
       .catch(() => setGarantiaLoading(false))
+    fetch('/api/sistema/dias-garantia')
+      .then(r => r.json())
+      .then((d: { dias: number }) => { setDiasGarantiaDefault(d.dias ?? 90) })
+      .catch(() => {})
   }, [])
 
   // ── Logo ──────────────────────────────────────────────────────────────────
@@ -642,6 +651,21 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
     }
   }
 
+  const guardarDiasGarantia = async () => {
+    setDiasGarantiaSaving(true)
+    try {
+      await fetch('/api/sistema/dias-garantia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dias: diasGarantiaDefault }),
+      })
+      setDiasGarantiaSaved(true)
+      setTimeout(() => setDiasGarantiaSaved(false), 2500)
+    } finally {
+      setDiasGarantiaSaving(false)
+    }
+  }
+
   return (
     <div style={{ padding: '0 0 48px' }}>
 
@@ -656,7 +680,7 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#1D1D1F'; e.currentTarget.style.borderColor = '#6E6E73' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#6E6E73'; e.currentTarget.style.borderColor = 'var(--border)' }}
-      >← Volver a Configuración</button>
+      >{backLabel}</button>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -790,6 +814,51 @@ function OrdenesEstadosPanel({ onBack }: { onBack: () => void }) {
       {/* ════════════════ TAB: GARANTÍA DE COMPROBANTE ════════════════ */}
       {activeTab === 'garantia' && (
         <div>
+          {/* Días de garantía por defecto */}
+          <div style={{
+            marginBottom: 24, padding: '16px 18px', borderRadius: 12,
+            background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#E5E5E3', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 7 }}>
+              🛡️ Días de garantía por defecto
+            </div>
+            <div style={{ fontSize: 12, color: '#6E6E73', marginBottom: 14, lineHeight: 1.5 }}>
+              Cantidad de días que se asigna automáticamente al entregar un equipo con garantía.<br />
+              Podés modificarlo por orden desde el panel de entrega.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="number"
+                min={1} max={3650}
+                value={diasGarantiaDefault}
+                onChange={e => { setDiasGarantiaDefault(Math.max(1, Math.min(3650, parseInt(e.target.value) || 1))); setDiasGarantiaSaved(false) }}
+                style={{
+                  width: 100, padding: '8px 12px', borderRadius: 8,
+                  border: '1px solid var(--border)', background: 'var(--surface)',
+                  color: '#E5E5E3', fontSize: 15, fontWeight: 700,
+                  outline: 'none', textAlign: 'center',
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = COLOR)}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              />
+              <span style={{ fontSize: 13, color: '#6E6E73' }}>días</span>
+              <button
+                onClick={guardarDiasGarantia}
+                disabled={diasGarantiaSaving}
+                style={{
+                  padding: '8px 20px', borderRadius: 8, border: 'none',
+                  background: diasGarantiaSaved ? '#4ade80' : COLOR,
+                  color: diasGarantiaSaved ? '#000' : '#fff',
+                  fontWeight: 700, fontSize: 13,
+                  cursor: diasGarantiaSaving ? 'not-allowed' : 'pointer',
+                  opacity: diasGarantiaSaving ? 0.7 : 1, transition: 'all 0.15s',
+                }}
+              >
+                {diasGarantiaSaved ? '✓ Guardado' : diasGarantiaSaving ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+
           <div style={{ fontSize: 13, color: '#6E6E73', marginBottom: 20, lineHeight: 1.6 }}>
             Este texto se imprime al pie del <strong style={{ color: '#1D1D1F' }}>Comprobante de Retiro de Equipo</strong>.<br />
             Podés editarlo libremente para reflejar las condiciones de garantía del servicio.
@@ -1149,7 +1218,7 @@ export default function ConfiguracionView({
   const [config, setConfig] = useState<Record<string, boolean> | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [subPanel, setSubPanel] = useState<'ordenes-estados' | 'comisiones-config' | null>(null)
+  const [subPanel, setSubPanel] = useState<null>(null)
 
   useEffect(() => {
     fetch('/api/sistema/modulos', { cache: 'no-store' }).then(r => r.json()).then(setConfig).catch(() => {})
@@ -1176,14 +1245,6 @@ export default function ConfiguracionView({
       setTimeout(() => setSaved(false), 2500)
       onModulosSaved?.(config)
     } finally { setSaving(false) }
-  }
-
-  // Sub-panels
-  if (subPanel === 'ordenes-estados') {
-    return <OrdenesEstadosPanel onBack={() => setSubPanel(null)} />
-  }
-  if (subPanel === 'comisiones-config') {
-    return <ComisionesConfigPanel onBack={() => setSubPanel(null)} />
   }
 
   const herramientas = MODULOS.filter(m => m.group === 'herramientas')
@@ -1276,7 +1337,7 @@ export default function ConfiguracionView({
                   modulo={m}
                   enabled={config[m.id] ?? true}
                   onToggle={() => toggle(m.id)}
-                  onSettings={m.id === 'ordenes' ? () => setSubPanel('ordenes-estados') : undefined}
+                  onSettings={undefined}
                 />
               ))}
             </div>
@@ -1294,7 +1355,7 @@ export default function ConfiguracionView({
                   modulo={m}
                   enabled={config[m.id] ?? true}
                   onToggle={() => toggle(m.id)}
-                  onSettings={m.id === 'comisiones' ? () => setSubPanel('comisiones-config') : undefined}
+                  onSettings={undefined}
                 />
               ))}
             </div>

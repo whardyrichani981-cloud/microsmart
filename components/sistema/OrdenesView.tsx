@@ -7,6 +7,16 @@ import {
   inputSt, calcSt, AutoCapInput, SearchableSelect, DictateButton,
 } from './shared'
 import { MODELOS_DISPOSITIVOS } from './modelos'
+import {
+  getColores, getCameras,
+  FUNCION_META, ALL_FUNCION_KEYS, GRUPOS_FUNCIONES,
+  emptyChecklist, funcionesOk,
+  type FuncionFija,
+} from './equipo-data'
+import type { ChecklistFunciones } from '@/lib/sistema-types'
+import { OrdenesEstadosPanel } from './ConfiguracionView'
+import GarantiasView from './GarantiasView'
+import { printFacturaOrden } from '@/lib/print-caja'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const COLOR = '#4ade80'
@@ -92,6 +102,7 @@ function printOrden(orden: Orden, logoBase64 = '', terminos = '') {
         <div class="section-title">Equipo</div>
         <div class="row"><span class="row-label">Dispositivo</span><span class="row-value">${orden.categoriaDispositivo ?? 'iPhone'}</span></div>
         <div class="row"><span class="row-label">Modelo</span><span class="row-value large">${orden.modeloEquipo || '—'}</span></div>
+        ${(orden as any).colorEquipo ? `<div class="row"><span class="row-label">Color</span><span class="row-value">${(orden as any).colorEquipo}</span></div>` : ''}
         <div class="row"><span class="row-label">IMEI / Serie</span><span class="row-value mono">${orden.imei || '—'}</span></div>
         <div class="row"><span class="row-label">Accesorios</span><span class="row-value">${orden.accesorios || '—'}</span></div>
         ${contrasena ? `<div class="row"><span class="row-label">Contraseña</span><span class="row-value mono contrasena">${contrasena}</span></div>` : ''}
@@ -461,11 +472,30 @@ function ClienteCombo({ tipo, nombre, telefono, onNombre, onTelefono, onMail }: 
   const [newEmpresa, setNewEmpresa] = useState('')
   const [newCuit, setNewCuit] = useState('')
   const [creating, setCreating] = useState(false)
+  const [prevOrdenes, setPrevOrdenes] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('/api/sistema/clientes-personas').then(r => r.json()).then(setPersonas).catch(() => {})
     fetch('/api/sistema/clientes').then(r => r.json()).then(setEmpresas).catch(() => {})
   }, [])
+
+  // Buscar historial cuando hay teléfono completo (10+ dígitos)
+  useEffect(() => {
+    const tel = telefono.replace(/\D/g, '')
+    if (tel.length >= 8) {
+      fetch('/api/sistema/ordenes')
+        .then(r => r.json())
+        .then((data: Orden[]) => {
+          const count = data.filter(o =>
+            o.telefonoCliente?.replace(/\D/g, '') === tel
+          ).length
+          setPrevOrdenes(count)
+        })
+        .catch(() => setPrevOrdenes(null))
+    } else {
+      setPrevOrdenes(null)
+    }
+  }, [telefono])
 
   useEffect(() => { setShowNew(false) }, [tipo])
 
@@ -642,6 +672,149 @@ function ClienteCombo({ tipo, nombre, telefono, onNombre, onTelefono, onMail }: 
           </div>
         </div>
       )}
+
+      {/* Indicador de reparaciones previas */}
+      {prevOrdenes !== null && prevOrdenes > 0 && (
+        <div style={{
+          marginTop: 8, padding: '7px 12px', borderRadius: 7,
+          background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.25)',
+          fontSize: 12, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          📋 <b>{prevOrdenes} reparación{prevOrdenes !== 1 ? 'es' : ''} anterior{prevOrdenes !== 1 ? 'es' : ''}</b> con este cliente
+        </div>
+      )}
+      {prevOrdenes === 0 && telefono.replace(/\D/g, '').length >= 8 && (
+        <div style={{
+          marginTop: 8, padding: '6px 12px', borderRadius: 7,
+          background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)',
+          fontSize: 12, color: '#4ade80',
+        }}>
+          🆕 Primera vez — no hay reparaciones anteriores con este teléfono
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── HistorialClienteModal ────────────────────────────────────────────────────
+function HistorialClienteModal({
+  nombre, telefono, ordenActualId, onClose,
+}: { nombre: string; telefono: string; ordenActualId: string; onClose: () => void }) {
+  const [ordenes, setOrdenes] = useState<Orden[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/sistema/ordenes')
+      .then(r => r.json())
+      .then((data: Orden[]) => {
+        const matches = data.filter(o => {
+          if (o.id === ordenActualId) return false
+          if (telefono && o.telefonoCliente) {
+            return o.telefonoCliente.replace(/\D/g, '') === telefono.replace(/\D/g, '')
+          }
+          return o.nombreCliente.toLowerCase() === nombre.toLowerCase()
+        }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+        setOrdenes(matches)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [nombre, telefono, ordenActualId])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--surface)', borderRadius: 14,
+        border: '1px solid var(--border)',
+        width: '90%', maxWidth: 680, maxHeight: '80vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        overflow: 'hidden',
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: `${COLOR}22`, border: `2px solid ${COLOR}44`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 800, color: COLOR, flexShrink: 0,
+          }}>
+            {nombre.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
+              📋 Historial de {nombre}
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+              {loading ? 'Buscando…' : `${ordenes.length} reparación${ordenes.length !== 1 ? 'es' : ''} anterior${ordenes.length !== 1 ? 'es' : ''}`}
+            </div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: C.muted, fontSize: 20, padding: '4px 8px', borderRadius: 6,
+          }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: 'center', color: C.muted }}>Buscando…</div>
+          ) : ordenes.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: C.muted }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🆕</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Primera vez</div>
+              <div style={{ fontSize: 13 }}>No hay reparaciones anteriores para este cliente</div>
+            </div>
+          ) : ordenes.map((o, i) => (
+            <div key={o.id} style={{
+              padding: '13px 20px',
+              borderBottom: i < ordenes.length - 1 ? '1px solid var(--border)' : 'none',
+              display: 'flex', gap: 14, alignItems: 'flex-start',
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                background: `${getEstadoColor(o.estado)}15`,
+                border: `1px solid ${getEstadoColor(o.estado)}44`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'column', gap: 0,
+              }}>
+                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, lineHeight: 1 }}>#</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: getEstadoColor(o.estado), lineHeight: 1.2 }}>{o.nOrden}</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {o.modeloEquipo || 'Sin modelo'}
+                  </span>
+                  <span style={{
+                    fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700,
+                    background: `${getEstadoColor(o.estado)}18`, color: getEstadoColor(o.estado),
+                  }}>{o.estado}</span>
+                  {o.prioridad === 'Urgente' && (
+                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: '#ef444418', color: '#ef4444' }}>⚡ Urgente</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>
+                  {o.tipoServicio || 'Sin tipo de servicio'}
+                  {o.descripcionFalla ? ` · ${o.descripcionFalla.slice(0, 70)}${o.descripcionFalla.length > 70 ? '…' : ''}` : ''}
+                </div>
+                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: C.muted, flexWrap: 'wrap' }}>
+                  <span>📅 {formatDate(o.fecha)}</span>
+                  {o.tecnico && <span>👤 {o.tecnico}</span>}
+                  {o.montoCobrado ? <span style={{ color: COLOR, fontWeight: 700 }}>💰 {fmtARS(o.montoCobrado)}</span> : null}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -683,11 +856,12 @@ function ProveedorCombo({ value, onChange, proveedores }: {
       />
       {open && filtered.length > 0 && (
         <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-          background: 'var(--surface2)', border: '1px solid var(--border)',
-          borderRadius: 6, overflow: 'hidden', maxHeight: 180, overflowY: 'auto',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 8, overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
         }}>
+          <div className="dropdown-scroll" style={{ maxHeight: 180, overflowY: 'auto', overflowX: 'hidden' }}>
           {filtered.map(p => (
             <button
               key={p.id}
@@ -703,6 +877,7 @@ function ProveedorCombo({ value, onChange, proveedores }: {
               {p.nombre}
             </button>
           ))}
+          </div>
         </div>
       )}
     </div>
@@ -730,6 +905,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   const [accionOpen, setAccionOpen] = useState(false)
   const [accionPos, setAccionPos] = useState<{ top: number; left: number } | null>(null)
   const [copiedDetail, setCopiedDetail] = useState(false)
+  const [historialOpen, setHistorialOpen] = useState(false)
   const [notas2, setNotas2] = useState(orden.notas2 ?? '')
   const [savingNotas, setSavingNotas] = useState(false)
 
@@ -746,6 +922,22 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   const [entregaLoading, setEntregaLoading] = useState(false)
   const [entregaMetodoPago, setEntregaMetodoPago] = useState<MetodoPago>(orden.metodoPago ?? 'Efectivo')
   const [entregaMonto, setEntregaMonto] = useState<number>(orden.montoCobrado ?? 0)
+  const [entregaGarantia, setEntregaGarantia] = useState(orden.garantia ?? false)
+  const [entregaDiasGarantia, setEntregaDiasGarantia] = useState(orden.diasGarantia ?? 90)
+
+  // Factura prompt after entrega
+  const [showFacturaPrompt, setShowFacturaPrompt] = useState(false)
+  const [facturaOrden, setFacturaOrden] = useState<typeof orden | null>(null)
+
+  // Cargar días de garantía por defecto al abrir el modal
+  useEffect(() => {
+    if (showEntregaConfirm && !orden.garantia) {
+      fetch('/api/sistema/dias-garantia')
+        .then(r => r.json())
+        .then((d: { dias: number }) => { setEntregaDiasGarantia(d.dias ?? 90) })
+        .catch(() => {})
+    }
+  }, [showEntregaConfirm, orden.garantia])
 
   // Products/services section
   const [showAddProducto, setShowAddProducto] = useState(false)
@@ -762,6 +954,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   const [prodPrecio, setProdPrecio] = useState(0)
   // Quick-purchase form (when stock = 0)
   const [showQuickBuy, setShowQuickBuy] = useState(false)
+  const [quickBuyStep, setQuickBuyStep] = useState<'choose' | 'form'>('choose')
   const [quickProveedor, setQuickProveedor] = useState('')
   const [quickCosto, setQuickCosto] = useState(0)
   const [quickSaving, setQuickSaving] = useState(false)
@@ -776,6 +969,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   const [selectedServRep, setSelectedServRep] = useState<StockItem | null>(null)
   const [servRepCantidad, setServRepCantidad] = useState(1)
   const [showServQuickBuy, setShowServQuickBuy] = useState(false)
+  const [servQuickBuyStep, setServQuickBuyStep] = useState<'choose' | 'form'>('choose')
   const [servQuickProveedor, setServQuickProveedor] = useState('')
   const [servQuickCosto, setServQuickCosto] = useState(0)
   const [servQuickSaving, setServQuickSaving] = useState(false)
@@ -956,15 +1150,44 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
         } catch { /* silencioso */ }
       }
 
+      // ── Descontar stock automáticamente ──────────────────────────────────
+      const productItems = (orden.ordenItems ?? []).filter(it => it.tipo === 'producto' && it.refId)
+      const stockDescuentos: string[] = []
+      if (productItems.length > 0) {
+        try {
+          const [repRes, accRes] = await Promise.all([
+            fetch('/api/sistema/stock?tipo=repuestos').then(r => r.json()),
+            fetch('/api/sistema/stock?tipo=accesorios').then(r => r.json()),
+          ])
+          const allStock: StockItem[] = [...(repRes?.items ?? []), ...(accRes?.items ?? [])]
+          for (const item of productItems) {
+            const stockItem = allStock.find(s => s.id === item.refId)
+            if (!stockItem) continue
+            const nuevoStock = Math.max(0, (stockItem.stock ?? 0) - item.cantidad)
+            await fetch('/api/sistema/stock', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...stockItem, stock: nuevoStock }),
+            })
+            stockDescuentos.push(`${item.nombre} ×${item.cantidad}`)
+          }
+        } catch { /* silencioso — no bloquea la entrega */ }
+      }
+
       // Mark order as Entregado + log historial
-      const entry = mkEntry('estado', `Equipo entregado. Venta registrada en reportes (${orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}).`, currentUser)
+      const stockLog = stockDescuentos.length > 0
+        ? ` · Stock descontado: ${stockDescuentos.join(', ')}.`
+        : ''
+      const entry = mkEntry('estado', `Equipo entregado. Venta registrada en reportes (${orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}).${stockLog}`, currentUser)
       const newHist = [...(orden.historial ?? []), entry]
       await fetch(`/api/sistema/ordenes/${orden.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...orden, imagenes, estado: 'Entregado' as EstadoOrden, metodoPago: entregaMetodoPago, montoCobrado: entregaMonto, historial: newHist }),
+        body: JSON.stringify({ ...orden, imagenes, estado: 'Entregado' as EstadoOrden, metodoPago: entregaMetodoPago, montoCobrado: entregaMonto, garantia: entregaGarantia, diasGarantia: entregaGarantia ? entregaDiasGarantia : 0, historial: newHist }),
       })
       setShowEntregaConfirm(false)
+      setFacturaOrden({ ...orden, montoCobrado: entregaMonto, metodoPago: entregaMetodoPago })
+      setShowFacturaPrompt(true)
       onRefresh()
     } catch (e) {
       alert(`Error al registrar la venta: ${String(e)}`)
@@ -1113,12 +1336,13 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
     setQuickCosto(0)
   }
 
-  const addProductoToOrden = async (stockOverride?: StockItem, gastoId?: string) => {
+  const addProductoToOrden = async (stockOverride?: StockItem, gastoId?: string, noStockUpdate?: boolean) => {
     const prod = stockOverride ?? selectedProd
     if (!prod) return
-    // Check stock — if 0 and no override, show quick-buy form instead
-    if (!stockOverride && prod.stock <= 0) {
+    // Check stock — if 0 and no override/skip, mostrar modal de reposición
+    if (!stockOverride && !noStockUpdate && prod.stock <= 0) {
       setShowQuickBuy(true)
+      setQuickBuyStep('choose')
       setQuickCosto(prod.costoUnitario)
       setQuickProveedor(prod.proveedor ?? '')
       return
@@ -1141,15 +1365,16 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...orden, imagenes, ordenItems: newItems }),
     })
-    // Deduct stock immediately
-    const newStock = Math.max((prod.stock ?? 0) - prodCantidad, 0)
-    await fetch(`/api/sistema/stock/${prod.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...prod, stock: newStock, costoTotalARS: newStock * prod.costoUnitario }),
-    })
-    // Refresh local stock list
-    setStockItems(prev => prev.map(s => s.id === prod.id ? { ...s, stock: newStock } : s))
+    // Deduct stock (unless explicitly skipped)
+    if (!noStockUpdate) {
+      const newStock = Math.max((prod.stock ?? 0) - prodCantidad, 0)
+      await fetch(`/api/sistema/stock/${prod.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...prod, stock: newStock, costoTotalARS: newStock * prod.costoUnitario }),
+      })
+      setStockItems(prev => prev.map(s => s.id === prod.id ? { ...s, stock: newStock } : s))
+    }
     onRefresh()
     resetProdForm()
   }
@@ -1206,12 +1431,13 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
     setShowServQuickBuy(false); setServQuickProveedor(''); setServQuickCosto(0)
   }
 
-  const addServicioToOrden = async (repOverride?: StockItem, gastoId?: string) => {
+  const addServicioToOrden = async (repOverride?: StockItem, gastoId?: string, noStockUpdate?: boolean) => {
     if (!selectedServ) return
     const rep = repOverride ?? selectedServRep
-    // Si hay repuesto vinculado y stock = 0, mostrar compra rápida
-    if (!repOverride && rep && rep.stock <= 0) {
+    // Si hay repuesto vinculado y stock = 0, mostrar modal de reposición
+    if (!repOverride && !noStockUpdate && rep && rep.stock <= 0) {
       setShowServQuickBuy(true)
+      setServQuickBuyStep('choose')
       setServQuickCosto(rep.costoUnitario)
       setServQuickProveedor(rep.proveedor ?? '')
       return
@@ -1233,8 +1459,8 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...orden, imagenes, ordenItems: newItems }),
     })
-    // Descontar stock del repuesto vinculado
-    if (rep) {
+    // Descontar stock del repuesto vinculado (a menos que se indique no hacerlo)
+    if (rep && !noStockUpdate) {
       const newStock = Math.max((rep.stock ?? 0) - servRepCantidad, 0)
       await fetch(`/api/sistema/stock/${rep.id}`, {
         method: 'PUT',
@@ -1538,6 +1764,14 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                   📞 {orden.telefonoCliente}
                 </div>
               )}
+              <button
+                onClick={() => setHistorialOpen(true)}
+                style={{
+                  marginTop: 8, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                  background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.30)',
+                  color: '#60a5fa', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}
+              >📋 Ver historial</button>
             </div>
           </div>
         </div>
@@ -1552,7 +1786,10 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               fontSize: 28,
             }}>📱</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 4 }}>{orden.modeloEquipo || '—'}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 2 }}>{orden.modeloEquipo || '—'}</div>
+              {(orden as any).colorEquipo && (
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>🎨 {(orden as any).colorEquipo}</div>
+              )}
               <div style={{ marginBottom: 6 }}>
                 {editingImei ? (
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
@@ -1712,6 +1949,50 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               <div style={{ ...valSt, color: C.muted, fontSize: 12 }}>{orden.notas}</div>
             </div>
           )}
+
+          {/* Checklist de funciones al ingreso */}
+          {(orden as any).funciones && (orden as any).modeloEquipo && (() => {
+            const fns: ChecklistFunciones = (orden as any).funciones
+            const modelo: string = (orden as any).modeloEquipo
+            const cameras = getCameras(modelo)
+            const { ok, total } = funcionesOk(fns, modelo)
+            const pct = total > 0 ? Math.round((ok / total) * 100) : 0
+            const faults = ALL_FUNCION_KEYS.filter(k => !fns[k])
+            const camFaults = cameras.filter(z => !fns.camaras?.includes(z))
+            if (total === 0) return null
+            return (
+              <div style={{ gridColumn: 'span 2' }}>
+                <div style={labelSt}>Estado funcional al ingreso</div>
+                {/* Barra de progreso */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : pct >= 70 ? COLOR : '#ef4444', borderRadius: 4 }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: pct === 100 ? '#4ade80' : pct >= 70 ? COLOR : '#ef4444', whiteSpace: 'nowrap' }}>
+                    {ok}/{total} OK
+                  </span>
+                </div>
+                {/* Tiles de fallas */}
+                {(faults.length > 0 || camFaults.length > 0) && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {faults.map(k => (
+                      <span key={k} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 5, fontWeight: 700, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                        ✗ {FUNCION_META[k].label}
+                      </span>
+                    ))}
+                    {camFaults.map(z => (
+                      <span key={z} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 5, fontWeight: 700, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                        ✗ Cámara {z}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {faults.length === 0 && camFaults.length === 0 && (
+                  <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>✓ Todas las funciones OK al ingreso</div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </div>
 
@@ -1801,57 +2082,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               </div>
             )}
 
-            {/* Quick-buy form when stock = 0 */}
-            {selectedProd && showQuickBuy && (
-              <div style={{ marginTop: 4, marginBottom: 10, padding: '12px', borderRadius: 8, background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.35)' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', marginBottom: 10 }}>
-                  ⚠ Sin stock — Registrar compra de repuesto
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>PROVEEDOR</div>
-                    <ProveedorCombo value={quickProveedor} onChange={setQuickProveedor} proveedores={proveedoresList} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>CANTIDAD</div>
-                    <input
-                      type="number" min={1} value={prodCantidad}
-                      onChange={e => setProdCantidad(parseInt(e.target.value) || 1)}
-                      style={{ ...inputSt, fontSize: 12 }}
-                    />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>COSTO UNIT. (ARS)</div>
-                    <input
-                      type="number" min={0} value={quickCosto}
-                      onChange={e => setQuickCosto(parseFloat(e.target.value) || 0)}
-                      style={{ ...inputSt, fontSize: 12 }}
-                    />
-                  </div>
-                </div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 8, padding: '6px 8px', borderRadius: 5, background: 'rgba(251,146,60,0.06)' }}>
-                  Se actualizará el stock de <strong style={{ color: C.text }}>{selectedProd.repuesto} {selectedProd.modelo}</strong> con {prodCantidad} unidad{prodCantidad !== 1 ? 'es' : ''} comprada{prodCantidad !== 1 ? 's' : ''} a {quickProveedor || '—'}.
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={quickBuyAndAdd}
-                    disabled={quickSaving}
-                    style={{
-                      flex: 1, padding: '7px', borderRadius: 6, border: 'none',
-                      background: quickSaving ? 'var(--border)' : '#fb923c',
-                      color: quickSaving ? C.muted : '#000', fontWeight: 700, fontSize: 12,
-                      cursor: quickSaving ? 'not-allowed' : 'pointer',
-                    }}
-                  >{quickSaving ? 'Guardando...' : '🛒 Registrar compra y agregar'}</button>
-                  <button
-                    onClick={() => setShowQuickBuy(false)}
-                    style={{ padding: '7px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'none', color: C.muted, fontSize: 12, cursor: 'pointer' }}
-                  >← Volver</button>
-                </div>
-              </div>
-            )}
-
-            {!showQuickBuy && (
+            {selectedProd && !showQuickBuy && (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   onClick={() => addProductoToOrden()}
@@ -1997,71 +2228,19 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               </>
             )}
 
-            {/* Quick-buy cuando stock del repuesto = 0 */}
-            {selectedServ && showServQuickBuy && selectedServRep && (
-              <div style={{ marginTop: 4, marginBottom: 10, padding: '12px', borderRadius: 8, background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.35)' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', marginBottom: 10 }}>
-                  ⚠ Sin stock — Registrar compra de repuesto
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>PROVEEDOR</div>
-                    <ProveedorCombo value={servQuickProveedor} onChange={setServQuickProveedor} proveedores={proveedoresList} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>CANTIDAD</div>
-                    <input
-                      type="number" min={1} value={servRepCantidad}
-                      onChange={e => setServRepCantidad(parseInt(e.target.value) || 1)}
-                      style={{ ...inputSt, fontSize: 12 }}
-                    />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>COSTO UNIT. (ARS)</div>
-                    <input
-                      type="number" min={0} value={servQuickCosto}
-                      onChange={e => setServQuickCosto(parseFloat(e.target.value) || 0)}
-                      style={{ ...inputSt, fontSize: 12 }}
-                    />
-                  </div>
-                </div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 8, padding: '6px 8px', borderRadius: 5, background: 'rgba(251,146,60,0.06)' }}>
-                  Se actualizará el stock de <strong style={{ color: C.text }}>{selectedServRep.repuesto} {selectedServRep.modelo}</strong> con {servRepCantidad} unidad{servRepCantidad !== 1 ? 'es' : ''} comprada{servRepCantidad !== 1 ? 's' : ''} a {servQuickProveedor || '—'}.
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={servQuickBuyAndAdd}
-                    disabled={servQuickSaving}
-                    style={{
-                      flex: 1, padding: '7px', borderRadius: 6, border: 'none',
-                      background: servQuickSaving ? 'var(--border)' : '#fb923c',
-                      color: servQuickSaving ? C.muted : '#000', fontWeight: 700, fontSize: 12,
-                      cursor: servQuickSaving ? 'not-allowed' : 'pointer',
-                    }}
-                  >{servQuickSaving ? 'Guardando...' : '🛒 Registrar compra y agregar'}</button>
-                  <button
-                    onClick={() => setShowServQuickBuy(false)}
-                    style={{ padding: '7px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'none', color: C.muted, fontSize: 12, cursor: 'pointer' }}
-                  >← Volver</button>
-                </div>
-              </div>
-            )}
-
-            {!showServQuickBuy && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => addServicioToOrden()}
-                  disabled={!selectedServ}
-                  style={{
-                    flex: 1, padding: '7px', borderRadius: 6, border: 'none',
-                    background: !selectedServ ? 'var(--border)' : COLOR,
-                    color: !selectedServ ? C.muted : '#000', fontWeight: 700, fontSize: 12,
-                    cursor: !selectedServ ? 'not-allowed' : 'pointer',
-                  }}
-                >✓ Agregar{selectedServRep ? ' y descontar stock' : ''}</button>
-                <button onClick={resetServForm} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'none', color: C.muted, fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => addServicioToOrden()}
+                disabled={!selectedServ}
+                style={{
+                  flex: 1, padding: '7px', borderRadius: 6, border: 'none',
+                  background: !selectedServ ? 'var(--border)' : COLOR,
+                  color: !selectedServ ? C.muted : '#000', fontWeight: 700, fontSize: 12,
+                  cursor: !selectedServ ? 'not-allowed' : 'pointer',
+                }}
+              >✓ Agregar{selectedServRep ? ' y descontar stock' : ''}</button>
+              <button onClick={resetServForm} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'none', color: C.muted, fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
+            </div>
           </div>
         )}
 
@@ -2600,9 +2779,59 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                 </div>
               </div>
 
+              {/* Garantía */}
+              <div style={{
+                marginTop: 14, padding: '12px 14px', borderRadius: 10,
+                background: entregaGarantia ? 'rgba(74,222,128,0.08)' : 'var(--hover-bg)',
+                border: `1px solid ${entregaGarantia ? 'rgba(74,222,128,0.3)' : 'var(--border)'}`,
+                transition: 'all 0.2s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: entregaGarantia ? 10 : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14 }}>🛡️</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: entregaGarantia ? COLOR : 'var(--text-secondary)' }}>
+                      Incluye garantía
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => setEntregaGarantia(v => !v)}
+                    style={{
+                      width: 38, height: 22, borderRadius: 11,
+                      background: entregaGarantia ? COLOR : 'var(--border)',
+                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', top: 3,
+                      left: entregaGarantia ? 19 : 3,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: '#fff', transition: 'left 0.2s',
+                    }} />
+                  </div>
+                </div>
+                {entregaGarantia && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 12, color: C.muted }}>Días de garantía:</span>
+                    <input
+                      type="number" min={1} max={3650}
+                      value={entregaDiasGarantia}
+                      onChange={e => setEntregaDiasGarantia(parseInt(e.target.value) || 90)}
+                      style={{
+                        width: 80, padding: '4px 8px', borderRadius: 6, textAlign: 'center',
+                        background: 'var(--hover-bg)', border: '1px solid var(--border)',
+                        color: COLOR, fontSize: 14, fontWeight: 700, outline: 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: C.muted }}>
+                      → vence {new Date(Date.now() + entregaDiasGarantia * 86400000).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Warning */}
               <div style={{
-                marginTop: 14, padding: '10px 12px', borderRadius: 8,
+                marginTop: 10, padding: '10px 12px', borderRadius: 8,
                 background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)',
                 fontSize: 11, color: '#4ade80', lineHeight: 1.5,
               }}>
@@ -2645,7 +2874,75 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
         </>
       )}
 
+      {/* ─── Factura prompt modal ────────────────────────────────────────── */}
+      {showFacturaPrompt && facturaOrden && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 599, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setShowFacturaPrompt(false)}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 600, width: 360, borderRadius: 16,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>🧾 ¿Deseás generar factura?</div>
+              <div style={{ fontSize: 12, color: C.muted }}>Orden #{facturaOrden.nOrden} — {facturaOrden.nombreCliente}</div>
+            </div>
+            <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowFacturaPrompt(false)}
+                style={{ padding: '10px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+              >Sin factura</button>
+              <button
+                onClick={() => {
+                  printFacturaOrden({
+                    nOrden: facturaOrden.nOrden,
+                    nombreCliente: facturaOrden.nombreCliente,
+                    telefonoCliente: facturaOrden.telefonoCliente,
+                    modeloEquipo: facturaOrden.modeloEquipo,
+                    tipoServicio: facturaOrden.tipoServicio,
+                    montoCobrado: facturaOrden.montoCobrado,
+                    metodoPago: facturaOrden.metodoPago,
+                    ordenItems: (facturaOrden.ordenItems ?? []).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnitario: it.precioUnitario, subtotal: it.subtotal })),
+                  }, 'B')
+                  setShowFacturaPrompt(false)
+                }}
+                style={{ padding: '10px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+              >📄 Factura B</button>
+              <button
+                onClick={() => {
+                  printFacturaOrden({
+                    nOrden: facturaOrden.nOrden,
+                    nombreCliente: facturaOrden.nombreCliente,
+                    telefonoCliente: facturaOrden.telefonoCliente,
+                    modeloEquipo: facturaOrden.modeloEquipo,
+                    tipoServicio: facturaOrden.tipoServicio,
+                    montoCobrado: facturaOrden.montoCobrado,
+                    metodoPago: facturaOrden.metodoPago,
+                    ordenItems: (facturaOrden.ordenItems ?? []).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnitario: it.precioUnitario, subtotal: it.subtotal })),
+                  }, 'A')
+                  setShowFacturaPrompt(false)
+                }}
+                style={{ padding: '10px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
+              >📄 Factura A</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ─── Lightbox ────────────────────────────────────────────────────── */}
+      {historialOpen && (
+        <HistorialClienteModal
+          nombre={orden.nombreCliente}
+          telefono={orden.telefonoCliente ?? ''}
+          ordenActualId={orden.id}
+          onClose={() => setHistorialOpen(false)}
+        />
+      )}
+
       {lightboxSrc && (
         <div
           onClick={() => setLightboxSrc(null)}
@@ -2679,6 +2976,234 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
           />
         </div>
       )}
+
+      {/* ─── Modal: reponer stock al agregar producto a orden ──────────────── */}
+      {showQuickBuy && selectedProd && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 1300, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }}
+            onClick={() => { if (!quickSaving) { setShowQuickBuy(false); setQuickBuyStep('choose') } }}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 1301, width: 400, borderRadius: 16,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.8)', overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--row-border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 22 }}>📦</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Sin stock disponible</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                  {selectedProd.repuesto}{selectedProd.modelo ? ` ${selectedProd.modelo}` : ''} · Stock actual: <strong style={{ color: '#f87171' }}>0</strong>
+                </div>
+              </div>
+              <button
+                onClick={() => { if (!quickSaving) { setShowQuickBuy(false); setQuickBuyStep('choose') } }}
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', color: C.muted, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}
+              >✕</button>
+            </div>
+
+            {/* Step 1: Choose */}
+            {quickBuyStep === 'choose' && (
+              <div style={{ padding: '18px 20px 20px' }}>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>¿Cómo deseas proceder?</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button
+                    onClick={() => setQuickBuyStep('form')}
+                    style={{
+                      padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(96,165,250,0.4)',
+                      background: 'rgba(96,165,250,0.08)', cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(96,165,250,0.16)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(96,165,250,0.08)')}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.blue, marginBottom: 4 }}>📥 Agregar al stock primero</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>Registra la compra, actualiza el stock y descuenta al agregar a la orden.</div>
+                  </button>
+                  <button
+                    onClick={() => { setShowQuickBuy(false); setQuickBuyStep('choose'); addProductoToOrden(undefined, undefined, true) }}
+                    style={{
+                      padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border)',
+                      background: 'var(--surface2)', cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface2)')}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>➡ Continuar sin agregar</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>Agrega el producto a la orden sin modificar el stock.</div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Form */}
+            {quickBuyStep === 'form' && (
+              <div style={{ padding: '18px 20px 20px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: '0.06em' }}>DATOS DE LA COMPRA</div>
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>PROVEEDOR</div>
+                  <ProveedorCombo value={quickProveedor} onChange={setQuickProveedor} proveedores={proveedoresList} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>CANTIDAD</div>
+                    <input
+                      type="number" min={1} value={prodCantidad}
+                      onChange={e => setProdCantidad(parseInt(e.target.value) || 1)}
+                      style={{ ...inputSt, fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>COSTO UNIT. (ARS)</div>
+                    <input
+                      type="number" min={0} value={quickCosto}
+                      onChange={e => setQuickCosto(parseFloat(e.target.value) || 0)}
+                      style={{ ...inputSt, fontSize: 12 }}
+                    />
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: C.muted, marginBottom: 14, padding: '7px 10px', borderRadius: 6, background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.15)' }}>
+                  Se agregará <strong style={{ color: C.text }}>{prodCantidad}</strong> unidad{prodCantidad !== 1 ? 'es' : ''} de <strong style={{ color: C.text }}>{selectedProd.repuesto}{selectedProd.modelo ? ` ${selectedProd.modelo}` : ''}</strong> al stock{quickProveedor ? ` (${quickProveedor})` : ''} y se descontará 1 al agregar a la orden.
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={quickBuyAndAdd}
+                    disabled={quickSaving}
+                    style={{
+                      flex: 1, padding: '9px', borderRadius: 8, border: 'none',
+                      background: quickSaving ? 'var(--border)' : C.blue,
+                      color: quickSaving ? C.muted : '#000', fontWeight: 700, fontSize: 12,
+                      cursor: quickSaving ? 'not-allowed' : 'pointer',
+                    }}
+                  >{quickSaving ? 'Guardando…' : '🛒 Registrar compra y agregar'}</button>
+                  <button
+                    onClick={() => setQuickBuyStep('choose')}
+                    style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: C.muted, fontSize: 12, cursor: 'pointer' }}
+                  >← Atrás</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ─── Modal: reponer stock al agregar repuesto vinculado a servicio ──── */}
+      {showServQuickBuy && selectedServRep && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 1300, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }}
+            onClick={() => { if (!servQuickSaving) { setShowServQuickBuy(false); setServQuickBuyStep('choose') } }}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 1301, width: 400, borderRadius: 16,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.8)', overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--row-border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 22 }}>🔧</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Sin stock de repuesto</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                  {selectedServRep.repuesto}{selectedServRep.modelo ? ` ${selectedServRep.modelo}` : ''} · Stock actual: <strong style={{ color: '#f87171' }}>0</strong>
+                </div>
+              </div>
+              <button
+                onClick={() => { if (!servQuickSaving) { setShowServQuickBuy(false); setServQuickBuyStep('choose') } }}
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', color: C.muted, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}
+              >✕</button>
+            </div>
+
+            {/* Step 1: Choose */}
+            {servQuickBuyStep === 'choose' && (
+              <div style={{ padding: '18px 20px 20px' }}>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>¿Cómo deseas proceder con el repuesto vinculado?</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button
+                    onClick={() => setServQuickBuyStep('form')}
+                    style={{
+                      padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(96,165,250,0.4)',
+                      background: 'rgba(96,165,250,0.08)', cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(96,165,250,0.16)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(96,165,250,0.08)')}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.blue, marginBottom: 4 }}>📥 Agregar al stock primero</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>Registra la compra, actualiza el stock y descuenta al agregar el servicio.</div>
+                  </button>
+                  <button
+                    onClick={() => { setShowServQuickBuy(false); setServQuickBuyStep('choose'); addServicioToOrden(undefined, undefined, true) }}
+                    style={{
+                      padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border)',
+                      background: 'var(--surface2)', cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface2)')}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>➡ Continuar sin agregar</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>Agrega el servicio a la orden sin modificar el stock del repuesto.</div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Form */}
+            {servQuickBuyStep === 'form' && (
+              <div style={{ padding: '18px 20px 20px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: '0.06em' }}>DATOS DE LA COMPRA</div>
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>PROVEEDOR</div>
+                  <ProveedorCombo value={servQuickProveedor} onChange={setServQuickProveedor} proveedores={proveedoresList} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>CANTIDAD</div>
+                    <input
+                      type="number" min={1} value={servRepCantidad}
+                      onChange={e => setServRepCantidad(parseInt(e.target.value) || 1)}
+                      style={{ ...inputSt, fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>COSTO UNIT. (ARS)</div>
+                    <input
+                      type="number" min={0} value={servQuickCosto}
+                      onChange={e => setServQuickCosto(parseFloat(e.target.value) || 0)}
+                      style={{ ...inputSt, fontSize: 12 }}
+                    />
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: C.muted, marginBottom: 14, padding: '7px 10px', borderRadius: 6, background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.15)' }}>
+                  Se agregará <strong style={{ color: C.text }}>{servRepCantidad}</strong> unidad{servRepCantidad !== 1 ? 'es' : ''} de <strong style={{ color: C.text }}>{selectedServRep.repuesto}{selectedServRep.modelo ? ` ${selectedServRep.modelo}` : ''}</strong> al stock{servQuickProveedor ? ` (${servQuickProveedor})` : ''} y se descontará {servRepCantidad} al agregar el servicio.
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={servQuickBuyAndAdd}
+                    disabled={servQuickSaving}
+                    style={{
+                      flex: 1, padding: '9px', borderRadius: 8, border: 'none',
+                      background: servQuickSaving ? 'var(--border)' : C.blue,
+                      color: servQuickSaving ? C.muted : '#000', fontWeight: 700, fontSize: 12,
+                      cursor: servQuickSaving ? 'not-allowed' : 'pointer',
+                    }}
+                  >{servQuickSaving ? 'Guardando…' : '🛒 Registrar compra y agregar'}</button>
+                  <button
+                    onClick={() => setServQuickBuyStep('choose')}
+                    style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: C.muted, fontSize: 12, cursor: 'pointer' }}
+                  >← Atrás</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -2696,14 +3221,17 @@ function buildEmpty(dolar: number): FormState {
     telefonoCliente: '',
     mailCliente: '',
     categoriaDispositivo: 'iPhone',
+    colorEquipo: '',
     imei: '',
     modeloEquipo: '',
+    funciones: emptyChecklist(),
     descripcionFalla: '',
     accesorios: '',
     contrasena: '',
     tecnico: 'Ronald',
     fechaEntrega: '',
     garantia: false,
+    diasGarantia: 90,
     tipoServicio: 'Cambio pantalla',
     proveedor: '',
     tipoRepuesto: '',
@@ -2746,6 +3274,281 @@ function recalc(f: FormState, dolar: number): FormState {
 // ─── API Response ─────────────────────────────────────────────────────────────
 interface ApiResponse { items: Orden[]; nextOrden: number; dolar: number }
 
+// ─── BulkEntregaModal ────────────────────────────────────────────────────────
+interface BulkEntregaItem {
+  orden: Orden
+  monto: number
+  metodoPago: MetodoPago
+  status: 'pendiente' | 'procesando' | 'ok' | 'error'
+  error?: string
+}
+
+function BulkEntregaModal({ ordenes, dolar, currentUser, logoLocal, terminosLocal, onClose, onDone }: {
+  ordenes: Orden[]
+  dolar: number
+  currentUser: string
+  logoLocal: string
+  terminosLocal: string
+  onClose: () => void
+  onDone: () => void
+}) {
+  const [items, setItems] = useState<BulkEntregaItem[]>(() =>
+    ordenes.map(o => {
+      const totalItems = (o.ordenItems ?? []).reduce((s, it) => s + (it.subtotal ?? 0), 0)
+      return {
+        orden: o,
+        monto: totalItems > 0 ? totalItems : (o.equivARS || o.montoCobrado || 0),
+        metodoPago: (o.metodoPago as MetodoPago) ?? 'Efectivo',
+        status: 'pendiente',
+      }
+    })
+  )
+  const [globalMetodo, setGlobalMetodo] = useState<MetodoPago | ''>('')
+  const [running, setRunning] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const setItemMonto  = (i: number, v: number)          => setItems(p => p.map((x, j) => j === i ? { ...x, monto: v } : x))
+  const setItemMetodo = (i: number, v: MetodoPago)      => setItems(p => p.map((x, j) => j === i ? { ...x, metodoPago: v } : x))
+
+  const applyGlobalMetodo = () => {
+    if (!globalMetodo) return
+    setItems(p => p.map(x => ({ ...x, metodoPago: globalMetodo as MetodoPago })))
+  }
+
+  const procesarEntrega = async (item: BulkEntregaItem): Promise<void> => {
+    const { orden, monto, metodoPago } = item
+    const equivARS = orden.moneda === 'USD $' ? Math.round(monto * dolar) : monto
+    const comisionMP = metodoPago === 'Mercado Pago' ? Math.round(equivARS * 0.045) : 0
+    const iibb = Math.round(equivARS * 0.04)
+
+    if (orden.tipo === 'Cliente final') {
+      await fetch('/api/sistema/ventas-csf', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fecha: orden.fecha, nOrden: orden.nOrden,
+          nombreCliente: orden.nombreCliente, modeloEquipo: orden.modeloEquipo,
+          tipoServicio: orden.tipoServicio ?? '',
+          ticket: equivARS, costoRepuestoUSD: orden.costoRepuestoUSD ?? 0,
+          precioDolar: dolar, costoRepuestoPesos: Math.round((orden.costoRepuestoUSD ?? 0) * dolar),
+          comisionMP, iibb, montoNetoRecibido: equivARS,
+          comisionVendedora: orden.comisionVendedora ?? 0,
+          comisionTecnico: orden.comisionTecnico ?? 0,
+          gananciaReal: equivARS - Math.round((orden.costoRepuestoUSD ?? 0) * dolar) - comisionMP - iibb - (orden.comisionVendedora ?? 0) - (orden.comisionTecnico ?? 0),
+          metodoPago,
+        }),
+      })
+    } else {
+      await fetch('/api/sistema/ventas-gremio', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fecha: orden.fecha, nOrden: orden.nOrden,
+          cliente: orden.nombreCliente, modeloEquipo: orden.modeloEquipo,
+          tipoReparacion: orden.tipoServicio ?? '',
+          montoCobrado: monto, moneda: orden.moneda ?? 'ARS $',
+          equivARS, montoNeto: equivARS, comisionMP, iibb,
+          comisionTecnico: orden.comisionTecnico ?? 0,
+          costoRepuestos: orden.costoRepuestos ?? 0,
+          repuestosUsados: orden.repuestosUsados ?? '',
+          gananciaReal: equivARS - (orden.costoRepuestos ?? 0) - comisionMP - iibb - (orden.comisionTecnico ?? 0),
+          metodoPago,
+        }),
+      })
+    }
+
+    const entrada: HistorialItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      tipo: 'estado',
+      descripcion: `Entregado (entrega masiva). Venta registrada (${orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}).`,
+      fecha: new Date().toISOString(),
+      usuario: currentUser,
+    }
+    await fetch(`/api/sistema/ordenes/${orden.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...orden, montoCobrado: monto, metodoPago, estado: 'Entregado', historial: [...(orden.historial ?? []), entrada] }),
+    })
+  }
+
+  const handleConfirmar = async () => {
+    setRunning(true)
+    for (let i = 0; i < items.length; i++) {
+      setItems(p => p.map((x, j) => j === i ? { ...x, status: 'procesando' } : x))
+      try {
+        await procesarEntrega(items[i])
+        setItems(p => p.map((x, j) => j === i ? { ...x, status: 'ok' } : x))
+      } catch (e) {
+        setItems(p => p.map((x, j) => j === i ? { ...x, status: 'error', error: String(e) } : x))
+      }
+    }
+    setRunning(false)
+    setDone(true)
+  }
+
+  const total = items.reduce((s, it) => {
+    const eq = it.orden.moneda === 'USD $' ? it.monto * dolar : it.monto
+    return s + eq
+  }, 0)
+  const okCount  = items.filter(x => x.status === 'ok').length
+  const errCount = items.filter(x => x.status === 'error').length
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2400, padding: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, width: 700, maxWidth: '96vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>🚚 Entrega masiva — {ordenes.length} orden{ordenes.length !== 1 ? 'es' : ''}</div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Confirmá monto y método de pago para cada orden, luego entregá todo a la vez</div>
+          </div>
+          {!running && <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 22, lineHeight: 1 }}>✕</button>}
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Método global */}
+          {!done && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'var(--surface2)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 12, color: C.muted, whiteSpace: 'nowrap' }}>Aplicar a todos:</span>
+              <select value={globalMetodo} onChange={e => setGlobalMetodo(e.target.value as MetodoPago)} style={{ ...inputSt, flex: 1, fontSize: 12 }}>
+                <option value="">— Elegir método —</option>
+                {METODOS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <button onClick={applyGlobalMetodo} disabled={!globalMetodo} style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: globalMetodo ? COLOR : '#aaa', color: '#000', fontSize: 12, fontWeight: 700, cursor: globalMetodo ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+                ✓ Aplicar
+              </button>
+            </div>
+          )}
+
+          {/* Lista de órdenes */}
+          {items.map((item, i) => {
+            const o = item.orden
+            const totalItems = (o.ordenItems ?? []).reduce((s, it) => s + (it.subtotal ?? 0), 0)
+            const statusColor = item.status === 'ok' ? '#4ade80' : item.status === 'error' ? '#f87171' : item.status === 'procesando' ? '#fbbf24' : 'var(--border)'
+            const statusIcon  = item.status === 'ok' ? '✓' : item.status === 'error' ? '✗' : item.status === 'procesando' ? '⟳' : '○'
+            return (
+              <div key={o.id} style={{ border: `1.5px solid ${statusColor}`, borderRadius: 10, padding: '12px 16px', transition: 'border-color 0.2s' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  {/* Status indicator */}
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${statusColor}20`, border: `2px solid ${statusColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: statusColor, flexShrink: 0, marginTop: 2 }}>
+                    {item.status === 'procesando' ? <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span> : statusIcon}
+                  </div>
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 12, color: C.text }}>#{o.nOrden}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{o.nombreCliente}</span>
+                      <span style={{ fontSize: 11, color: C.muted }}>{o.modeloEquipo}</span>
+                      <Badge label={o.tipo} color={o.tipo === 'Cliente final' ? COLOR : C.blue} />
+                    </div>
+                    {item.error && <div style={{ fontSize: 11, color: '#f87171', marginBottom: 4 }}>⚠️ {item.error}</div>}
+                    {totalItems > 0 && (
+                      <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>
+                        Items: {(o.ordenItems ?? []).map(it => `${it.nombre} × ${it.cantidad}`).join(', ')}
+                      </div>
+                    )}
+                    {/* Monto + Método — editable solo si no está procesado */}
+                    {!done && item.status === 'pendiente' ? (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ fontSize: 11, color: C.muted }}>Monto:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {o.moneda === 'USD $' && <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a' }}>U$D</span>}
+                            {o.moneda !== 'USD $' && <span style={{ fontSize: 11, fontWeight: 700, color: '#2563eb' }}>$</span>}
+                            <input
+                              type="number"
+                              value={item.monto || ''}
+                              onChange={e => setItemMonto(i, Number(e.target.value))}
+                              style={{ ...inputSt, width: 100, fontSize: 12, padding: '4px 8px', fontFamily: 'monospace' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ fontSize: 11, color: C.muted }}>Pago:</span>
+                          <select value={item.metodoPago} onChange={e => setItemMetodo(i, e.target.value as MetodoPago)} style={{ ...inputSt, fontSize: 11, padding: '4px 8px' }}>
+                            {METODOS.map(m => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                        </div>
+                        {o.moneda === 'USD $' && (
+                          <span style={{ fontSize: 10, color: C.muted }}>≈ {fmtARS(item.monto * dolar)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: C.text }}>
+                        <span style={{ fontWeight: 700 }}>{o.moneda === 'USD $' ? `U$D ${item.monto}` : fmtARS(item.monto)}</span>
+                        <span style={{ color: C.muted }}> · {item.metodoPago}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Print button (available after done) */}
+                  {item.status === 'ok' && (
+                    <button
+                      onClick={() => printOrden({ ...o, montoCobrado: item.monto, metodoPago: item.metodoPago, estado: 'Entregado' }, logoLocal, terminosLocal)}
+                      title="Imprimir orden"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 18, padding: '4px 6px', borderRadius: 6, flexShrink: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.color = C.blue)}
+                      onMouseLeave={e => (e.currentTarget.style.color = C.muted)}
+                    >🖨</button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+          {done ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 13 }}>
+                {errCount === 0
+                  ? <span style={{ color: '#4ade80', fontWeight: 700 }}>✓ {okCount} orden{okCount !== 1 ? 'es' : ''} entregada{okCount !== 1 ? 's' : ''} correctamente</span>
+                  : <span style={{ color: '#f87171', fontWeight: 700 }}>⚠️ {okCount} OK · {errCount} con error</span>
+                }
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => {
+                    const okItems = items.filter(x => x.status === 'ok')
+                    okItems.forEach(item => printOrden({ ...item.orden, montoCobrado: item.monto, metodoPago: item.metodoPago, estado: 'Entregado' }, logoLocal, terminosLocal))
+                  }}
+                  style={{ padding: '9px 18px', borderRadius: 8, border: `1px solid ${C.blue}44`, background: `${C.blue}12`, color: C.blue, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                >
+                  🖨 Imprimir todas
+                </button>
+                <button
+                  onClick={() => { onDone(); onClose() }}
+                  style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#4ade80', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                >
+                  ✓ Cerrar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 12, color: C.muted }}>
+                Total estimado: <span style={{ fontWeight: 700, color: C.text }}>{fmtARS(total)}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={onClose} disabled={running} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmar}
+                  disabled={running}
+                  style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: running ? '#aaa' : '#4ade80', color: '#000', fontWeight: 700, fontSize: 13, cursor: running ? 'not-allowed' : 'pointer' }}
+                >
+                  {running ? 'Procesando…' : `✓ Entregar ${items.length} orden${items.length !== 1 ? 'es' : ''}`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function OrdenesView() {
   const { data, loading, refresh } = useApi<ApiResponse>('/api/sistema/ordenes')
@@ -2776,6 +3579,43 @@ export default function OrdenesView() {
     return 'Ronald'
   })
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  // ─── Configuración inline ────────────────────────────────────────────────────
+  const [configOpen, setConfigOpen] = useState(false)
+
+  // ─── Selección masiva ────────────────────────────────────────────────────────
+  const [selectMode, setSelectMode]         = useState(false)
+  const [selectedIds, setSelectedIds]       = useState<Set<string>>(new Set())
+  const [bulkEntregaOpen, setBulkEntregaOpen] = useState(false)
+  const [bulkMoverEstado, setBulkMoverEstado] = useState('')
+  const [bulkMoverOpen, setBulkMoverOpen]     = useState(false)
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const selectAll = () => setSelectedIds(new Set(sorted.map(o => o.id)))
+  const clearSelection = () => { setSelectedIds(new Set()); setSelectMode(false) }
+
+  const bulkCambiarEstado = async () => {
+    if (!bulkMoverEstado || selectedIds.size === 0) return
+    const ordenesSel = list.filter(o => selectedIds.has(o.id))
+    await Promise.all(ordenesSel.map(o => {
+      const entrada: HistorialItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        tipo: 'estado',
+        descripcion: `Estado cambiado de "${o.estado}" a "${bulkMoverEstado}" (acción masiva)`,
+        fecha: new Date().toISOString(),
+        usuario: currentUser,
+      }
+      return fetch(`/api/sistema/ordenes/${o.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...o, estado: bulkMoverEstado, historial: [...(o.historial ?? []), entrada] }),
+      })
+    }))
+    setBulkMoverOpen(false)
+    setBulkMoverEstado('')
+    clearSelection()
+    await refresh()
+  }
 
   const dolar = data?.dolar ?? 1200
   const list = data?.items ?? []
@@ -3099,6 +3939,33 @@ export default function OrdenesView() {
           placeholder="Buscar por cliente, modelo, IMEI, N°orden..."
           style={{ ...inputSt, maxWidth: 400 }}
         />
+        {activeTab !== 'Entregado' && (
+          <button
+            onClick={() => { setSelectMode(s => !s); if (selectMode) clearSelection() }}
+            style={{
+              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              border: `1px solid ${selectMode ? COLOR : 'var(--border)'}`,
+              background: selectMode ? `${COLOR}18` : 'var(--surface2)',
+              color: selectMode ? COLOR : C.muted,
+              display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s', whiteSpace: 'nowrap',
+            }}
+          >
+            {selectMode ? '✕ Cancelar selección' : '☑ Seleccionar'}
+          </button>
+        )}
+        <button
+          onClick={() => setConfigOpen(true)}
+          title="Configuración de órdenes de trabajo"
+          style={{
+            padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid var(--border)',
+            background: 'var(--surface2)',
+            color: C.muted,
+            display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s', whiteSpace: 'nowrap',
+          }}
+        >
+          ⚙ Configurar
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
           <span style={{ fontSize: 11, color: C.muted }}>Trabajando como:</span>
           <select
@@ -3192,10 +4059,82 @@ export default function OrdenesView() {
             </button>
           )
         })}
+
+        {/* Separador + pestaña Entregados */}
+        <div style={{ width: 1, background: 'var(--border)', margin: '4px 4px', alignSelf: 'stretch' }} />
+        {(() => {
+          const cnt = countByEstado('Entregado')
+          const isActive = activeTab === 'Entregado'
+          const col = 'var(--text-secondary)'
+          return (
+            <button
+              onClick={() => setActiveTab('Entregado')}
+              style={{
+                padding: '8px 14px',
+                background: isActive ? 'var(--hover-bg)' : 'transparent',
+                border: 'none',
+                borderBottom: isActive ? `2px solid var(--text-secondary)` : '2px solid transparent',
+                borderRadius: '6px 6px 0 0',
+                color: isActive ? 'var(--text-primary)' : C.muted,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: isActive ? 700 : 400,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+                marginBottom: -1,
+              }}
+            >
+              ✓ Entregados
+              {cnt > 0 && (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: 10,
+                  background: isActive ? 'var(--surface2)' : 'var(--hover-bg)',
+                  color: isActive ? 'var(--text-primary)' : C.muted,
+                }}>
+                  {cnt}
+                </span>
+              )}
+            </button>
+          )
+        })()}
+
+        {/* Separador + pestaña Garantías */}
+        <div style={{ width: 1, background: 'var(--border)', margin: '4px 4px', alignSelf: 'stretch' }} />
+        {(() => {
+          const isActive = activeTab === 'garantias'
+          return (
+            <button
+              onClick={() => setActiveTab('garantias')}
+              style={{
+                padding: '8px 14px',
+                background: isActive ? 'rgba(74,222,128,0.08)' : 'transparent',
+                border: 'none',
+                borderBottom: isActive ? '2px solid #4ade80' : '2px solid transparent',
+                borderRadius: '6px 6px 0 0',
+                color: isActive ? '#4ade80' : C.muted,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: isActive ? 700 : 400,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+                marginBottom: -1,
+              }}
+            >
+              🛡️ Garantías
+            </button>
+          )
+        })()}
       </div>
 
       {/* Sort controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+      {activeTab !== 'garantias' && <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11, color: C.muted, marginRight: 2 }}>Ordenar:</span>
         {([
           { field: 'nOrden' as SortField, label: 'N° Orden' },
@@ -3233,10 +4172,80 @@ export default function OrdenesView() {
         <span style={{ fontSize: 11, color: C.muted, marginLeft: 4 }}>
           {sorted.length} orden{sorted.length !== 1 ? 'es' : ''}
         </span>
-      </div>
+      </div>}
 
-      {/* Orders table */}
-      {loading ? (
+      {/* Bulk action bar */}
+      {activeTab !== 'garantias' && selectMode && (
+        <div style={{ marginBottom: 10, padding: '10px 14px', background: `${COLOR}10`, border: `1.5px solid ${COLOR}44`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Conteo + select all */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: C.text, fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={selectedIds.size > 0 && selectedIds.size === sorted.length}
+                onChange={e => e.target.checked ? selectAll() : setSelectedIds(new Set())}
+                style={{ width: 15, height: 15, accentColor: COLOR, cursor: 'pointer' }}
+              />
+              Seleccionar todo
+            </label>
+            <span style={{ fontSize: 12, color: C.muted }}>
+              {selectedIds.size > 0
+                ? <span style={{ fontWeight: 700, color: COLOR }}>{selectedIds.size} seleccionada{selectedIds.size !== 1 ? 's' : ''}</span>
+                : <span>Ninguna seleccionada</span>
+              }
+            </span>
+          </div>
+
+          <div style={{ flex: 1 }} />
+
+          {/* Mover a estado */}
+          {selectedIds.size > 0 && (
+            <>
+              {!bulkMoverOpen ? (
+                <button
+                  onClick={() => setBulkMoverOpen(true)}
+                  style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: C.text, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                >
+                  🔄 Mover a estado
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <select
+                    value={bulkMoverEstado}
+                    onChange={e => setBulkMoverEstado(e.target.value)}
+                    style={{ ...inputSt, fontSize: 12, padding: '5px 10px', minWidth: 170 }}
+                  >
+                    <option value="">— Elegir estado —</option>
+                    {estadosOrdenConfig.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                  <button
+                    onClick={bulkCambiarEstado}
+                    disabled={!bulkMoverEstado}
+                    style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: bulkMoverEstado ? COLOR : '#aaa', color: '#000', fontSize: 12, fontWeight: 700, cursor: bulkMoverEstado ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
+                  >✓ Confirmar</button>
+                  <button onClick={() => { setBulkMoverOpen(false); setBulkMoverEstado('') }}
+                    style={{ padding: '6px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: C.muted, fontSize: 12, cursor: 'pointer' }}>✕</button>
+                </div>
+              )}
+
+              {/* Entregar masivo (solo en pestaña Salida) */}
+              {activeTab === 'Salida' && (
+                <button
+                  onClick={() => setBulkEntregaOpen(true)}
+                  style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: '#4ade80', color: '#000', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                >
+                  🚚 Entregar seleccionadas
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Garantías tab content */}
+      {activeTab === 'garantias' ? (
+        <GarantiasView />
+      ) : loading ? (
         <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Cargando...</div>
       ) : sorted.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40, color: C.muted, fontSize: 13 }}>
@@ -3247,6 +4256,16 @@ export default function OrdenesView() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
+                {selectMode && (
+                  <th style={{ padding: '9px 12px', textAlign: 'center', width: 40, borderBottom: '1px solid var(--border)' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size > 0 && selectedIds.size === sorted.length}
+                      onChange={e => e.target.checked ? selectAll() : setSelectedIds(new Set())}
+                      style={{ width: 15, height: 15, accentColor: COLOR, cursor: 'pointer' }}
+                    />
+                  </th>
+                )}
                 {['N°', 'PRIORIDAD', 'MODELO / IMEI', 'CLIENTE', 'TÉCNICO', 'TIPO', 'MONTO', 'ACCIONES'].map(h => (
                   <th key={h} style={{ padding: '9px 12px', textAlign: 'left', color: C.muted, fontWeight: 600, fontSize: 11, whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>
                     {h}
@@ -3258,13 +4277,27 @@ export default function OrdenesView() {
               {sorted.map((o, i) => {
                 const totalItems = (o.ordenItems ?? []).reduce((sum, it) => sum + (it.subtotal ?? 0), 0)
                 const monto = totalItems > 0 ? totalItems : (o.equivARS || o.montoCobrado)
+                const isSelected = selectedIds.has(o.id)
                 return (
                   <tr
                     key={o.id}
-                    style={{ borderBottom: i < sorted.length - 1 ? '1px solid var(--row-border)' : 'none', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--row-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
+                    style={{ borderBottom: i < sorted.length - 1 ? '1px solid var(--row-border)' : 'none', transition: 'background 0.1s', background: isSelected ? `${COLOR}0c` : '', cursor: selectMode ? 'pointer' : '' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--row-hover)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isSelected ? `${COLOR}0c` : '' }}
+                    onClick={selectMode ? () => toggleSelect(o.id) : undefined}
                   >
+                    {/* Checkbox (select mode) */}
+                    {selectMode && (
+                      <td style={{ padding: '8px 12px', verticalAlign: 'middle', textAlign: 'center', width: 40 }} onClick={e => { e.stopPropagation(); toggleSelect(o.id) }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(o.id)}
+                          style={{ width: 15, height: 15, accentColor: COLOR, cursor: 'pointer' }}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      </td>
+                    )}
                     {/* N° */}
                     <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
                       <span style={{ fontWeight: 700, fontFamily: 'monospace', color: C.text }}>#{o.nOrden}</span>
@@ -3276,6 +4309,7 @@ export default function OrdenesView() {
                     {/* Modelo / IMEI */}
                     <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
                       <div style={{ fontWeight: 600, color: C.text, fontSize: 12 }}>{o.modeloEquipo || '—'}</div>
+                      {(o as any).colorEquipo && <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>🎨 {(o as any).colorEquipo}</div>}
                       <div style={{ fontSize: 10, color: C.muted, marginTop: 2, fontFamily: 'monospace' }}>{o.imei || '—'}</div>
                     </td>
                     {/* Cliente */}
@@ -3380,6 +4414,41 @@ export default function OrdenesView() {
 
       </>)}
 
+      {/* ─── Bulk entrega modal ──────────────────────────────────────────────── */}
+      {bulkEntregaOpen && (() => {
+        const ordenesSel = list.filter(o => selectedIds.has(o.id))
+        return (
+          <BulkEntregaModal
+            ordenes={ordenesSel}
+            dolar={dolar}
+            currentUser={currentUser}
+            logoLocal={logoLocal}
+            terminosLocal={terminosLocal}
+            onClose={() => setBulkEntregaOpen(false)}
+            onDone={() => { clearSelection(); refresh() }}
+          />
+        )
+      })()}
+
+      {/* ─── Configuración inline ────────────────────────────────────────── */}
+      {configOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'var(--bg)',
+            overflowY: 'auto',
+            padding: '24px 0',
+          }}
+        >
+          <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 20px' }}>
+            <OrdenesEstadosPanel
+              onBack={() => setConfigOpen(false)}
+              backLabel="✕ Cerrar configuración"
+            />
+          </div>
+        </div>
+      )}
+
       {/* ─── Modal (siempre disponible, encima de detalle o lista) ────────── */}
       {modal && (
         <Modal
@@ -3478,7 +4547,23 @@ export default function OrdenesView() {
                 />
               </Field>
               <Field label="Modelo equipo" required>
-                <SearchableSelect value={form.modeloEquipo} onChange={v => set('modeloEquipo', v)} options={MODELOS_DISPOSITIVOS} emptyOption="— Seleccionar modelo —" placeholder="Buscar modelo..." />
+                <SearchableSelect
+                  value={form.modeloEquipo}
+                  onChange={v => { set('modeloEquipo', v); set('colorEquipo', ''); set('funciones', { ...emptyChecklist(), camaras: [] }) }}
+                  options={MODELOS_DISPOSITIVOS}
+                  emptyOption="— Seleccionar modelo —"
+                  placeholder="Buscar modelo..."
+                />
+              </Field>
+              <Field label="Color del dispositivo">
+                {!form.modeloEquipo ? (
+                  <div style={{ ...inputSt, color: '#676767', fontSize: 12, display: 'flex', alignItems: 'center', height: 38 }}>Seleccioná un modelo primero</div>
+                ) : (
+                  <select value={form.colorEquipo ?? ''} onChange={e => set('colorEquipo', e.target.value)} style={inputSt}>
+                    <option value="">— Sin especificar —</option>
+                    {getColores(form.modeloEquipo).map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
               </Field>
               <Field label="IMEI / Serie" required>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -3614,6 +4699,118 @@ export default function OrdenesView() {
                 </div>
               </Field>
 
+              {/* ── Checklist de funciones al ingreso ── */}
+              <div style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 12px' }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>📋 Estado funcional al ingreso</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                </div>
+
+                {/* Grupos de funciones */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {GRUPOS_FUNCIONES.map(grupo => (
+                    <div key={grupo.label}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{ fontSize: 12 }}>{grupo.icon}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{grupo.label}</span>
+                        <div style={{ flex: 1, height: 1, background: 'var(--border)', marginLeft: 4 }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {grupo.keys.map(key => {
+                          const { label, icon } = FUNCION_META[key]
+                          const funciones: ChecklistFunciones = form.funciones ?? emptyChecklist()
+                          const checked = funciones[key] as boolean
+                          return (
+                            <label
+                              key={key}
+                              onClick={() => {
+                                const current: ChecklistFunciones = form.funciones ?? emptyChecklist()
+                                set('funciones', { ...current, [key]: !checked })
+                              }}
+                              style={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                padding: '8px 10px', borderRadius: 10, cursor: 'pointer', width: 88, minHeight: 72,
+                                background: checked ? 'rgba(74,222,128,0.09)' : 'rgba(239,68,68,0.06)',
+                                border: `1.5px solid ${checked ? 'rgba(74,222,128,0.4)' : 'rgba(239,68,68,0.3)'}`,
+                                transition: 'all 0.12s', gap: 3, textAlign: 'center', userSelect: 'none',
+                              }}
+                            >
+                              <span style={{ fontSize: 18, lineHeight: 1 }}>{icon}</span>
+                              <span style={{ fontSize: 10, fontWeight: 600, color: checked ? '#4ade80' : 'var(--text-secondary)', lineHeight: 1.25, marginTop: 2 }}>{label}</span>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: checked ? '#4ade80' : '#ef4444', marginTop: 1 }}>{checked ? '✓' : '✗'}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Cámaras traseras */}
+                  {form.modeloEquipo && (() => {
+                    const cameras = getCameras(form.modeloEquipo)
+                    const funciones: ChecklistFunciones = form.funciones ?? emptyChecklist()
+                    return (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <span style={{ fontSize: 12 }}>📷</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            Cámaras traseras — {form.modeloEquipo}
+                          </span>
+                          <div style={{ flex: 1, height: 1, background: 'var(--border)', marginLeft: 4 }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {cameras.map(zoom => {
+                            const checked = funciones.camaras?.includes(zoom)
+                            return (
+                              <label
+                                key={zoom}
+                                style={{
+                                  display: 'flex', alignItems: 'center', padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
+                                  background: checked ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.07)',
+                                  border: `2px solid ${checked ? '#4ade80' : '#ef4444'}`,
+                                  transition: 'all 0.12s', flex: '1 1 70px', justifyContent: 'center', flexDirection: 'column', gap: 3,
+                                }}
+                                onClick={() => {
+                                  const current: ChecklistFunciones = form.funciones ?? emptyChecklist()
+                                  const newCams = checked
+                                    ? current.camaras.filter(z => z !== zoom)
+                                    : [...current.camaras, zoom]
+                                  set('funciones', { ...current, camaras: newCams })
+                                }}
+                              >
+                                <span style={{ fontSize: 18 }}>📷</span>
+                                <span style={{ fontSize: 13, fontWeight: 800, color: checked ? '#4ade80' : '#ef4444' }}>{zoom}</span>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: checked ? '#4ade80' : '#ef4444' }}>
+                                  {checked ? 'OK ✓' : '✗ Falla'}
+                                </span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                {/* Resumen compacto */}
+                {form.funciones && form.modeloEquipo && (() => {
+                  const { ok, total } = funcionesOk(form.funciones, form.modeloEquipo)
+                  const pct = total > 0 ? Math.round((ok / total) * 100) : 0
+                  if (total === 0) return null
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : pct >= 70 ? COLOR : '#ef4444', borderRadius: 3, transition: 'width 0.3s' }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: pct === 100 ? '#4ade80' : pct >= 70 ? COLOR : '#ef4444', whiteSpace: 'nowrap' }}>
+                        {ok}/{total} funciones OK ({pct}%)
+                      </span>
+                    </div>
+                  )
+                })()}
+              </div>
+
               <Field label="Contraseña / PIN" col={2}>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <input
@@ -3633,29 +4830,7 @@ export default function OrdenesView() {
                 <input type="number" min={0} value={form.adelanto} onChange={e => set('adelanto', parseFloat(e.target.value) || 0)} style={inputSt} />
               </Field>
 
-              {/* Garantía toggle */}
-              <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-                  <div
-                    onClick={() => set('garantia', !form.garantia)}
-                    style={{
-                      width: 36, height: 20, borderRadius: 10,
-                      background: form.garantia ? COLOR : 'var(--border)',
-                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute', top: 2,
-                      left: form.garantia ? 18 : 2,
-                      width: 16, height: 16, borderRadius: '50%',
-                      background: '#fff', transition: 'left 0.2s',
-                    }} />
-                  </div>
-                  <span style={{ fontSize: 12, color: form.garantia ? COLOR : C.muted, fontWeight: form.garantia ? 700 : 400 }}>
-                    Garantía
-                  </span>
-                </label>
-              </div>
+              {/* La garantía se configura al momento de entregar el equipo */}
             </FormGrid>
           )}
 

@@ -1,0 +1,19 @@
+categoria,tipo,modelo,codigo,precio_usd,precio_ars,stock
+modulos,Pantalla Incell AM,iPhone 13,IP13-INC-AM,45.00,42500,En stock
+modulos,Pantalla Incell AM,iPhone 13 Pro,,52.00,49000,En stock
+modulos,Pantalla OLED,iPhone 14 Pro Max,IP14PM-OLED,95.00,,En stock
+baterias,Batería,iPhone 12,,18.00,17000,En stock
+baterias,Batería,iPhone 13 Pro Max,,22.00,,Sin stock
+camaras,Cámara Trasera Principal,iPhone 14,,35.00,33000,En stock
+camaras,Cámara Frontal,iPhone 13 Pro,,28.00,,Ingresando
+flex,Flex de Carga,iPhone 12 Pro,,8.50,8000,En stock
+flex,Botón Home,iPhone SE 2020,,6.00,,En stock
+sensores,Sensor de Proximidad,iPhone 11,,12.00,11300,En stock
+cristales,Vidrio Trasero,iPhone 12,,15.00,14100,En stock
+chasis,Chasis Completo,iPhone 13,CH-IP13,55.00,,Sin stock
+parlantes,Parlante Inferior,iPhone 14,,9.00,8500,En stock
+circuitos,IC de Carga,iPhone X,,14.00,,En stock
+apple-watch,Módulo Pantalla,Apple Watch Series 7 41mm,,85.00,,En stock
+ipad,Pantalla LCD,iPad Air 4,,110.00,,En stock
+herramientas,Kit de Destornilladores,Pentalobe,,5.00,4700,En stock
+accesorios,Cable USB-C,iPhone 15,,3.50,,En stock

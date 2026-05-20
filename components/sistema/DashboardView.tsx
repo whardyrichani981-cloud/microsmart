@@ -29,7 +29,7 @@ export default function DashboardView() {
 
       {/* Top KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <KPICard label="Ingresos Brutos" value={fmtARS(d.totalIngresosBrutos)} color="#4ade80" icon="💰" sub={`B2C: ${fmtARS(d.ventasB2C)} · B2B: ${fmtARS(d.ventasB2B)}`} />
+        <KPICard label="Facturación" value={fmtARS(d.totalIngresosBrutos)} color="#4ade80" icon="💰" sub={`B2C: ${fmtARS(d.ventasB2C)} · B2B: ${fmtARS(d.ventasB2B)} · Caja: ${fmtARS(d.ventasCaja ?? 0)}`} />
         <KPICard label="Ganancia Real" value={fmtARS(d.gananciaReal)} color={d.gananciaReal >= 0 ? '#4ade80' : '#f87171'} icon="📈" sub={`Margen: ${margen}%`} />
         <KPICard label="Total Gastos" value={fmtARS(d.totalGastos)} color="#f87171" icon="🧾" sub={`Local: ${fmtARS(d.gastosLocal)} · Fijos: ${fmtARS(d.gastosFijos)}`} />
         <KPICard label="Comisiones" value={fmtARS(d.totalComisionesEmpleados)} color="#0066CC" icon="👥" sub={`${d.pendientesPago} pendientes de pago`} />
@@ -41,6 +41,7 @@ export default function DashboardView() {
         <KPICard label="Ventas B2C" value={String(d.cantidadVentasB2C)} color="#4ade80" icon="📋" sub={fmtARS(d.ventasB2C)} />
         <KPICard label="Ventas B2B" value={String(d.cantidadVentasB2B)} color="#34d399" icon="🏢" sub={fmtARS(d.ventasB2B)} />
         <KPICard label="Comisión MP" value={fmtARS(d.comisionesMP)} color="#a78bfa" icon="💳" sub={`IIBB: ${fmtARS(d.iibbTotal)}`} />
+        <KPICard label="Ventas Caja" value={String(d.cantidadVentasCaja ?? 0)} color="#fb923c" icon="🖥️" sub={fmtARS(d.ventasCaja ?? 0)} />
       </div>
 
       {/* Waterfall breakdown */}

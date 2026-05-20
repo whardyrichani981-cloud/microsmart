@@ -12,8 +12,7 @@ import type { AppleCategory } from '@/lib/categories'
 import { expandQuery, matchesQuery } from '@/lib/search'
 import SupplierColumns from './SupplierColumns'
 import NotasBoard from './NotasBoard'
-import GremioView from './GremioView'
-import CFView from './CFView'
+import ListasPreciosView from './ListasPreciosView'
 import SettingsModal from './SettingsModal'
 import AdminView from './AdminView'
 import HomeView from './HomeView'
@@ -28,6 +27,8 @@ import ClientesView from './sistema/ClientesView'
 import ProveedoresView from './sistema/ProveedoresView'
 import OrdenesView from './sistema/OrdenesView'
 import ServiciosView from './sistema/ServiciosView'
+import VentasEquiposView from './sistema/VentasEquiposView'
+import CajaView from './sistema/CajaView'
 import type { UserRole, Permissions } from '@/lib/roles'
 import { SUPERADMIN_PERMISSIONS } from '@/lib/roles'
 
@@ -41,7 +42,7 @@ interface Props {
 }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable'
+type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja'
 
 const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions; adminOnly?: boolean }[] = [
   { id: 'inicio',         label: 'Inicio',                   icon: '🏠' },
@@ -54,7 +55,9 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'clientes',       label: 'Clientes',                 icon: '👥', permKey: 'canViewClientes' },
   { id: 'agenda',         label: 'Turnos',                   icon: '📅', permKey: 'canViewAgenda' },
   { id: 'stock',          label: 'Stock',                    icon: '📦', permKey: 'canViewStock' },
+  { id: 'ventas-equipos', label: 'Ventas Equipos',           icon: '📱' },
   { id: 'contable',       label: 'Administración contable',  icon: '📒' },
+  { id: 'caja',           label: 'Caja de mostrador',        icon: '🖥️', permKey: 'canViewOrdenes' },
   { id: 'administracion', label: 'Configuración del sistema', icon: '⚙️', adminOnly: true },
 ]
 
@@ -106,7 +109,6 @@ export default function PriceComparator({
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeNav, setActiveNav] = useState<NavItem>('inicio')
   const [isDark, setIsDark] = useState(false)
-  const [comparadorSubTab, setComparadorSubTab] = useState<'comparador' | 'gremio' | 'cf'>('comparador')
   const [contableSubTab, setContableSubTab] = useState<'ventas' | 'gastos' | 'reportes' | 'comisiones'>('ventas')
   const [viewMode, setViewMode] = useState<'merged' | 'columns'>('columns')
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set())
@@ -115,7 +117,7 @@ export default function PriceComparator({
   // Reset scroll al inicio cada vez que se cambia de pestaña o sub-pestaña
   useEffect(() => {
     if (mainRef.current) mainRef.current.scrollTop = 0
-  }, [activeNav, comparadorSubTab, contableSubTab])
+  }, [activeNav, contableSubTab])
 
   // Theme: load from localStorage after hydration
   useEffect(() => {
@@ -161,9 +163,10 @@ export default function PriceComparator({
       for (const item of s.items) {
         const key = item.name.toLowerCase().trim()
         if (!map.has(key))
-          map.set(key, { key, name: item.name, code: item.code, category: item.category, prices: {}, stocks: {} })
+          map.set(key, { key, name: item.name, code: item.code, category: item.category, prices: {}, pricesARS: {}, stocks: {} })
         const row = map.get(key)!
         row.prices[s.id] = item.price
+        if (item.priceARS) row.pricesARS[s.id] = item.priceARS
         if (item.stock) row.stocks[s.id] = item.stock
       }
     }
@@ -230,7 +233,6 @@ export default function PriceComparator({
   const handleNav = (id: NavItem) => {
     setActiveNav(id)
     if (id !== 'comparador') setSelectedSupplierIds(new Set())
-    if (id === 'comparador') setComparadorSubTab('comparador')
     if (id === 'contable') setContableSubTab('ventas')
   }
 
@@ -762,71 +764,6 @@ export default function PriceComparator({
     </div>
   )
 
-  const ProveedoresView = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E5E5E3', marginBottom: 4 }}>Proveedores</h2>
-        <p style={{ fontSize: 13, color: '#676767' }}>
-          Gestioná tus fuentes de precios. Los proveedores integrados se actualizan automáticamente.
-        </p>
-      </div>
-
-      {/* Supplier cards */}
-      {suppliers.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-          {suppliers.map(s => (
-            <div key={s.id} style={{
-              background: 'var(--surface)', border: `1px solid ${s.color.border}44`,
-              borderRadius: 10, padding: 16,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8,
-                  background: s.color.bg, border: `1px solid ${s.color.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16,
-                }}>
-                  {s.source === 'builtin' ? '🏢' : '📁'}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#E5E5E3' }}>{s.name}</div>
-                  <div style={{ fontSize: 11, color: s.color.text }}>
-                    {s.source === 'builtin' ? 'Integrado · auto-actualiza' : 'Cargado manualmente'}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: '#676767' }}>
-                  <span style={{ color: '#E5E5E3', fontWeight: 600 }}>{s.items.length}</span>{' '}productos
-                </span>
-                {s.error ? (
-                  <span style={{ fontSize: 11, color: '#f87171' }}>⚠ Error</span>
-                ) : (
-                  <span style={{ fontSize: 11, color: '#4ade80' }}>✓ OK</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Supplier name chips + remove */}
-      {suppliers.length > 0 && (
-        <>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#676767' }}>Gestionar proveedores</div>
-          <SupplierChips suppliers={suppliers} onRemove={handleSupplierRemove} onRename={handleSupplierRename} />
-        </>
-      )}
-
-      {/* Upload — only for users with permission */}
-      {p.canUploadSuppliers && (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#676767', marginBottom: 8 }}>Agregar proveedor</div>
-          <UploadZone onSupplierAdd={handleSupplierAdd} supplierCount={suppliers.length} />
-        </div>
-      )}
-    </div>
-  )
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
@@ -840,33 +777,9 @@ export default function PriceComparator({
             <HomeView key="inicio" displayName={displayName || currentUser} currentUser={currentUser} />
           )}
           {activeNav === 'comparador' && (
-            <div key="comparador">
-              {/* Sub-pestañas: Comparador / Gremio / Consumidor Final */}
-              <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-                {[
-                  { id: 'comparador' as const, label: '📊 Proveedores' },
-                  ...(p.canViewGremio ? [{ id: 'gremio' as const, label: '🔧 Gremio' }] : []),
-                  ...(p.canViewCF    ? [{ id: 'cf'    as const, label: '💰 Consumidor Final' }] : []),
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setComparadorSubTab(tab.id)}
-                    style={{
-                      padding: '7px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: comparadorSubTab === tab.id ? 700 : 500,
-                      background: 'none', marginBottom: -1,
-                      borderBottom: comparadorSubTab === tab.id ? '2px solid #60a5fa' : '2px solid transparent',
-                      color: comparadorSubTab === tab.id ? '#60a5fa' : '#8A8A8A',
-                      transition: 'all 0.15s',
-                    }}
-                  >{tab.label}</button>
-                ))}
-              </div>
-              {comparadorSubTab === 'comparador' && ComparadorView}
-              {comparadorSubTab === 'gremio'     && <GremioView key="gremio" />}
-              {comparadorSubTab === 'cf'         && <CFView key="cf" />}
-            </div>
+            <ListasPreciosView key="listas-precios" />
           )}
-          {activeNav === 'proveedores' && ProveedoresView}
+          {activeNav === 'proveedores' && <ProveedoresView key="proveedores" />}
           {activeNav === 'notasdash' && (
             <NotasBoard key="notasdash" onNotesChange={setPendingNotes} currentUserName={displayName || undefined} isSuperAdmin={isSuperAdmin} />
           )}
@@ -907,6 +820,8 @@ export default function PriceComparator({
               {contableSubTab === 'reportes'   && <ReportesMainView key="reportes" />}
             </div>
           )}
+          {activeNav === 'ventas-equipos' && <VentasEquiposView key="ventas-equipos" />}
+          {activeNav === 'caja' && <CajaView key="caja" />}
           {activeNav === 'administracion' && <AdminView key="administracion" onModulosChange={handleModulosChange} onModulosSaved={handleModulosSaved} />}
         </main>
       </div>

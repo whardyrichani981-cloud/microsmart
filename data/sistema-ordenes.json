@@ -3,7 +3,7 @@
     "id": "1779117498084-367nnm",
     "fecha": "2026-05-18",
     "tipo": "Cliente final",
-    "estado": "Entrada",
+    "estado": "Salida",
     "prioridad": "Normal",
     "nombreCliente": "Ronald diaz",
     "telefonoCliente": "1125049001",
@@ -121,6 +121,13 @@
         "descripcion": "Estado cambiado de \"En reparación\" a \"Entrada\"",
         "fecha": "2026-05-18T21:10:12.620Z",
         "usuario": "Ronald"
+      },
+      {
+        "id": "1779228459193-6wfv",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Entrada\" a \"Salida\" (acción masiva)",
+        "fecha": "2026-05-19T22:07:39.193Z",
+        "usuario": "Ronald"
       }
     ],
     "ordenItems": [],
@@ -131,7 +138,7 @@
     "id": "1779140107844-30aajz",
     "fecha": "2026-05-18",
     "tipo": "Gremio",
-    "estado": "Salida",
+    "estado": "Entrada",
     "prioridad": "Normal",
     "nombreCliente": "microsmart",
     "telefonoCliente": "1125049001",
@@ -142,7 +149,7 @@
     "accesorios": "",
     "tecnico": "Ronald",
     "fechaEntrega": "",
-    "garantia": false,
+    "garantia": true,
     "tipoServicio": "Cambio pantalla",
     "proveedor": "",
     "tipoRepuesto": "",
@@ -183,6 +190,27 @@
         "descripcion": "Estado cambiado de \"Entrada\" a \"Salida\"",
         "fecha": "2026-05-19T02:47:44.346Z",
         "usuario": "Ronald"
+      },
+      {
+        "id": "1779230923759-37mm",
+        "tipo": "foto",
+        "descripcion": "Se subieron 1 foto(s)",
+        "fecha": "2026-05-19T22:48:43.759Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779238166380-u0ky",
+        "tipo": "estado",
+        "descripcion": "Equipo entregado. Venta registrada en reportes (B2B).",
+        "fecha": "2026-05-20T00:49:26.380Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779239135591-gg7l",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Entregado\" a \"Entrada\"",
+        "fecha": "2026-05-20T01:05:35.591Z",
+        "usuario": "Ronald"
       }
     ],
     "notasLista": [],
@@ -194,7 +222,7 @@
     "codigoSeguimiento": "8AC4ZZNA",
     "fecha": "2026-05-18",
     "tipo": "Cliente final",
-    "estado": "Laboratorio",
+    "estado": "Entrada",
     "prioridad": "Normal",
     "nombreCliente": "Ronald diaz",
     "telefonoCliente": "1125049001",
@@ -207,7 +235,136 @@
     "contrasena": "1278",
     "tecnico": "Ronald",
     "fechaEntrega": "",
-    "garantia": false,
+    "garantia": true,
+    "tipoServicio": "Cambio pantalla",
+    "proveedor": "",
+    "tipoRepuesto": "",
+    "repuestosUsados": "",
+    "costoRepuestoUSD": 0,
+    "precioDolar": 1200,
+    "costoRepuestoPesos": 0,
+    "costoRepuestos": 0,
+    "montoCobrado": 98000,
+    "moneda": "ARS $",
+    "equivARS": 98000,
+    "metodoPago": "Efectivo",
+    "comisionMP": 0,
+    "iibb": 3920,
+    "comisionVendedora": 0,
+    "comisionTecnico": 0,
+    "gananciaReal": 94080,
+    "notas": "",
+    "imagenes": [],
+    "presupuesto": 0,
+    "adelanto": 0,
+    "ordenItems": [
+      {
+        "id": "1779229957443-mojc",
+        "tipo": "servicio",
+        "refId": "svc-csf-022",
+        "nombre": "Cambio de Modulo iphone 7 plus blanco",
+        "cantidad": 1,
+        "precioUnitario": 98000,
+        "subtotal": 98000,
+        "gastoId": "1779229957440-ogl4c4"
+      }
+    ],
+    "notas2": "",
+    "historial": [
+      {
+        "id": "1779145608648-muaz",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Entrada\" a \"Laboratorio\"",
+        "fecha": "2026-05-18T23:06:48.648Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779228443812-5xbr",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Laboratorio\" a \"Entrada\"",
+        "fecha": "2026-05-19T22:07:23.812Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779228459193-axwb",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Entrada\" a \"Salida\" (acción masiva)",
+        "fecha": "2026-05-19T22:07:39.193Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779230028452-ke19",
+        "tipo": "estado",
+        "descripcion": "Equipo entregado. Venta registrada en reportes (B2C).",
+        "fecha": "2026-05-19T22:33:48.452Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779239130775-98jn",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Entregado\" a \"Entrada\"",
+        "fecha": "2026-05-20T01:05:30.775Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779239161838-hgoi",
+        "tipo": "estado",
+        "descripcion": "Equipo entregado. Venta registrada en reportes (B2C).",
+        "fecha": "2026-05-20T01:06:01.838Z",
+        "usuario": "Ronald"
+      },
+      {
+        "id": "1779239543848-jwnw",
+        "tipo": "estado",
+        "descripcion": "Estado cambiado de \"Entregado\" a \"Entrada\"",
+        "fecha": "2026-05-20T01:12:23.848Z",
+        "usuario": "Ronald"
+      }
+    ],
+    "notasLista": [],
+    "nOrden": 3,
+    "createdAt": "2026-05-18T22:56:45.682Z",
+    "diasGarantia": 90
+  },
+  {
+    "id": "1779237942885-83qo9q",
+    "codigoSeguimiento": "X8S24YNB",
+    "fecha": "2026-05-20",
+    "tipo": "Cliente final",
+    "estado": "Entrada",
+    "prioridad": "Normal",
+    "nombreCliente": "",
+    "telefonoCliente": "",
+    "mailCliente": "",
+    "categoriaDispositivo": "iPhone",
+    "colorEquipo": "",
+    "imei": "",
+    "modeloEquipo": "",
+    "funciones": {
+      "pantalla": false,
+      "placa": false,
+      "microfonoNotas": false,
+      "microfonoSelfie": false,
+      "microfonoCamaraZoom": false,
+      "altavoz": false,
+      "speaker": false,
+      "botonesVolumen": false,
+      "botonPower": false,
+      "faceId": false,
+      "wifi": false,
+      "senal": false,
+      "camaras": [],
+      "camaraSelfie": false,
+      "camaraRetratoSelfie": false,
+      "camaraRetratoPrincipal": false
+    },
+    "descripcionFalla": "",
+    "accesorios": "",
+    "contrasena": "",
+    "tecnico": "Ronald",
+    "fechaEntrega": "",
+    "garantia": true,
+    "diasGarantia": 90,
     "tipoServicio": "Cambio pantalla",
     "proveedor": "",
     "tipoRepuesto": "",
@@ -231,17 +388,9 @@
     "adelanto": 0,
     "ordenItems": [],
     "notas2": "",
-    "historial": [
-      {
-        "id": "1779145608648-muaz",
-        "tipo": "estado",
-        "descripcion": "Estado cambiado de \"Entrada\" a \"Laboratorio\"",
-        "fecha": "2026-05-18T23:06:48.648Z",
-        "usuario": "Ronald"
-      }
-    ],
+    "historial": [],
     "notasLista": [],
-    "nOrden": 3,
-    "createdAt": "2026-05-18T22:56:45.682Z"
+    "nOrden": 4,
+    "createdAt": "2026-05-20T00:45:42.885Z"
   }
 ]

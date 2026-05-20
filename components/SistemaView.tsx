@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, lazy, Suspense } from 'react'
+import { useState, lazy, Suspense, useEffect } from 'react'
 
 const OrdenesView    = lazy(() => import('./sistema/OrdenesView'))
 const ClientesView   = lazy(() => import('./sistema/ClientesView'))
@@ -11,7 +11,10 @@ const StockMainView  = lazy(() => import('./sistema/StockMainView'))
 const TipoCambioView = lazy(() => import('./sistema/TipoCambioView'))
 const VentasCSFView  = lazy(() => import('./sistema/VentasCSFView'))
 const VentasGremioView = lazy(() => import('./sistema/VentasGremioView'))
+const VentasEquiposView = lazy(() => import('./sistema/VentasEquiposView'))
 const DashboardView  = lazy(() => import('./sistema/DashboardView'))
+const ChatSoporteView = lazy(() => import('./sistema/ChatSoporteView'))
+const GarantiasView  = lazy(() => import('./sistema/GarantiasView'))
 
 type SectionId =
   | 'ordenes'
@@ -23,7 +26,10 @@ type SectionId =
   | 'tipo-cambio'
   | 'ventas-csf'
   | 'ventas-gremio'
+  | 'ventas-equipos'
   | 'dashboard'
+  | 'chat'
+  | 'garantias'
 
 interface NavItem { id: SectionId; label: string; icon: string; desc?: string }
 interface NavGroup { group: string; icon: string; color: string; items: NavItem[] }
@@ -32,7 +38,9 @@ const NAV: NavGroup[] = [
   {
     group: 'Centro de Servicios', icon: '🔧', color: '#4ade80',
     items: [
-      { id: 'ordenes', label: 'Órdenes de trabajo', icon: '📋', desc: 'Seguimiento y flujo de reparaciones' },
+      { id: 'ordenes',   label: 'Órdenes de trabajo', icon: '📋', desc: 'Seguimiento y flujo de reparaciones' },
+      { id: 'garantias', label: 'Garantías',           icon: '🛡️', desc: 'Órdenes con garantía vigente' },
+      { id: 'chat',      label: 'Chat & Soporte',      icon: '💬', desc: 'Mensajes de clientes · Telegram' },
     ],
   },
   {
@@ -40,6 +48,12 @@ const NAV: NavGroup[] = [
     items: [
       { id: 'clientes', label: 'Clientes', icon: '👥', desc: 'Personas (B2C) y Empresas (B2B)' },
       { id: 'proveedores', label: 'Proveedores', icon: '🏪', desc: 'Registro de proveedores' },
+    ],
+  },
+  {
+    group: 'Ventas Equipos', icon: '📱', color: '#f97316',
+    items: [
+      { id: 'ventas-equipos', label: 'Stock de equipos', icon: '📱', desc: 'Equipos usados en stock' },
     ],
   },
   {
@@ -89,9 +103,12 @@ function SectionContent({ id }: { id: SectionId }) {
     case 'gastos':        return <GastosMainView />
     case 'stock':         return <StockMainView />
     case 'tipo-cambio':   return <TipoCambioView />
-    case 'ventas-csf':    return <VentasCSFView />
-    case 'ventas-gremio': return <VentasGremioView />
-    case 'dashboard':     return <DashboardView />
+    case 'ventas-csf':     return <VentasCSFView />
+    case 'ventas-gremio':  return <VentasGremioView />
+    case 'ventas-equipos': return <VentasEquiposView />
+    case 'dashboard':      return <DashboardView />
+    case 'chat':           return <ChatSoporteView />
+    case 'garantias':      return <GarantiasView />
   }
 }
 
@@ -100,6 +117,30 @@ export default function SistemaView() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(
     Object.fromEntries(NAV.map(g => [g.group, g.group !== 'Archivo']))
   )
+  const [stockAlerts, setStockAlerts] = useState(0)
+
+  useEffect(() => {
+    const check = () => {
+      Promise.all([
+        fetch('/api/sistema/stock?tipo=repuestos').then(r => r.json()).catch(() => ({ items: [] })),
+        fetch('/api/sistema/stock?tipo=accesorios').then(r => r.json()).catch(() => ({ items: [] })),
+      ]).then(([rep, acc]) => {
+        const all = [...(rep?.items ?? []), ...(acc?.items ?? [])]
+        const map = new Map<string, { total: number; min: number }>()
+        for (const item of all) {
+          const k = `${item.tipo}|||${item.repuesto?.toLowerCase()}|||${item.modelo?.toLowerCase()}`
+          if (!map.has(k)) map.set(k, { total: 0, min: item.stockMinimo ?? 2 })
+          const g = map.get(k)!
+          g.total += item.stock ?? 0
+          g.min = Math.max(g.min, item.stockMinimo ?? 2)
+        }
+        setStockAlerts([...map.values()].filter(g => g.total <= g.min).length)
+      })
+    }
+    check()
+    const t = setInterval(check, 60000) // recheck every minute
+    return () => clearInterval(t)
+  }, [])
 
   const activeItem = ALL_ITEMS.find(i => i.id === activeId)!
   const activeGroup = groupOf(activeId)
@@ -171,8 +212,15 @@ export default function SistemaView() {
                       <span style={{
                         fontSize: 12, fontWeight: isActive ? 600 : 400,
                         color: isActive ? group.color : '#8A8A8A',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
                       }}>{item.label}</span>
+                      {item.id === 'stock' && stockAlerts > 0 && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 800,
+                          background: '#ef4444', color: '#fff',
+                          padding: '1px 5px', borderRadius: 8, lineHeight: '15px', flexShrink: 0,
+                        }}>{stockAlerts}</span>
+                      )}
                     </button>
                   )
                 })}

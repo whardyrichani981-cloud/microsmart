@@ -272,13 +272,12 @@ function Err({ msg }: { msg: string }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-type TabId = 'reparaciones' | 'originales' | 'ampsentrix' | 'cf'
+type TabId = 'reparaciones' | 'originales' | 'ampsentrix'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'reparaciones', label: 'Reparaciones' },
   { id: 'originales',   label: 'Repuestos Originales' },
   { id: 'ampsentrix',   label: 'Repuestos Ampsentrix' },
-  { id: 'cf',           label: 'Consumidor Final' },
 ]
 
 export default function GremioView() {
@@ -300,7 +299,7 @@ export default function GremioView() {
     load('/api/gremio',            setReparaciones, 'reparaciones')
     load('/api/gremio/originales', setOriginales,   'originales')
     load('/api/gremio/ampsentrix', setAmpsentrix,   'ampsentrix')
-    load('/api/gremio/cf',         setCf,           'cf')
+    // load('/api/gremio/cf', setCf, 'cf')  // CF oculto de la vista Gremio
   }, [])
 
   // Badge counts per tab while searching
@@ -397,12 +396,6 @@ export default function GremioView() {
         !ampsentrix ? <Loading label="repuestos Ampsentrix" /> :
         <AmpsentrixTab items={ampsentrix} q={q} />
       )}
-      {activeTab === 'cf' && (
-        errors.cf ? <Err msg={errors.cf} /> :
-        !cf ? <Loading label="lista Consumidor Final" /> :
-        <CFTab items={cf} q={q} />
-      )}
-
       {/* Legend */}
       <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 20, fontSize: 12, color: '#676767', flexWrap: 'wrap' }}>
         <span><span style={{ color: '#f472b6', fontWeight: 600 }}>Rosa</span> = Transferencia</span>

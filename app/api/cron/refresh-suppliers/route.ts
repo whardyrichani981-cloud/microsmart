@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
-import { parseBhTech, parseCparts, parseGeneric } from '@/lib/parsers'
+import { parseBhTech, parseCparts, parsePineapple } from '@/lib/parsers'
 
 const BHTECH_URL =
   'https://docs.google.com/spreadsheets/d/1tNpvPU5mTcwPFP4fuKS-JR-dB4-38rerBbBfvAxrUhk/export?format=csv&gid=0'
@@ -67,9 +67,21 @@ async function refreshPineapple(): Promise<SupplierResult> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const buf = await res.arrayBuffer()
     const wb = XLSX.read(buf, { type: 'array' })
-    const ws = wb.Sheets[wb.SheetNames[0]]
-    const rows = XLSX.utils.sheet_to_json<(string | number)[]>(ws, { header: 1, defval: '' })
-    const items = parseGeneric(rows)
+
+    // Read ALL sheets using dedicated Pineapple parser
+    const allItems: ReturnType<typeof parsePineapple> = []
+    for (const sheetName of wb.SheetNames) {
+      const ws = wb.Sheets[sheetName]
+      const rows = XLSX.utils.sheet_to_json<(string | number)[]>(ws, { header: 1, defval: '' })
+      allItems.push(...parsePineapple(rows))
+    }
+    const seen = new Set<string>()
+    const items = allItems.filter(item => {
+      const key = `${item.name.toLowerCase()}|${item.price}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
     const cs = checksum(items)
     const changed = lastChecksums['pineapple'] !== undefined && lastChecksums['pineapple'] !== cs
     lastChecksums['pineapple'] = cs

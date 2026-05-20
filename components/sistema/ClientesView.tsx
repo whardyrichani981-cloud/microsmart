@@ -9,10 +9,11 @@ import {
 
 const COLOR = '#34d399'
 const COLOR_B2C = '#60a5fa'
+const COLOR_EMPRESA = '#a78bfa'
 
 const CONDICIONES_IVA = ['Responsable Inscripto', 'Monotributista', 'Consumidor Final', 'Exento'] as const
 
-// ─── B2B (Empresas) ───────────────────────────────────────────────────────────
+// ─── B2B (Gremio / Mayorista) ────────────────────────────────────────────────
 type B2BForm = Omit<ClienteB2B, 'id' | 'createdAt'>
 function emptyB2B(): B2BForm {
   return { nombre: '', empresa: '', telefono: '', mail: '', cuit: '', condicionIVA: 'Consumidor Final', direccion: '', notas: '' }
@@ -25,13 +26,19 @@ function emptyB2C(): B2CForm {
 }
 
 export default function ClientesView() {
-  const [tab, setTab] = useState<'personas' | 'empresas'>('personas')
+  const [tab, setTab] = useState<'personas' | 'gremio' | 'empresas'>('personas')
+
+  const TABS = [
+    { id: 'personas'  as const, label: '👤 Personas (B2C)',      color: COLOR_B2C     },
+    { id: 'gremio'    as const, label: '🏢 Gremio / Mayorista',   color: COLOR         },
+    { id: 'empresas'  as const, label: '🏛️ Empresas',             color: COLOR_EMPRESA },
+  ]
 
   return (
     <div style={{ padding: '0 0 40px' }}>
       {/* Tab selector */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-        {([['personas', '👤 Personas (B2C)', COLOR_B2C], ['empresas', '🏢 Empresas (B2B)', COLOR]] as const).map(([id, label, color]) => {
+        {TABS.map(({ id, label, color }) => {
           const active = tab === id
           return (
             <button key={id} onClick={() => setTab(id)} style={{
@@ -45,7 +52,9 @@ export default function ClientesView() {
         })}
       </div>
 
-      {tab === 'personas' ? <PersonasTab /> : <EmpresasTab />}
+      {tab === 'personas' && <PersonasTab />}
+      {tab === 'gremio'   && <EmpresasTab />}
+      {tab === 'empresas' && <EmpresasPlaceholderTab />}
     </div>
   )
 }
@@ -72,13 +81,13 @@ function PersonasTab() {
       if (modal === 'new') {
         await fetch('/api/sistema/clientes-personas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       } else {
-        await fetch(`/api/sistema/clientes-personas/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+        await fetch('/api/sistema/clientes-personas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editId, ...form }) })
       }
       await refresh(); setModal(false)
     } finally { setSaving(false) }
   }
   const del = async (c: ClientePersona) => {
-    await fetch(`/api/sistema/clientes-personas/${c.id}`, { method: 'DELETE' })
+    await fetch('/api/sistema/clientes-personas', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) })
     await refresh()
   }
 
@@ -136,7 +145,7 @@ function PersonasTab() {
   )
 }
 
-// ─── Empresas Tab ─────────────────────────────────────────────────────────────
+// ─── Gremio / Mayorista Tab ──────────────────────────────────────────────────
 function EmpresasTab() {
   const { data: clientes, loading, refresh } = useApi<ClienteB2B[]>('/api/sistema/clientes')
   const [modal, setModal] = useState<false | 'new' | 'edit'>(false)
@@ -156,13 +165,14 @@ function EmpresasTab() {
       if (modal === 'new') {
         await fetch('/api/sistema/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       } else {
-        await fetch(`/api/sistema/clientes/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+        await fetch('/api/sistema/clientes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editId, ...form }) })
       }
       await refresh(); setModal(false)
     } finally { setSaving(false) }
   }
   const del = async (c: ClienteB2B) => {
-    await fetch(`/api/sistema/clientes/${c.id}`, { method: 'DELETE' }); await refresh()
+    await fetch('/api/sistema/clientes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) })
+    await refresh()
   }
 
   const list = clientes ?? []
@@ -189,21 +199,21 @@ function EmpresasTab() {
 
   return (
     <>
-      <PageHeader icon="🏢" title="Clientes Empresas" desc="Clientes corporativos y gremios (B2B)" color={COLOR}
-        count={list.length} onNew={openNew} newLabel="Nueva empresa"
+      <PageHeader icon="🏢" title="Gremio / Mayoristas" desc="Mayoristas del rubro y clientes B2B" color={COLOR}
+        count={list.length} onNew={openNew} newLabel="Nuevo Gremio/Mayorista"
         extra={<input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, empresa, CUIT..." style={{ ...inputSt, width: 280, flexShrink: 0 }} />}
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
-        <KPICard label="Total Empresas" value={String(list.length)} color={COLOR} icon="🏢" />
+        <KPICard label="Total Gremio/May." value={String(list.length)} color={COLOR} icon="🏢" />
         <KPICard label="Con Empresa" value={String(list.filter(c => c.empresa).length)} color={C.blue} icon="🏷️" />
         <KPICard label="Resp. Inscriptos" value={String(list.filter(c => c.condicionIVA === 'Responsable Inscripto').length)} color={C.blue} icon="🔖" />
         <KPICard label="Monotributistas" value={String(list.filter(c => c.condicionIVA === 'Monotributista').length)} color={C.purple} icon="📋" />
       </div>
       {loading ? <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Cargando...</div>
-        : <DataTable cols={cols} data={filtered} onEdit={openEdit} onDelete={del} accentColor={COLOR} emptyMsg="No hay empresas registradas" />}
+        : <DataTable cols={cols} data={filtered} onEdit={openEdit} onDelete={del} accentColor={COLOR} emptyMsg="No hay gremios/mayoristas registrados" />}
 
       {modal && (
-        <Modal title={modal === 'new' ? 'Nueva Empresa' : 'Editar Empresa'} onClose={() => setModal(false)}
+        <Modal title={modal === 'new' ? 'Nuevo Gremio / Mayorista' : 'Editar Gremio / Mayorista'} onClose={() => setModal(false)}
           onSubmit={save} submitting={saving} submitColor={COLOR} width={600}>
           <FormGrid cols={2}>
             <Field label="Nombre" required col={2}>
@@ -236,5 +246,32 @@ function EmpresasTab() {
         </Modal>
       )}
     </>
+  )
+}
+
+// ─── Empresas Placeholder Tab ─────────────────────────────────────────────────
+function EmpresasPlaceholderTab() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: 16 }}>
+      <div style={{
+        width: 72, height: 72, borderRadius: 20,
+        background: 'rgba(167,139,250,0.12)', border: '1.5px solid rgba(167,139,250,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34,
+      }}>🏛️</div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Empresas</div>
+        <div style={{ fontSize: 13, color: C.muted, maxWidth: 340, lineHeight: 1.6 }}>
+          Esta sección está reservada para la gestión de clientes empresariales.
+          Próximamente se agregarán lógicas, APIs y funcionalidades específicas para este segmento.
+        </div>
+      </div>
+      <div style={{
+        marginTop: 8, padding: '8px 20px', borderRadius: 999,
+        background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)',
+        fontSize: 12, fontWeight: 600, color: '#a78bfa',
+      }}>
+        🚧 En desarrollo
+      </div>
+    </div>
   )
 }

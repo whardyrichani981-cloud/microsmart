@@ -1,7 +1,8 @@
 export interface SupplierItem {
   name: string
   code: string
-  price: number
+  price: number       // primary price (USD when available)
+  priceARS?: number   // secondary price in ARS/pesos (when list has both)
   stock?: string
   category?: string
 }
@@ -26,6 +27,9 @@ export interface MergedRow {
   name: string
   code: string
   category?: string
-  prices: Record<string, number> // supplierId -> price
-  stocks: Record<string, string>  // supplierId -> stock status
+  prices: Record<string, number>    // supplierId -> primary price (USD)
+  pricesARS: Record<string, number> // supplierId -> ARS price (when available)
+  stocks: Record<string, string>    // supplierId -> stock status
 }
+
+export type SortState = { col: string; dir: 1 | -1 }

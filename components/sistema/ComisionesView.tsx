@@ -6,6 +6,7 @@ import {
   C, Modal, Field, FormGrid, SectionDivider, PageHeader, Badge, KPICard,
   inputSt, calcSt, AutoCapInput, SearchableSelect,
 } from './shared'
+import { ComisionesConfigPanel } from './ConfiguracionView'
 
 const COLOR = '#0066CC'
 const EMPLEADOS: Empleado[] = ['Ronald', 'Sharon', 'Saddi']
@@ -51,7 +52,7 @@ export default function ComisionesView() {
   const defaultTab: Tab = isAdmin ? 'Ronald' : currentEmpleado
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab)
   const [modal, setModal] = useState<false | 'new' | 'edit'>(false)
-
+  const [configOpen, setConfigOpen] = useState(false)
 
   const [form, setForm] = useState<FormState>(buildEmpty('Ronald'))
   const [editId, setEditId] = useState<string | null>(null)
@@ -199,15 +200,34 @@ export default function ComisionesView() {
 
   return (
     <div style={{ padding: '0 0 40px' }}>
-      <PageHeader
-        icon="💛"
-        title="Comisiones"
-        desc="Gestión de comisiones por empleado"
-        color={COLOR}
-        count={filtered.length}
-        onNew={openNew}
-        newLabel="Nueva comisión"
-      />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <PageHeader
+            icon="💛"
+            title="Comisiones"
+            desc="Gestión de comisiones por empleado"
+            color={COLOR}
+            count={filtered.length}
+            onNew={openNew}
+            newLabel="Nueva comisión"
+          />
+        </div>
+        <button
+          onClick={() => setConfigOpen(true)}
+          title="Configuración de reglas de comisión"
+          style={{
+            marginTop: 4,
+            padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid var(--border)',
+            background: 'var(--surface2)',
+            color: C.muted,
+            display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'all 0.15s', whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          ⚙ Configurar
+        </button>
+      </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
@@ -480,6 +500,25 @@ export default function ComisionesView() {
             </Field>
           </FormGrid>
         </Modal>
+      )}
+
+      {/* ─── Configuración inline ──────────────────────────────────────────── */}
+      {configOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'var(--bg)',
+            overflowY: 'auto',
+            padding: '24px 0',
+          }}
+        >
+          <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 20px' }}>
+            <ComisionesConfigPanel
+              onBack={() => setConfigOpen(false)}
+              backLabel="✕ Cerrar configuración"
+            />
+          </div>
+        </div>
       )}
     </div>
   )

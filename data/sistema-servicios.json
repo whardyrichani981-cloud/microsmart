@@ -2,20 +2,20 @@
   {
     "id": "svc-001",
     "tipo": "Gremio",
-    "nombre": "Reprogramación de True Tone",
-    "descripcion": "Reprogramación de True Tone para todos los modelos",
+    "nombre": "ReprogramaciÃ³n de True Tone",
+    "descripcion": "ReprogramaciÃ³n de True Tone para todos los modelos",
     "precio": 22000,
-    "categoria": "Programación",
+    "categoria": "ProgramaciÃ³n",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-002",
     "tipo": "Gremio",
-    "nombre": "Reprogramación de batería",
-    "descripcion": "Reprogramación de batería para todos los modelos",
+    "nombre": "ReprogramaciÃ³n de baterÃ­a",
+    "descripcion": "ReprogramaciÃ³n de baterÃ­a para todos los modelos",
     "precio": 8800,
-    "categoria": "Programación",
+    "categoria": "ProgramaciÃ³n",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
@@ -32,18 +32,18 @@
   {
     "id": "svc-004",
     "tipo": "Gremio",
-    "nombre": "Revisión de Mac",
-    "descripcion": "Revisión para todas las Mac",
+    "nombre": "RevisiÃ³n de Mac",
+    "descripcion": "RevisiÃ³n para todas las Mac",
     "precio": 27500,
-    "categoria": "Revisión",
+    "categoria": "RevisiÃ³n",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-005",
     "tipo": "Gremio",
-    "nombre": "Cambio de periféricos iPad",
-    "descripcion": "Cambio de periféricos para todos los modelos de iPad",
+    "nombre": "Cambio de perifÃ©ricos iPad",
+    "descripcion": "Cambio de perifÃ©ricos para todos los modelos de iPad",
     "precio": 33000,
     "categoria": "iPad",
     "activo": true,
@@ -52,8 +52,8 @@
   {
     "id": "svc-006",
     "tipo": "Gremio",
-    "nombre": "Revisión iPad",
-    "descripcion": "Revisión de iPad para todos los modelos",
+    "nombre": "RevisiÃ³n iPad",
+    "descripcion": "RevisiÃ³n de iPad para todos los modelos",
     "precio": 22000,
     "categoria": "iPad",
     "activo": true,
@@ -72,8 +72,8 @@
   {
     "id": "svc-008",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone 8 a 11 Pro Max",
-    "descripcion": "Mano de obra y revisión para iPhone 8, 8 Plus, X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max",
+    "nombre": "Mano de obra y revisiÃ³n iPhone 8 a 11 Pro Max",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone 8, 8 Plus, X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max",
     "precio": 22000,
     "categoria": "Mano de obra",
     "activo": true,
@@ -82,8 +82,8 @@
   {
     "id": "svc-009",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone 12 a 12 Pro Max",
-    "descripcion": "Mano de obra y revisión para iPhone 12, 12 Mini, 12 Pro, 12 Pro Max",
+    "nombre": "Mano de obra y revisiÃ³n iPhone 12 a 12 Pro Max",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone 12, 12 Mini, 12 Pro, 12 Pro Max",
     "precio": 22000,
     "categoria": "Mano de obra",
     "activo": true,
@@ -92,8 +92,8 @@
   {
     "id": "svc-010",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone 13/14/15/14 Plus/15 Plus",
-    "descripcion": "Mano de obra y revisión para iPhone 13, 14, 15, 14 Plus, 15 Plus",
+    "nombre": "Mano de obra y revisiÃ³n iPhone 13/14/15/14 Plus/15 Plus",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone 13, 14, 15, 14 Plus, 15 Plus",
     "precio": 22000,
     "categoria": "Mano de obra",
     "activo": true,
@@ -102,8 +102,8 @@
   {
     "id": "svc-011",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone 13 Pro / 13 Pro Max",
-    "descripcion": "Mano de obra y revisión para iPhone 13 Pro y 13 Pro Max",
+    "nombre": "Mano de obra y revisiÃ³n iPhone 13 Pro / 13 Pro Max",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone 13 Pro y 13 Pro Max",
     "precio": 27500,
     "categoria": "Mano de obra",
     "activo": true,
@@ -112,8 +112,8 @@
   {
     "id": "svc-012",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone 14 Pro / 14 Pro Max",
-    "descripcion": "Mano de obra y revisión para iPhone 14 Pro y 14 Pro Max",
+    "nombre": "Mano de obra y revisiÃ³n iPhone 14 Pro / 14 Pro Max",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone 14 Pro y 14 Pro Max",
     "precio": 27500,
     "categoria": "Mano de obra",
     "activo": true,
@@ -122,8 +122,8 @@
   {
     "id": "svc-013",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone 15 Pro / 15 Pro Max",
-    "descripcion": "Mano de obra y revisión para iPhone 15 Pro y 15 Pro Max",
+    "nombre": "Mano de obra y revisiÃ³n iPhone 15 Pro / 15 Pro Max",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone 15 Pro y 15 Pro Max",
     "precio": 33000,
     "categoria": "Mano de obra",
     "activo": true,
@@ -132,8 +132,8 @@
   {
     "id": "svc-014",
     "tipo": "Gremio",
-    "nombre": "Mano de obra y revisión iPhone Serie 16/17",
-    "descripcion": "Mano de obra y revisión para iPhone Serie 16 y 17",
+    "nombre": "Mano de obra y revisiÃ³n iPhone Serie 16/17",
+    "descripcion": "Mano de obra y revisiÃ³n para iPhone Serie 16 y 17",
     "precio": 38500,
     "categoria": "Mano de obra",
     "activo": true,
@@ -142,60 +142,60 @@
   {
     "id": "svc-015",
     "tipo": "Gremio",
-    "nombre": "Mano de obra cambio cámara selfie iPhone X a 11 Pro Max",
-    "descripcion": "Cambio de cámara frontal para iPhone X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max",
+    "nombre": "Mano de obra cambio cÃ¡mara selfie iPhone X a 11 Pro Max",
+    "descripcion": "Cambio de cÃ¡mara frontal para iPhone X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max",
     "precio": 33000,
-    "categoria": "Cámara Selfie",
+    "categoria": "CÃ¡mara Selfie",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-016",
     "tipo": "Gremio",
-    "nombre": "Mano de obra cambio cámara selfie iPhone 12 a 12 Pro Max",
-    "descripcion": "Cambio de cámara frontal para iPhone 12, 12 Mini, 12 Pro, 12 Pro Max",
+    "nombre": "Mano de obra cambio cÃ¡mara selfie iPhone 12 a 12 Pro Max",
+    "descripcion": "Cambio de cÃ¡mara frontal para iPhone 12, 12 Mini, 12 Pro, 12 Pro Max",
     "precio": 33000,
-    "categoria": "Cámara Selfie",
+    "categoria": "CÃ¡mara Selfie",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-017",
     "tipo": "Gremio",
-    "nombre": "Mano de obra cambio cámara selfie iPhone 13 Pro / 13 Pro Max",
-    "descripcion": "Cambio de cámara frontal para iPhone 13 Pro y 13 Pro Max",
+    "nombre": "Mano de obra cambio cÃ¡mara selfie iPhone 13 Pro / 13 Pro Max",
+    "descripcion": "Cambio de cÃ¡mara frontal para iPhone 13 Pro y 13 Pro Max",
     "precio": 38500,
-    "categoria": "Cámara Selfie",
+    "categoria": "CÃ¡mara Selfie",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-018",
     "tipo": "Gremio",
-    "nombre": "Mano de obra cambio cámara selfie iPhone 14 Pro / 14 Pro Max",
-    "descripcion": "Cambio de cámara frontal para iPhone 14 Pro y 14 Pro Max",
+    "nombre": "Mano de obra cambio cÃ¡mara selfie iPhone 14 Pro / 14 Pro Max",
+    "descripcion": "Cambio de cÃ¡mara frontal para iPhone 14 Pro y 14 Pro Max",
     "precio": 38500,
-    "categoria": "Cámara Selfie",
+    "categoria": "CÃ¡mara Selfie",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-019",
     "tipo": "Gremio",
-    "nombre": "Mano de obra cambio cámara selfie iPhone 15 Pro / 15 Pro Max",
-    "descripcion": "Cambio de cámara frontal para iPhone 15 Pro y 15 Pro Max",
+    "nombre": "Mano de obra cambio cÃ¡mara selfie iPhone 15 Pro / 15 Pro Max",
+    "descripcion": "Cambio de cÃ¡mara frontal para iPhone 15 Pro y 15 Pro Max",
     "precio": 44000,
-    "categoria": "Cámara Selfie",
+    "categoria": "CÃ¡mara Selfie",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-020",
     "tipo": "Gremio",
-    "nombre": "Mano de obra cambio cámara selfie iPhone Serie 16/17",
-    "descripcion": "Cambio de cámara frontal para iPhone Serie 16 y 17",
+    "nombre": "Mano de obra cambio cÃ¡mara selfie iPhone Serie 16/17",
+    "descripcion": "Cambio de cÃ¡mara frontal para iPhone Serie 16 y 17",
     "precio": 49500,
-    "categoria": "Cámara Selfie",
+    "categoria": "CÃ¡mara Selfie",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
@@ -312,78 +312,78 @@
   {
     "id": "svc-032",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie X",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone Serie X",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie X",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone Serie X",
     "precio": 11000,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-033",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie 11",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone 11, 11 Pro, 11 Pro Max",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie 11",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone 11, 11 Pro, 11 Pro Max",
     "precio": 11000,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-034",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie 12",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone 12, 12 Mini, 12 Pro, 12 Pro Max",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie 12",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone 12, 12 Mini, 12 Pro, 12 Pro Max",
     "precio": 11000,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-035",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie 13",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone 13, 13 Mini, 13 Pro, 13 Pro Max",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie 13",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone 13, 13 Mini, 13 Pro, 13 Pro Max",
     "precio": 16500,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-036",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie 14",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone 14, 14 Plus, 14 Pro, 14 Pro Max",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie 14",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone 14, 14 Plus, 14 Pro, 14 Pro Max",
     "precio": 16500,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-037",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie 15",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone 15, 15 Plus, 15 Pro, 15 Pro Max",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie 15",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone 15, 15 Plus, 15 Pro, 15 Pro Max",
     "precio": 16500,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-038",
     "tipo": "Gremio",
-    "nombre": "Cambio de vidrio de cámara Serie 16",
-    "descripcion": "Cambio de vidrio de cámara trasera para iPhone Serie 16",
+    "nombre": "Cambio de vidrio de cÃ¡mara Serie 16",
+    "descripcion": "Cambio de vidrio de cÃ¡mara trasera para iPhone Serie 16",
     "precio": 22000,
-    "categoria": "Vidrio Cámara",
+    "categoria": "Vidrio CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-039",
     "tipo": "Gremio",
-    "nombre": "Cambio de batería Apple Watch Serie 1/2",
-    "descripcion": "Cambio de batería para Apple Watch Series 1 y 2",
+    "nombre": "Cambio de baterÃ­a Apple Watch Serie 1/2",
+    "descripcion": "Cambio de baterÃ­a para Apple Watch Series 1 y 2",
     "precio": 27500,
     "categoria": "Apple Watch",
     "activo": true,
@@ -392,8 +392,8 @@
   {
     "id": "svc-040",
     "tipo": "Gremio",
-    "nombre": "Cambio de batería Apple Watch Serie 3/4",
-    "descripcion": "Cambio de batería para Apple Watch Series 3 y 4",
+    "nombre": "Cambio de baterÃ­a Apple Watch Serie 3/4",
+    "descripcion": "Cambio de baterÃ­a para Apple Watch Series 3 y 4",
     "precio": 27500,
     "categoria": "Apple Watch",
     "activo": true,
@@ -402,8 +402,8 @@
   {
     "id": "svc-041",
     "tipo": "Gremio",
-    "nombre": "Cambio de batería Apple Watch Serie 5/SE",
-    "descripcion": "Cambio de batería para Apple Watch Series 5 y SE",
+    "nombre": "Cambio de baterÃ­a Apple Watch Serie 5/SE",
+    "descripcion": "Cambio de baterÃ­a para Apple Watch Series 5 y SE",
     "precio": 27500,
     "categoria": "Apple Watch",
     "activo": true,
@@ -412,8 +412,8 @@
   {
     "id": "svc-042",
     "tipo": "Gremio",
-    "nombre": "Cambio de batería Apple Watch Serie 6",
-    "descripcion": "Cambio de batería para Apple Watch Series 6",
+    "nombre": "Cambio de baterÃ­a Apple Watch Serie 6",
+    "descripcion": "Cambio de baterÃ­a para Apple Watch Series 6",
     "precio": 27500,
     "categoria": "Apple Watch",
     "activo": true,
@@ -422,8 +422,8 @@
   {
     "id": "svc-043",
     "tipo": "Gremio",
-    "nombre": "Cambio de batería Apple Watch Serie 7",
-    "descripcion": "Cambio de batería para Apple Watch Series 7",
+    "nombre": "Cambio de baterÃ­a Apple Watch Serie 7",
+    "descripcion": "Cambio de baterÃ­a para Apple Watch Series 7",
     "precio": 27500,
     "categoria": "Apple Watch",
     "activo": true,
@@ -432,8 +432,8 @@
   {
     "id": "svc-044",
     "tipo": "Gremio",
-    "nombre": "Cambio de batería Apple Watch Serie 8",
-    "descripcion": "Cambio de batería para Apple Watch Series 8",
+    "nombre": "Cambio de baterÃ­a Apple Watch Serie 8",
+    "descripcion": "Cambio de baterÃ­a para Apple Watch Series 8",
     "precio": 27500,
     "categoria": "Apple Watch",
     "activo": true,
@@ -502,8 +502,8 @@
   {
     "id": "svc-051",
     "tipo": "Gremio",
-    "nombre": "Trasplante de flex de batería Serie X/11",
-    "descripcion": "Trasplante de flex de batería para iPhone Serie X y 11",
+    "nombre": "Trasplante de flex de baterÃ­a Serie X/11",
+    "descripcion": "Trasplante de flex de baterÃ­a para iPhone Serie X y 11",
     "precio": 22000,
     "categoria": "Trasplante Flex",
     "activo": true,
@@ -512,8 +512,8 @@
   {
     "id": "svc-052",
     "tipo": "Gremio",
-    "nombre": "Trasplante de flex de batería Serie 12",
-    "descripcion": "Trasplante de flex de batería para iPhone Serie 12",
+    "nombre": "Trasplante de flex de baterÃ­a Serie 12",
+    "descripcion": "Trasplante de flex de baterÃ­a para iPhone Serie 12",
     "precio": 22000,
     "categoria": "Trasplante Flex",
     "activo": true,
@@ -522,8 +522,8 @@
   {
     "id": "svc-053",
     "tipo": "Gremio",
-    "nombre": "Trasplante de flex de batería Serie 13",
-    "descripcion": "Trasplante de flex de batería para iPhone Serie 13",
+    "nombre": "Trasplante de flex de baterÃ­a Serie 13",
+    "descripcion": "Trasplante de flex de baterÃ­a para iPhone Serie 13",
     "precio": 27500,
     "categoria": "Trasplante Flex",
     "activo": true,
@@ -532,8 +532,8 @@
   {
     "id": "svc-054",
     "tipo": "Gremio",
-    "nombre": "Trasplante de flex de batería Serie 14",
-    "descripcion": "Trasplante de flex de batería para iPhone Serie 14",
+    "nombre": "Trasplante de flex de baterÃ­a Serie 14",
+    "descripcion": "Trasplante de flex de baterÃ­a para iPhone Serie 14",
     "precio": 27500,
     "categoria": "Trasplante Flex",
     "activo": true,
@@ -542,8 +542,8 @@
   {
     "id": "svc-055",
     "tipo": "Gremio",
-    "nombre": "Trasplante de flex de batería Serie 15",
-    "descripcion": "Trasplante de flex de batería para iPhone Serie 15",
+    "nombre": "Trasplante de flex de baterÃ­a Serie 15",
+    "descripcion": "Trasplante de flex de baterÃ­a para iPhone Serie 15",
     "precio": 27500,
     "categoria": "Trasplante Flex",
     "activo": true,
@@ -552,8 +552,8 @@
   {
     "id": "svc-056",
     "tipo": "Gremio",
-    "nombre": "Trasplante de flex de batería Serie 16",
-    "descripcion": "Trasplante de flex de batería para iPhone Serie 16",
+    "nombre": "Trasplante de flex de baterÃ­a Serie 16",
+    "descripcion": "Trasplante de flex de baterÃ­a para iPhone Serie 16",
     "precio": 38500,
     "categoria": "Trasplante Flex",
     "activo": true,
@@ -653,7 +653,7 @@
     "id": "svc-066",
     "tipo": "Gremio",
     "nombre": "Cambio de vidrio trasero iPhone SE2/SE3",
-    "descripcion": "Cambio de vidrio trasero para iPhone SE 2da y 3ra generación",
+    "descripcion": "Cambio de vidrio trasero para iPhone SE 2da y 3ra generaciÃ³n",
     "precio": 32890,
     "categoria": "Vidrio Trasero",
     "activo": true,
@@ -892,168 +892,168 @@
   {
     "id": "svc-090",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 6/6s/6 Plus/6s Plus",
-    "descripcion": "Reparación de placa para iPhone 6, 6s, 6 Plus y 6s Plus",
+    "nombre": "ReparaciÃ³n de placa iPhone 6/6s/6 Plus/6s Plus",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 6, 6s, 6 Plus y 6s Plus",
     "precio": 44000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-091",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 8/8 Plus/SE2020",
-    "descripcion": "Reparación de placa para iPhone 8, 8 Plus y SE 2020",
+    "nombre": "ReparaciÃ³n de placa iPhone 8/8 Plus/SE2020",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 8, 8 Plus y SE 2020",
     "precio": 44000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-092",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone X/XR/SE2022",
-    "descripcion": "Reparación de placa para iPhone X, XR y SE 2022",
+    "nombre": "ReparaciÃ³n de placa iPhone X/XR/SE2022",
+    "descripcion": "ReparaciÃ³n de placa para iPhone X, XR y SE 2022",
     "precio": 66000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-093",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone XS/XS Max",
-    "descripcion": "Reparación de placa para iPhone XS y XS Max",
+    "nombre": "ReparaciÃ³n de placa iPhone XS/XS Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone XS y XS Max",
     "precio": 66000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-094",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 11",
-    "descripcion": "Reparación de placa para iPhone 11",
+    "nombre": "ReparaciÃ³n de placa iPhone 11",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 11",
     "precio": 77000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-095",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 11 Pro/11 Pro Max",
-    "descripcion": "Reparación de placa para iPhone 11 Pro y 11 Pro Max",
+    "nombre": "ReparaciÃ³n de placa iPhone 11 Pro/11 Pro Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 11 Pro y 11 Pro Max",
     "precio": 77000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-096",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 12 Mini/12",
-    "descripcion": "Reparación de placa para iPhone 12 Mini y 12",
+    "nombre": "ReparaciÃ³n de placa iPhone 12 Mini/12",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 12 Mini y 12",
     "precio": 110000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-097",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 12 Pro/12 Pro Max",
-    "descripcion": "Reparación de placa para iPhone 12 Pro y 12 Pro Max",
+    "nombre": "ReparaciÃ³n de placa iPhone 12 Pro/12 Pro Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 12 Pro y 12 Pro Max",
     "precio": 110000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-098",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 13 Mini/13",
-    "descripcion": "Reparación de placa para iPhone 13 Mini y 13",
+    "nombre": "ReparaciÃ³n de placa iPhone 13 Mini/13",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 13 Mini y 13",
     "precio": 143000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-099",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 13 Pro/13 Pro Max",
-    "descripcion": "Reparación de placa para iPhone 13 Pro y 13 Pro Max",
+    "nombre": "ReparaciÃ³n de placa iPhone 13 Pro/13 Pro Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 13 Pro y 13 Pro Max",
     "precio": 143000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-100",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 14/14 Plus",
-    "descripcion": "Reparación de placa para iPhone 14 y 14 Plus",
+    "nombre": "ReparaciÃ³n de placa iPhone 14/14 Plus",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 14 y 14 Plus",
     "precio": 198000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-101",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 14 Pro/14 Pro Max",
-    "descripcion": "Reparación de placa para iPhone 14 Pro y 14 Pro Max",
+    "nombre": "ReparaciÃ³n de placa iPhone 14 Pro/14 Pro Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 14 Pro y 14 Pro Max",
     "precio": 198000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-102",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 15/15 Plus",
-    "descripcion": "Reparación de placa para iPhone 15 y 15 Plus",
+    "nombre": "ReparaciÃ³n de placa iPhone 15/15 Plus",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 15 y 15 Plus",
     "precio": 220000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-103",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 15 Pro/15 Pro Max",
-    "descripcion": "Reparación de placa para iPhone 15 Pro y 15 Pro Max",
+    "nombre": "ReparaciÃ³n de placa iPhone 15 Pro/15 Pro Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 15 Pro y 15 Pro Max",
     "precio": 275000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-104",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 16E/16/16 Plus",
-    "descripcion": "Reparación de placa para iPhone 16E, 16 y 16 Plus",
+    "nombre": "ReparaciÃ³n de placa iPhone 16E/16/16 Plus",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 16E, 16 y 16 Plus",
     "precio": 330000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-105",
     "tipo": "Gremio",
-    "nombre": "Reparación de placa iPhone 16 Pro/16 Pro Max",
-    "descripcion": "Reparación de placa para iPhone 16 Pro y 16 Pro Max",
+    "nombre": "ReparaciÃ³n de placa iPhone 16 Pro/16 Pro Max",
+    "descripcion": "ReparaciÃ³n de placa para iPhone 16 Pro y 16 Pro Max",
     "precio": 385000,
-    "categoria": "Reparación Placa",
+    "categoria": "ReparaciÃ³n Placa",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-106",
     "tipo": "Gremio",
-    "nombre": "Reparación de huella iPhone 6s/6s Plus",
-    "descripcion": "Reparación de Touch ID para iPhone 6s y 6s Plus",
+    "nombre": "ReparaciÃ³n de huella iPhone 6s/6s Plus",
+    "descripcion": "ReparaciÃ³n de Touch ID para iPhone 6s y 6s Plus",
     "precio": 44000,
     "categoria": "Touch ID",
     "activo": true,
@@ -1062,8 +1062,8 @@
   {
     "id": "svc-107",
     "tipo": "Gremio",
-    "nombre": "Reparación de huella iPhone 7/7 Plus",
-    "descripcion": "Reparación de Touch ID para iPhone 7 y 7 Plus",
+    "nombre": "ReparaciÃ³n de huella iPhone 7/7 Plus",
+    "descripcion": "ReparaciÃ³n de Touch ID para iPhone 7 y 7 Plus",
     "precio": 44000,
     "categoria": "Touch ID",
     "activo": true,
@@ -1072,8 +1072,8 @@
   {
     "id": "svc-108",
     "tipo": "Gremio",
-    "nombre": "Reparación de huella iPhone 8/8 Plus/SE2/SE3",
-    "descripcion": "Reparación de Touch ID para iPhone 8, 8 Plus, SE 2da y 3ra gen",
+    "nombre": "ReparaciÃ³n de huella iPhone 8/8 Plus/SE2/SE3",
+    "descripcion": "ReparaciÃ³n de Touch ID para iPhone 8, 8 Plus, SE 2da y 3ra gen",
     "precio": 44000,
     "categoria": "Touch ID",
     "activo": true,
@@ -1082,40 +1082,40 @@
   {
     "id": "svc-109",
     "tipo": "Gremio",
-    "nombre": "Reparación de conector de batería iPhone X a 11 Pro Max",
-    "descripcion": "Reparación de conector de batería para iPhone X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max",
+    "nombre": "ReparaciÃ³n de conector de baterÃ­a iPhone X a 11 Pro Max",
+    "descripcion": "ReparaciÃ³n de conector de baterÃ­a para iPhone X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max",
     "precio": 22000,
-    "categoria": "Conector Batería",
+    "categoria": "Conector BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-110",
     "tipo": "Gremio",
-    "nombre": "Reparación de conector de batería iPhone 12 a 13 Pro Max",
-    "descripcion": "Reparación de conector de batería para iPhone 12 a 13 Pro Max",
+    "nombre": "ReparaciÃ³n de conector de baterÃ­a iPhone 12 a 13 Pro Max",
+    "descripcion": "ReparaciÃ³n de conector de baterÃ­a para iPhone 12 a 13 Pro Max",
     "precio": 33000,
-    "categoria": "Conector Batería",
+    "categoria": "Conector BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-111",
     "tipo": "Gremio",
-    "nombre": "Reparación de conector de batería iPhone 14 a 15 Pro Max",
-    "descripcion": "Reparación de conector de batería para iPhone 14 a 15 Pro Max",
+    "nombre": "ReparaciÃ³n de conector de baterÃ­a iPhone 14 a 15 Pro Max",
+    "descripcion": "ReparaciÃ³n de conector de baterÃ­a para iPhone 14 a 15 Pro Max",
     "precio": 44000,
-    "categoria": "Conector Batería",
+    "categoria": "Conector BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
   {
     "id": "svc-112",
     "tipo": "Gremio",
-    "nombre": "Reparación de conector de batería iPhone 16 a 16 Pro Max",
-    "descripcion": "Reparación de conector de batería para iPhone 16 a 16 Pro Max",
+    "nombre": "ReparaciÃ³n de conector de baterÃ­a iPhone 16 a 16 Pro Max",
+    "descripcion": "ReparaciÃ³n de conector de baterÃ­a para iPhone 16 a 16 Pro Max",
     "precio": 55000,
-    "categoria": "Conector Batería",
+    "categoria": "Conector BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T10:00:00.000Z"
   },
@@ -1142,8 +1142,8 @@
   {
     "id": "svc-115",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone X/XS/XS Max/XR",
-    "descripcion": "Reparación de CPU swap para iPhone X, XS, XS Max y XR — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone X/XS/XS Max/XR",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone X, XS, XS Max y XR â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1152,8 +1152,8 @@
   {
     "id": "svc-116",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone 11/11 Pro/11 Pro Max",
-    "descripcion": "Reparación de CPU swap para iPhone 11, 11 Pro y 11 Pro Max — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone 11/11 Pro/11 Pro Max",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone 11, 11 Pro y 11 Pro Max â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1162,8 +1162,8 @@
   {
     "id": "svc-117",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone 12 Mini/12/12 Pro/12 Pro Max",
-    "descripcion": "Reparación de CPU swap para iPhone 12 Mini, 12, 12 Pro y 12 Pro Max — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone 12 Mini/12/12 Pro/12 Pro Max",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone 12 Mini, 12, 12 Pro y 12 Pro Max â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1172,8 +1172,8 @@
   {
     "id": "svc-118",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone 13 Mini/13/13 Pro/13 Pro Max",
-    "descripcion": "Reparación de CPU swap para iPhone 13 Mini, 13, 13 Pro y 13 Pro Max — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone 13 Mini/13/13 Pro/13 Pro Max",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone 13 Mini, 13, 13 Pro y 13 Pro Max â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1182,8 +1182,8 @@
   {
     "id": "svc-119",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone 14/14 Plus",
-    "descripcion": "Reparación de CPU swap para iPhone 14 y 14 Plus — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone 14/14 Plus",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone 14 y 14 Plus â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1192,8 +1192,8 @@
   {
     "id": "svc-120",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone 14 Pro/14 Pro Max",
-    "descripcion": "Reparación de CPU swap para iPhone 14 Pro y 14 Pro Max — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone 14 Pro/14 Pro Max",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone 14 Pro y 14 Pro Max â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1202,8 +1202,8 @@
   {
     "id": "svc-121",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone Serie 15",
-    "descripcion": "Reparación de CPU swap para iPhone Serie 15 — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone Serie 15",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone Serie 15 â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1212,8 +1212,8 @@
   {
     "id": "svc-122",
     "tipo": "Gremio",
-    "nombre": "Reparación CPU (swap) iPhone Serie 16",
-    "descripcion": "Reparación de CPU swap para iPhone Serie 16 — Precio a consultar",
+    "nombre": "ReparaciÃ³n CPU (swap) iPhone Serie 16",
+    "descripcion": "ReparaciÃ³n de CPU swap para iPhone Serie 16 â€” Precio a consultar",
     "precio": 0,
     "categoria": "CPU Swap",
     "activo": true,
@@ -1222,8 +1222,8 @@
   {
     "id": "svc-123",
     "tipo": "Gremio",
-    "nombre": "Reparación de placas iPad",
-    "descripcion": "Reparación de placas para todos los modelos de iPad — Precio a consultar",
+    "nombre": "ReparaciÃ³n de placas iPad",
+    "descripcion": "ReparaciÃ³n de placas para todos los modelos de iPad â€” Precio a consultar",
     "precio": 0,
     "categoria": "iPad",
     "activo": true,
@@ -1232,8 +1232,8 @@
   {
     "id": "svc-124",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie X",
-    "descripcion": "Reparación de Face ID para iPhone Serie X",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie X",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie X",
     "precio": 66000,
     "categoria": "Face ID",
     "activo": true,
@@ -1242,8 +1242,8 @@
   {
     "id": "svc-125",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie 11",
-    "descripcion": "Reparación de Face ID para iPhone Serie 11",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie 11",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie 11",
     "precio": 77000,
     "categoria": "Face ID",
     "activo": true,
@@ -1252,8 +1252,8 @@
   {
     "id": "svc-126",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie 12",
-    "descripcion": "Reparación de Face ID para iPhone Serie 12",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie 12",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie 12",
     "precio": 110000,
     "categoria": "Face ID",
     "activo": true,
@@ -1262,8 +1262,8 @@
   {
     "id": "svc-127",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie 13",
-    "descripcion": "Reparación de Face ID para iPhone Serie 13",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie 13",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie 13",
     "precio": 143000,
     "categoria": "Face ID",
     "activo": true,
@@ -1272,8 +1272,8 @@
   {
     "id": "svc-128",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie 14",
-    "descripcion": "Reparación de Face ID para iPhone Serie 14",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie 14",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie 14",
     "precio": 198000,
     "categoria": "Face ID",
     "activo": true,
@@ -1282,8 +1282,8 @@
   {
     "id": "svc-129",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie 15",
-    "descripcion": "Reparación de Face ID para iPhone Serie 15",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie 15",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie 15",
     "precio": 220000,
     "categoria": "Face ID",
     "activo": true,
@@ -1292,8 +1292,8 @@
   {
     "id": "svc-130",
     "tipo": "Gremio",
-    "nombre": "Reparación de Face ID iPhone Serie 16",
-    "descripcion": "Reparación de Face ID para iPhone Serie 16",
+    "nombre": "ReparaciÃ³n de Face ID iPhone Serie 16",
+    "descripcion": "ReparaciÃ³n de Face ID para iPhone Serie 16",
     "precio": 220000,
     "categoria": "Face ID",
     "activo": true,
@@ -1342,7 +1342,7 @@
   {
     "id": "svc-csf-005",
     "tipo": "Cliente final",
-    "nombre": "Revisión de MacBook",
+    "nombre": "RevisiÃ³n de MacBook",
     "descripcion": "",
     "precio": 20000,
     "categoria": "Mac",
@@ -1362,7 +1362,7 @@
   {
     "id": "svc-csf-007",
     "tipo": "Cliente final",
-    "nombre": "Cambio de batería para MacBook",
+    "nombre": "Cambio de baterÃ­a para MacBook",
     "descripcion": "",
     "precio": 380000,
     "categoria": "Mac",
@@ -1382,7 +1382,7 @@
   {
     "id": "svc-csf-009",
     "tipo": "Cliente final",
-    "nombre": "Reparación de flex de imagen Mac",
+    "nombre": "ReparaciÃ³n de flex de imagen Mac",
     "descripcion": "",
     "precio": 280000,
     "categoria": "Mac",
@@ -1395,7 +1395,7 @@
     "nombre": "Cambio de Modulo iphone 6 blanco",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1405,7 +1405,7 @@
     "nombre": "Cambio de Modulo iphone 6 negro",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1415,7 +1415,7 @@
     "nombre": "Cambio de Modulo iphone 6s blanco",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1425,7 +1425,7 @@
     "nombre": "Cambio de Modulo iphone 6s negro",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1435,7 +1435,7 @@
     "nombre": "Cambio de Modulo iphone 6 plus blanco",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1445,7 +1445,7 @@
     "nombre": "Cambio de Modulo iphone 6 plus negro",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1455,7 +1455,7 @@
     "nombre": "Cambio de Modulo iphone 6s plus blanco",
     "descripcion": "",
     "precio": 98000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1465,7 +1465,7 @@
     "nombre": "Cambio de Modulo iphone 6s plus negro",
     "descripcion": "",
     "precio": 98000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1475,7 +1475,7 @@
     "nombre": "Cambio de Modulo iphone 7 blanco",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1485,7 +1485,7 @@
     "nombre": "Cambio de Modulo iphone 7 negro",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1495,7 +1495,7 @@
     "nombre": "Cambio de Modulo iphone 8 blanco",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1505,7 +1505,7 @@
     "nombre": "Cambio de Modulo iphone 8/SE2/SE3 negro",
     "descripcion": "",
     "precio": 90500,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1515,7 +1515,7 @@
     "nombre": "Cambio de Modulo iphone 7 plus blanco",
     "descripcion": "",
     "precio": 98000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1525,7 +1525,7 @@
     "nombre": "Cambio de Modulo iphone 7 plus negro",
     "descripcion": "",
     "precio": 98000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1535,7 +1535,7 @@
     "nombre": "Cambio de Modulo iphone 8 plus blanco",
     "descripcion": "",
     "precio": 98000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1545,7 +1545,7 @@
     "nombre": "Cambio de Modulo iphone 8 plus negro",
     "descripcion": "",
     "precio": 98000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1555,7 +1555,7 @@
     "nombre": "Cambio de Modulo iphone x",
     "descripcion": "",
     "precio": 130000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1565,7 +1565,7 @@
     "nombre": "Cambio de Modulo iphone xs",
     "descripcion": "",
     "precio": 130000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1575,7 +1575,7 @@
     "nombre": "Cambio de Modulo iphone xs max",
     "descripcion": "",
     "precio": 145000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1585,7 +1585,7 @@
     "nombre": "Cambio de Modulo iphone Xr",
     "descripcion": "",
     "precio": 145000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1595,7 +1595,7 @@
     "nombre": "Cambio de Modulo iphone 11",
     "descripcion": "",
     "precio": 145000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1605,7 +1605,7 @@
     "nombre": "Cambio de Modulo iphone 11 pro",
     "descripcion": "",
     "precio": 160000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1615,7 +1615,7 @@
     "nombre": "Cambio de Modulo iphone 11 pro max",
     "descripcion": "",
     "precio": 165000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1625,7 +1625,7 @@
     "nombre": "Cambio de Modulo iphone 12 mini",
     "descripcion": "",
     "precio": 180000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1635,7 +1635,7 @@
     "nombre": "Cambio de Modulo iphone 12/12PRO incell",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1645,7 +1645,7 @@
     "nombre": "Cambio de Modulo iphone 12/12PRO original",
     "descripcion": "",
     "precio": 280000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1655,7 +1655,7 @@
     "nombre": "Cambio de Modulo iphone 12 pro max",
     "descripcion": "",
     "precio": 190000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1665,7 +1665,7 @@
     "nombre": "Cambio de Modulo iphone 13 mini",
     "descripcion": "",
     "precio": 190000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1675,7 +1675,7 @@
     "nombre": "Cambio de Modulo iphone 13",
     "descripcion": "",
     "precio": 165000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1685,7 +1685,7 @@
     "nombre": "Cambio de Modulo iphone 13 pro original",
     "descripcion": "",
     "precio": 599000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1695,7 +1695,7 @@
     "nombre": "Cambio de Modulo iphone 13 pro soft oled",
     "descripcion": "",
     "precio": 350000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1705,7 +1705,7 @@
     "nombre": "Cambio de Modulo iphone 13 pro max original",
     "descripcion": "",
     "precio": 630000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1715,7 +1715,7 @@
     "nombre": "Cambio de Modulo iPhone 13 Pro Max soft oled",
     "descripcion": "",
     "precio": 399000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1725,7 +1725,7 @@
     "nombre": "Cambio de Modulo iphone 14 plus original",
     "descripcion": "",
     "precio": 620000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1735,7 +1735,7 @@
     "nombre": "Cambio de Modulo iphone 14 plus incell ic",
     "descripcion": "",
     "precio": 280000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1745,7 +1745,7 @@
     "nombre": "Cambio de Modulo iphone 14 original",
     "descripcion": "",
     "precio": 480000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1755,7 +1755,7 @@
     "nombre": "Cambio de Modulo iphone 14 soft oled",
     "descripcion": "",
     "precio": 280000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1765,7 +1765,7 @@
     "nombre": "Cambio de Modulo iphone 14 pro original",
     "descripcion": "",
     "precio": 750000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1775,7 +1775,7 @@
     "nombre": "Cambio de Modulo iphone 14 pro soft oled",
     "descripcion": "",
     "precio": 495000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1785,7 +1785,7 @@
     "nombre": "Cambio de Modulo iphone 14 pro max original",
     "descripcion": "",
     "precio": 780000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1795,7 +1795,7 @@
     "nombre": "Cambio de Modulo iphone 14 pro max soft oled",
     "descripcion": "",
     "precio": 585000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1805,7 +1805,7 @@
     "nombre": "Cambio de Modulo iphone 15 plus original",
     "descripcion": "",
     "precio": 720000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1815,7 +1815,7 @@
     "nombre": "Cambio de Modulo iphone 15 plus incell ic",
     "descripcion": "",
     "precio": 320000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1825,7 +1825,7 @@
     "nombre": "Cambio de Modulo iphone 15 original",
     "descripcion": "",
     "precio": 720000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1835,7 +1835,7 @@
     "nombre": "Cambio de Modulo iphone 15 soft oled",
     "descripcion": "",
     "precio": 365000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1845,7 +1845,7 @@
     "nombre": "Cambio de Modulo iphone 15 pro original",
     "descripcion": "",
     "precio": 850000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1855,7 +1855,7 @@
     "nombre": "Cambio de Modulo iphone 15 pro soft oled",
     "descripcion": "",
     "precio": 550000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1865,7 +1865,7 @@
     "nombre": "Cambio de Modulo iphone 15 pro max original",
     "descripcion": "",
     "precio": 850000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1875,7 +1875,7 @@
     "nombre": "Cambio de Modulo iphone 15 pro max soft oled",
     "descripcion": "",
     "precio": 680000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1885,7 +1885,7 @@
     "nombre": "Cambio de Modulo iphone 16 original",
     "descripcion": "",
     "precio": 780000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1895,7 +1895,7 @@
     "nombre": "Cambio de Modulo iphone 16 incell ic",
     "descripcion": "",
     "precio": 395000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1905,7 +1905,7 @@
     "nombre": "Cambio de Modulo iphone 16 plus original",
     "descripcion": "",
     "precio": 780000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1915,7 +1915,7 @@
     "nombre": "Cambio de Modulo iphone 16 plus soft oled",
     "descripcion": "",
     "precio": 395000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1925,7 +1925,7 @@
     "nombre": "Cambio de Modulo iphone 16 pro original",
     "descripcion": "",
     "precio": 890000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1935,7 +1935,7 @@
     "nombre": "Cambio de Modulo iphone 16 pro soft oled",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1945,7 +1945,7 @@
     "nombre": "Cambio de Modulo iphone 16 pro max original",
     "descripcion": "",
     "precio": 890000,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1955,7 +1955,7 @@
     "nombre": "Cambio de Modulo iphone 16 pro max soft oled",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Pantalla/Módulo",
+    "categoria": "Pantalla/MÃ³dulo",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1965,7 +1965,7 @@
     "nombre": "Cambio de Bateria iphone 6",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1975,7 +1975,7 @@
     "nombre": "Cambio de Bateria iphone 6s",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1985,7 +1985,7 @@
     "nombre": "Cambio de Bateria iphone 6 plus",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -1995,7 +1995,7 @@
     "nombre": "Cambio de Bateria iphone 6s plus",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2005,7 +2005,7 @@
     "nombre": "Cambio de Bateria iphone 7",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2015,7 +2015,7 @@
     "nombre": "Cambio de Bateria iphone 7 plus",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2025,7 +2025,7 @@
     "nombre": "Cambio de Bateria iphone 8",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2035,7 +2035,7 @@
     "nombre": "Cambio de Bateria iphone 8 plus",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2045,7 +2045,7 @@
     "nombre": "Cambio de Bateria iphone SE 2",
     "descripcion": "",
     "precio": 120000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2055,17 +2055,17 @@
     "nombre": "Cambio de Bateria iphone SE 3",
     "descripcion": "",
     "precio": 120000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
   {
     "id": "svc-csf-077",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Batería iphone x",
+    "nombre": "Cambio de BaterÃ­a iphone x",
     "descripcion": "",
     "precio": 120000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2075,7 +2075,7 @@
     "nombre": "Cambio de Bateria iphone xs",
     "descripcion": "",
     "precio": 140000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2085,7 +2085,7 @@
     "nombre": "Cambio de Bateria iphone xs max",
     "descripcion": "",
     "precio": 140000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2095,7 +2095,7 @@
     "nombre": "Cambio de Bateria iphone Xr",
     "descripcion": "",
     "precio": 135000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2105,7 +2105,7 @@
     "nombre": "Cambio de Bateria iphone 11",
     "descripcion": "",
     "precio": 135000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2115,7 +2115,7 @@
     "nombre": "Cambio de Bateria iphone 11 pro",
     "descripcion": "",
     "precio": 140000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2125,7 +2125,7 @@
     "nombre": "Cambio de Bateria iphone 11 pro max",
     "descripcion": "",
     "precio": 140000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2135,7 +2135,7 @@
     "nombre": "Cambio de Bateria iphone 12 mini",
     "descripcion": "",
     "precio": 135000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2145,7 +2145,7 @@
     "nombre": "Cambio de Bateria iphone 12/12 pro",
     "descripcion": "",
     "precio": 138000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2155,7 +2155,7 @@
     "nombre": "Cambio de Bateria iphone 12 pro max",
     "descripcion": "",
     "precio": 145000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2165,7 +2165,7 @@
     "nombre": "Cambio de Bateria iphone 13 mini",
     "descripcion": "",
     "precio": 135000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2175,7 +2175,7 @@
     "nombre": "Cambio de Bateria iphone 13",
     "descripcion": "",
     "precio": 135000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2185,7 +2185,7 @@
     "nombre": "Cambio de Bateria iphone 13 pro",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2195,7 +2195,7 @@
     "nombre": "Cambio de Bateria iphone 13 pro max",
     "descripcion": "",
     "precio": 155000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2205,7 +2205,7 @@
     "nombre": "Cambio de Bateria iphone 14 plus",
     "descripcion": "",
     "precio": 145000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2215,7 +2215,7 @@
     "nombre": "Cambio de Bateria iphone 14",
     "descripcion": "",
     "precio": 135000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2225,7 +2225,7 @@
     "nombre": "Cambio de Bateria iphone 14 pro",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2235,7 +2235,7 @@
     "nombre": "Cambio de Bateria iphone 14 pro max",
     "descripcion": "",
     "precio": 160000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2245,7 +2245,7 @@
     "nombre": "Cambio de bateria iphone 15 plus",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2255,7 +2255,7 @@
     "nombre": "Cambio de Bateria iphone 15",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2265,17 +2265,17 @@
     "nombre": "Cambio de Bateria iphone 15 pro",
     "descripcion": "",
     "precio": 190000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
   {
     "id": "svc-csf-098",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Batería iphone 15 pro max",
+    "nombre": "Cambio de BaterÃ­a iphone 15 pro max",
     "descripcion": "",
     "precio": 190000,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2285,7 +2285,7 @@
     "nombre": "Cambio de Bateria iphone 16",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2295,7 +2295,7 @@
     "nombre": "Cambio de Bateria iphone 16 plus",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2305,7 +2305,7 @@
     "nombre": "Cambio de Bateria iphone 16 pro",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -2315,7 +2315,7 @@
     "nombre": "Cambio de Bateria iphone 16 pro max",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Batería",
+    "categoria": "BaterÃ­a",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3625,7 +3625,7 @@
     "nombre": "Cambio de Camara trasera 5G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3635,7 +3635,7 @@
     "nombre": "Cambio de Camara trasera 5S",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3645,7 +3645,7 @@
     "nombre": "Cambio de Camara trasera 5C",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3655,7 +3655,7 @@
     "nombre": "Cambio de Camara trasera SE",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3665,7 +3665,7 @@
     "nombre": "Cambio de ara trasera 6G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3675,7 +3675,7 @@
     "nombre": "Cambio de Camara trasera 6P",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3685,7 +3685,7 @@
     "nombre": "Cambio de Camara trasera 6S",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3695,7 +3695,7 @@
     "nombre": "Cambio de Camara trasera 6SP",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3705,7 +3705,7 @@
     "nombre": "Cambio de Camara trasera 7G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3715,7 +3715,7 @@
     "nombre": "Cambio de Camara trasera 7P",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3725,7 +3725,7 @@
     "nombre": "Cambio de Camara trasera 8G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3735,7 +3735,7 @@
     "nombre": "Cambio de Camara trasera 8P",
     "descripcion": "",
     "precio": 95500,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3745,7 +3745,7 @@
     "nombre": "Cambio de Camara trasera X",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3755,7 +3755,7 @@
     "nombre": "Cambio de Camara trasera XR",
     "descripcion": "",
     "precio": 120000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3765,7 +3765,7 @@
     "nombre": "Cambio de Camara trasera XS/XSM",
     "descripcion": "",
     "precio": 120000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3775,7 +3775,7 @@
     "nombre": "Cambio de Camara trasera 11",
     "descripcion": "",
     "precio": 120000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3785,7 +3785,7 @@
     "nombre": "Cambio de Camara trasera 11P/11PM",
     "descripcion": "",
     "precio": 195000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3795,7 +3795,7 @@
     "nombre": "Cambio de Camara trasera SE2/SE3",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3805,7 +3805,7 @@
     "nombre": "Cambio de Camara trasera 12M",
     "descripcion": "",
     "precio": 250000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3815,7 +3815,7 @@
     "nombre": "Cambio de Camara trasera 12",
     "descripcion": "",
     "precio": 180000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3825,7 +3825,7 @@
     "nombre": "Cambio de Camara trasera 12P",
     "descripcion": "",
     "precio": 330000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3835,7 +3835,7 @@
     "nombre": "Cambio de Camara trasera 12PM",
     "descripcion": "",
     "precio": 330000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3845,7 +3845,7 @@
     "nombre": "Cambio de Camara trasera 13M/13",
     "descripcion": "",
     "precio": 250000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3855,7 +3855,7 @@
     "nombre": "Cambio de Camara trasera 13P/13PM",
     "descripcion": "",
     "precio": 330000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3865,7 +3865,7 @@
     "nombre": "Cambio de Camara trasera 14",
     "descripcion": "",
     "precio": 250000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3875,7 +3875,7 @@
     "nombre": "Cambio de Camara trasera 14PLUS",
     "descripcion": "",
     "precio": 250000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3885,7 +3885,7 @@
     "nombre": "Cambio de Camara trasera 14P",
     "descripcion": "",
     "precio": 330000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3895,7 +3895,7 @@
     "nombre": "Cambio de Camara trasera 14PM",
     "descripcion": "",
     "precio": 330000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3905,7 +3905,7 @@
     "nombre": "Cambio de Camara trasera 15",
     "descripcion": "",
     "precio": 250000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3915,7 +3915,7 @@
     "nombre": "Cambio de Camara trasera 15 plus",
     "descripcion": "",
     "precio": 250000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3925,7 +3925,7 @@
     "nombre": "Cambio de Camara trasera 15 pro",
     "descripcion": "",
     "precio": 330000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3935,7 +3935,7 @@
     "nombre": "Cambio de Camara trasera 15 pro max",
     "descripcion": "",
     "precio": 33000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3945,7 +3945,7 @@
     "nombre": "Cambio de Camara trasera 16",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3955,7 +3955,7 @@
     "nombre": "Cambio de Camara trasera 16 plus",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3965,7 +3965,7 @@
     "nombre": "Cambio de Camara trasera 16 pro",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3975,7 +3975,7 @@
     "nombre": "Cambio de Camara trasera 16 pro max",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3985,7 +3985,7 @@
     "nombre": "Cambio de Camara frontal 5G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -3995,7 +3995,7 @@
     "nombre": "Cambio de Camara frontal 5S",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4005,7 +4005,7 @@
     "nombre": "Cambio de Camara frontal 5C",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4015,7 +4015,7 @@
     "nombre": "Cambio de Camara frontal SE",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4025,7 +4025,7 @@
     "nombre": "Cambio de Camara frontal 6G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4035,7 +4035,7 @@
     "nombre": "Cambio de Camara frontal 6P",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4045,7 +4045,7 @@
     "nombre": "Cambio de Camara frontal 6S",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4055,7 +4055,7 @@
     "nombre": "Cambio de Camara frontal 6SP",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4065,7 +4065,7 @@
     "nombre": "Cambio de Camara frontal 7G",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4075,7 +4075,7 @@
     "nombre": "Cambio de Camara frontal 7P",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4085,7 +4085,7 @@
     "nombre": "Cambio de Camara frontal 8G/SE2/SE3",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4095,7 +4095,7 @@
     "nombre": "Cambio de Camara frontal 8P",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4105,7 +4105,7 @@
     "nombre": "Cambio de Camara frontal X",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4115,7 +4115,7 @@
     "nombre": "Cambio de Camara frontal XR",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4125,7 +4125,7 @@
     "nombre": "Cambio de Camara frontal XS",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4135,7 +4135,7 @@
     "nombre": "Cambio de Camara frontal XSM",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4145,7 +4145,7 @@
     "nombre": "Cambio de Camara frontal 11",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4155,7 +4155,7 @@
     "nombre": "Cambio de Camara frontal 11P",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4165,7 +4165,7 @@
     "nombre": "Cambio de Camara frontal 11PM",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4175,7 +4175,7 @@
     "nombre": "Cambio de Camara frontal 12M",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4185,7 +4185,7 @@
     "nombre": "Cambio de Camara frontal 12",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4195,7 +4195,7 @@
     "nombre": "Cambio de Camara frontal 12 pro",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4205,7 +4205,7 @@
     "nombre": "Cambio de Camara frontal 12 pro max",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4215,7 +4215,7 @@
     "nombre": "Cambio de Camara frontal 13 mini",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4225,7 +4225,7 @@
     "nombre": "Cambio de Camara frontal 13",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4235,7 +4235,7 @@
     "nombre": "Cambio de Camara frontal 13 pro",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4245,7 +4245,7 @@
     "nombre": "Cambio de Camara frontal 13 pro max",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4255,7 +4255,7 @@
     "nombre": "Cambio de Camara frontal 14",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4265,7 +4265,7 @@
     "nombre": "Cambio de Camara frontal 14 plus",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4275,7 +4275,7 @@
     "nombre": "Cambio de Camara frontal 14 pro",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4285,7 +4285,7 @@
     "nombre": "Cambio de Camara frontal 14 pro max",
     "descripcion": "",
     "precio": 190000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4295,7 +4295,7 @@
     "nombre": "Cambio de Camara frontal 15",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4305,7 +4305,7 @@
     "nombre": "Cambio de Camara frontal 15 plus",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4315,7 +4315,7 @@
     "nombre": "Cambio de Camara frontal 15 pro",
     "descripcion": "",
     "precio": 150000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4325,7 +4325,7 @@
     "nombre": "Cambio de Camara frontal 15 pro max",
     "descripcion": "",
     "precio": 190000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4335,7 +4335,7 @@
     "nombre": "Cambio de Camara frontal 16",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4345,7 +4345,7 @@
     "nombre": "Cambio de Camara frontal 16 plus",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4355,7 +4355,7 @@
     "nombre": "Cambio de Camara frontal 16 pro",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4365,7 +4365,7 @@
     "nombre": "Cambio de Camara frontal 16 pro max",
     "descripcion": "",
     "precio": 0,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -4522,7 +4522,7 @@
   {
     "id": "svc-csf-323",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Encendido IPHONE X",
+    "nombre": "Cambio de Flex Encendido iPhone X",
     "descripcion": "",
     "precio": 85000,
     "categoria": "Flex",
@@ -4532,7 +4532,7 @@
   {
     "id": "svc-csf-324",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Volumen Carga Inala IPHONE X",
+    "nombre": "Cambio de Flex Volumen Carga Inala iPhone X",
     "descripcion": "",
     "precio": 85000,
     "categoria": "Flex",
@@ -4712,7 +4712,7 @@
   {
     "id": "svc-csf-342",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Encendido IPHONE 14",
+    "nombre": "Cambio de Flex Encendido iPhone 14",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4722,7 +4722,7 @@
   {
     "id": "svc-csf-343",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Volumen IPHONE 14",
+    "nombre": "Cambio de Flex Volumen iPhone 14",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4792,7 +4792,7 @@
   {
     "id": "svc-csf-350",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex ENCENDIDO IPHONE 15",
+    "nombre": "Cambio de Flex ENCENDIDO iPhone 15",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4802,7 +4802,7 @@
   {
     "id": "svc-csf-351",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex VOLUMEN IPHONE 15",
+    "nombre": "Cambio de Flex VOLUMEN iPhone 15",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4832,7 +4832,7 @@
   {
     "id": "svc-csf-354",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 12 MINI",
+    "nombre": "Cambio de Flex Flash iPhone 12 MINI",
     "descripcion": "",
     "precio": 85000,
     "categoria": "Flex",
@@ -4842,7 +4842,7 @@
   {
     "id": "svc-csf-355",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 12",
+    "nombre": "Cambio de Flex Flash iPhone 12",
     "descripcion": "",
     "precio": 85000,
     "categoria": "Flex",
@@ -4852,7 +4852,7 @@
   {
     "id": "svc-csf-356",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 12 PRO",
+    "nombre": "Cambio de Flex Flash iPhone 12 PRO",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4862,7 +4862,7 @@
   {
     "id": "svc-csf-357",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 12 PRO MAX",
+    "nombre": "Cambio de Flex Flash iPhone 12 PRO MAX",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4872,7 +4872,7 @@
   {
     "id": "svc-csf-358",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 13 MINI",
+    "nombre": "Cambio de Flex Flash iPhone 13 MINI",
     "descripcion": "",
     "precio": 85000,
     "categoria": "Flex",
@@ -4882,7 +4882,7 @@
   {
     "id": "svc-csf-359",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 13",
+    "nombre": "Cambio de Flex Flash iPhone 13",
     "descripcion": "",
     "precio": 95500,
     "categoria": "Flex",
@@ -4892,7 +4892,7 @@
   {
     "id": "svc-csf-360",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 13 PRO",
+    "nombre": "Cambio de Flex Flash iPhone 13 PRO",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4902,7 +4902,7 @@
   {
     "id": "svc-csf-361",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 13 PRO MAX",
+    "nombre": "Cambio de Flex Flash iPhone 13 PRO MAX",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4912,7 +4912,7 @@
   {
     "id": "svc-csf-362",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash Carga Inalamb. IPHONE 14",
+    "nombre": "Cambio de Flex Flash Carga Inalamb. iPhone 14",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4922,7 +4922,7 @@
   {
     "id": "svc-csf-363",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash Carga Inalamb. IPHONE 14 PLUS",
+    "nombre": "Cambio de Flex Flash Carga Inalamb. iPhone 14 PLUS",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4932,7 +4932,7 @@
   {
     "id": "svc-csf-364",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 14 PRO",
+    "nombre": "Cambio de Flex Flash iPhone 14 PRO",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -4942,7 +4942,7 @@
   {
     "id": "svc-csf-365",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex Flash IPHONE 14 PRO MAX",
+    "nombre": "Cambio de Flex Flash iPhone 14 PRO MAX",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Flex",
@@ -6115,7 +6115,7 @@
     "nombre": "Cambio de vidrio de camara iphone X",
     "descripcion": "",
     "precio": 55000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6125,7 +6125,7 @@
     "nombre": "Cambio de vidrio de camara iphone XS",
     "descripcion": "",
     "precio": 55000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6135,7 +6135,7 @@
     "nombre": "Cambio de vidrio de camara iphone XS MAX",
     "descripcion": "",
     "precio": 55000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6145,7 +6145,7 @@
     "nombre": "Cambio de vidrio de camara iphone XR",
     "descripcion": "",
     "precio": 55000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6155,7 +6155,7 @@
     "nombre": "Cambio de vidrio de camara iphone 11",
     "descripcion": "",
     "precio": 55000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6165,7 +6165,7 @@
     "nombre": "Cambio de vidrio de camara iphone 11 PRO",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6175,7 +6175,7 @@
     "nombre": "Cambio de vidrio de camara iphone 11 PRO MAX",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6185,7 +6185,7 @@
     "nombre": "Cambio de vidrio de camara iphone 12 MINI",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6195,7 +6195,7 @@
     "nombre": "Cambio de vidrio de camara iphone 12",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6205,7 +6205,7 @@
     "nombre": "Cambio de vidrio de camara iphone 12 PRO",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6215,7 +6215,7 @@
     "nombre": "Cambio de vidrio de camara iphone 12 PRO MAX",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6225,7 +6225,7 @@
     "nombre": "Cambio de vidrio de camara iphone 13 MINI",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6235,7 +6235,7 @@
     "nombre": "Cambio de vidrio de camara iphone 13",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6245,7 +6245,7 @@
     "nombre": "Cambio de vidrio de camara iphone 13 PRO",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6255,7 +6255,7 @@
     "nombre": "Cambio de vidrio de camara iphone 13 PRO MAX",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6265,7 +6265,7 @@
     "nombre": "Cambio de vidrio de camara iphone 14",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6275,7 +6275,7 @@
     "nombre": "Cambio de vidrio de camara iphone 14 PLUS",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6285,7 +6285,7 @@
     "nombre": "Cambio de vidrio de camara iphone 14 PRO",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6295,7 +6295,7 @@
     "nombre": "Cambio de vidrio de camara iphone 14 PRO MAX",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6305,7 +6305,7 @@
     "nombre": "Cambio de vidrio de camara iphone 15",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6315,7 +6315,7 @@
     "nombre": "Cambio de vidrio de camara iphone 15 PLUS",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6325,7 +6325,7 @@
     "nombre": "Cambio de vidrio de camara iphone 15 PRO",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6335,7 +6335,7 @@
     "nombre": "Cambio de vidrio de camara iphone 15 PRO MAX",
     "descripcion": "",
     "precio": 85000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6345,7 +6345,7 @@
     "nombre": "Cambio de vidrio de camara iphone 16",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6355,7 +6355,7 @@
     "nombre": "Cambio de vidrio de camara iphone 16 PLUS",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6365,7 +6365,7 @@
     "nombre": "Cambio de vidrio de camara iphone 16 PRO",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -6375,7 +6375,7 @@
     "nombre": "Cambio de vidrio de camara iphone 16 PRO MAX",
     "descripcion": "",
     "precio": 95000,
-    "categoria": "Cámara",
+    "categoria": "CÃ¡mara",
     "activo": true,
     "createdAt": "2026-05-18T12:00:00.000Z"
   },
@@ -7242,7 +7242,7 @@
   {
     "id": "svc-csf-595",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Modulo IPAD PRO 11 1/2º",
+    "nombre": "Cambio de Modulo IPAD PRO 11 1/2Âº",
     "descripcion": "",
     "precio": 590000,
     "categoria": "Otro",
@@ -7252,7 +7252,7 @@
   {
     "id": "svc-csf-596",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Modulo IPAD  PRO 11 3/4º",
+    "nombre": "Cambio de Modulo IPAD  PRO 11 3/4Âº",
     "descripcion": "",
     "precio": 590000,
     "categoria": "Otro",
@@ -7262,7 +7262,7 @@
   {
     "id": "svc-csf-597",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Modulo IPAD PRO 12.9 1º",
+    "nombre": "Cambio de Modulo IPAD PRO 12.9 1Âº",
     "descripcion": "",
     "precio": 690000,
     "categoria": "Otro",
@@ -7272,7 +7272,7 @@
   {
     "id": "svc-csf-598",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Modulo IPAD PRO 12.9 2º",
+    "nombre": "Cambio de Modulo IPAD PRO 12.9 2Âº",
     "descripcion": "",
     "precio": 950000,
     "categoria": "Otro",
@@ -7282,7 +7282,7 @@
   {
     "id": "svc-csf-599",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Modulo IPAD PRO 12.9 3/4º",
+    "nombre": "Cambio de Modulo IPAD PRO 12.9 3/4Âº",
     "descripcion": "",
     "precio": 690000,
     "categoria": "Otro",
@@ -7292,7 +7292,7 @@
   {
     "id": "svc-csf-600",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Modulo IPAD PRO 12.9 5/6º",
+    "nombre": "Cambio de Modulo IPAD PRO 12.9 5/6Âº",
     "descripcion": "",
     "precio": 840000,
     "categoria": "Otro",
@@ -7512,7 +7512,7 @@
   {
     "id": "svc-csf-622",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD  AIR 3 / PRO 10.5 2º",
+    "nombre": "Cambio de Bateria IPAD  AIR 3 / PRO 10.5 2Âº",
     "descripcion": "",
     "precio": 240000,
     "categoria": "Otro",
@@ -7542,7 +7542,7 @@
   {
     "id": "svc-csf-625",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 11 1º",
+    "nombre": "Cambio de Bateria IPAD PRO 11 1Âº",
     "descripcion": "",
     "precio": 240000,
     "categoria": "Otro",
@@ -7552,7 +7552,7 @@
   {
     "id": "svc-csf-626",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 11 2º",
+    "nombre": "Cambio de Bateria IPAD PRO 11 2Âº",
     "descripcion": "",
     "precio": 240000,
     "categoria": "Otro",
@@ -7562,7 +7562,7 @@
   {
     "id": "svc-csf-627",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 11 3º/4º",
+    "nombre": "Cambio de Bateria IPAD PRO 11 3Âº/4Âº",
     "descripcion": "",
     "precio": 240000,
     "categoria": "Otro",
@@ -7572,7 +7572,7 @@
   {
     "id": "svc-csf-628",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 12.9 1º",
+    "nombre": "Cambio de Bateria IPAD PRO 12.9 1Âº",
     "descripcion": "",
     "precio": 240000,
     "categoria": "Otro",
@@ -7582,7 +7582,7 @@
   {
     "id": "svc-csf-629",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 12.9 2º",
+    "nombre": "Cambio de Bateria IPAD PRO 12.9 2Âº",
     "descripcion": "",
     "precio": 290000,
     "categoria": "Otro",
@@ -7592,7 +7592,7 @@
   {
     "id": "svc-csf-630",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 12.9 3/4º",
+    "nombre": "Cambio de Bateria IPAD PRO 12.9 3/4Âº",
     "descripcion": "",
     "precio": 320000,
     "categoria": "Otro",
@@ -7602,7 +7602,7 @@
   {
     "id": "svc-csf-631",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Bateria IPAD PRO 12.9 5º/6º",
+    "nombre": "Cambio de Bateria IPAD PRO 12.9 5Âº/6Âº",
     "descripcion": "",
     "precio": 320000,
     "categoria": "Otro",
@@ -7652,7 +7652,7 @@
   {
     "id": "svc-csf-636",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Boton Home IPAD MINI 4 / AIR 2 / PRO 12.9 1º",
+    "nombre": "Cambio de Boton Home IPAD MINI 4 / AIR 2 / PRO 12.9 1Âº",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",
@@ -7682,7 +7682,7 @@
   {
     "id": "svc-csf-639",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Boton Home IPAD AIR 3 / PRO 10.5 / PRO 12.9 2º",
+    "nombre": "Cambio de Boton Home IPAD AIR 3 / PRO 10.5 / PRO 12.9 2Âº",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",
@@ -7892,7 +7892,7 @@
   {
     "id": "svc-csf-660",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex de carga IPAD PRO 11 1º/2º - PRO 12.9 3º/4º",
+    "nombre": "Cambio de Flex de carga IPAD PRO 11 1Âº/2Âº - PRO 12.9 3Âº/4Âº",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",
@@ -7902,7 +7902,7 @@
   {
     "id": "svc-csf-661",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex de carga IPAD PRO 12.9 1º (WIFI)",
+    "nombre": "Cambio de Flex de carga IPAD PRO 12.9 1Âº (WIFI)",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",
@@ -7912,7 +7912,7 @@
   {
     "id": "svc-csf-662",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex de carga IPAD PRO 12.9 2º (WIFI)",
+    "nombre": "Cambio de Flex de carga IPAD PRO 12.9 2Âº (WIFI)",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",
@@ -7922,7 +7922,7 @@
   {
     "id": "svc-csf-663",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex de carga IPAD PRO 11 3º/4º - PRO 12.9 5º/6º",
+    "nombre": "Cambio de Flex de carga IPAD PRO 11 3Âº/4Âº - PRO 12.9 5Âº/6Âº",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",
@@ -8212,7 +8212,7 @@
   {
     "id": "svc-csf-692",
     "tipo": "Cliente final",
-    "nombre": "Cambio de Flex WIFI GPS IPAD PRO 12.9 2º",
+    "nombre": "Cambio de Flex WIFI GPS IPAD PRO 12.9 2Âº",
     "descripcion": "",
     "precio": 120000,
     "categoria": "Otro",

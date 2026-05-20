@@ -187,3 +187,16 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #636366; }
 input::placeholder { color: var(--text-dim); }
 input:focus { border-color: var(--accent) !important; outline: none; }
 select:focus { border-color: var(--accent) !important; outline: none; }
+
+/* ─── Dropdown scroll (proveedores, combos) ─────────────────────────────────── */
+.dropdown-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.dropdown-scroll::-webkit-scrollbar { width: 3px; }
+.dropdown-scroll::-webkit-scrollbar-track { background: transparent; }
+.dropdown-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+.dropdown-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
