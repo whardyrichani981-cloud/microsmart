@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "1779288624683-o3ytcv",
+    "fecha": "2026-05-20",
+    "fechaHoraCierre": "2026-05-20T14:50:24.663Z",
+    "totalGeneral": 90500,
+    "cantidadVentas": 1,
+    "desglosePorMetodo": {
+      "Efectivo": 90500,
+      "Transferencia": 0,
+      "Mercado Pago": 0,
+      "Tarjeta Débito": 0,
+      "Tarjeta Crédito": 0,
+      "Cheque": 0
+    },
+    "ventaIds": [
+      "1779288604126-5gkeb5"
+    ]
+  }
+]

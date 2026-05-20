@@ -204,5 +204,21 @@
     "id": "1779286370722-8abi46",
     "createdAt": "2026-05-20T14:12:50.722Z",
     "telegramMsgId": 26
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779288530952-ugqufd",
+    "createdAt": "2026-05-20T14:48:50.952Z",
+    "telegramMsgId": 27
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779288535054-v0wegg",
+    "createdAt": "2026-05-20T14:48:55.054Z",
+    "telegramMsgId": 28
   }
 ]

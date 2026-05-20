@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import VentasCSFView from './VentasCSFView'
 import VentasGremioView from './VentasGremioView'
 import { fmtARS, C, inputSt } from './shared'
-import type { VentaCaja } from '@/lib/sistema-types'
+import type { VentaCaja, VentaCSF, VentaGremio } from '@/lib/sistema-types'
 
 const COLOR_CSF      = '#4ade80'
 const COLOR_GREMIO   = '#34d399'
@@ -14,6 +14,59 @@ const TABS = [
   { id: 'gremio'   as const, label: '🏢 Gremio',         color: COLOR_GREMIO   },
   { id: 'empresas' as const, label: '🏛️ Empresas',       color: COLOR_EMPRESAS },
 ]
+
+// ── Resumen combinado (CSF legacy + Caja Mostrador) ──────────────────────────
+function ResumenCombinado({ tipo, color }: { tipo: 'csf' | 'gremio'; color: string }) {
+  const [totalCaja, setTotalCaja] = useState(0)
+  const [countCaja, setCountCaja] = useState(0)
+  const [totalLegacy, setTotalLegacy] = useState(0)
+  const [countLegacy, setCountLegacy] = useState(0)
+
+  useEffect(() => {
+    // Ventas caja mostrador
+    fetch('/api/sistema/ventas-caja')
+      .then(r => r.json())
+      .then((d: { items: VentaCaja[] }) => {
+        const items = (d.items ?? []).filter(v =>
+          tipo === 'gremio' ? v.tipoCliente === 'gremio'
+            : v.tipoCliente === 'clienteFinal' || (!v.tipoCliente && v.tipoFactura !== 'A')
+        )
+        setTotalCaja(items.reduce((s, v) => s + v.total, 0))
+        setCountCaja(items.length)
+      }).catch(() => {})
+
+    // Ventas legacy (CSF o Gremio)
+    const url = tipo === 'gremio' ? '/api/sistema/ventas-gremio' : '/api/sistema/ventas-csf'
+    fetch(url)
+      .then(r => r.json())
+      .then((d: (VentaCSF | VentaGremio)[]) => {
+        const items = Array.isArray(d) ? d : []
+        const total = items.reduce((s, v) => s + ('ticket' in v ? (v as VentaCSF).ticket : (v as VentaGremio).equivARS), 0)
+        setTotalLegacy(total)
+        setCountLegacy(items.length)
+      }).catch(() => {})
+  }, [tipo])
+
+  const totalCombinado = totalCaja + totalLegacy
+  const countCombinado = countCaja + countLegacy
+  if (countCombinado === 0) return null
+
+  return (
+    <div style={{
+      display: 'flex', gap: 10, padding: '12px 16px', borderRadius: 12,
+      background: `${color}08`, border: `1px solid ${color}25`, marginBottom: 4,
+      alignItems: 'center', flexWrap: 'wrap',
+    }}>
+      <span style={{ fontSize: 14, fontWeight: 800, color, flex: 1, minWidth: 120 }}>
+        📊 Total combinado: {fmtARS(totalCombinado)}
+      </span>
+      <span style={{ fontSize: 12, color: C.muted }}>{countCombinado} venta{countCombinado !== 1 ? 's' : ''} en total</span>
+      <span style={{ fontSize: 11, color: C.muted }}>
+        ({countLegacy} orden{countLegacy !== 1 ? 'es' : ''} {fmtARS(totalLegacy)} + {countCaja} caja {fmtARS(totalCaja)})
+      </span>
+    </div>
+  )
+}
 
 // ── Tabla de ventas de caja mostrador ─────────────────────────────────────────
 function VentasCajaView({
@@ -259,6 +312,7 @@ export default function VentasMainView() {
       {/* Tab content */}
       {tab === 'csf' && (
         <>
+          <ResumenCombinado tipo="csf" color={COLOR_CSF} />
           <VentasCSFView />
           {/* Ventas de mostrador cliente final (sin factura o Factura B) */}
           <div style={{ marginTop: 8 }}>
@@ -280,6 +334,7 @@ export default function VentasMainView() {
       )}
       {tab === 'gremio' && (
         <>
+          <ResumenCombinado tipo="gremio" color={COLOR_GREMIO} />
           <VentasGremioView />
           {/* Ventas de mostrador a clientes gremio */}
           <div style={{ marginTop: 8 }}>
