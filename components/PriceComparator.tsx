@@ -29,6 +29,7 @@ import OrdenesView from './sistema/OrdenesView'
 import ServiciosView from './sistema/ServiciosView'
 import VentasEquiposView from './sistema/VentasEquiposView'
 import CajaView from './sistema/CajaView'
+import CajaDiariaView from './sistema/CajaDiariaView'
 import type { UserRole, Permissions } from '@/lib/roles'
 import { SUPERADMIN_PERMISSIONS } from '@/lib/roles'
 
@@ -109,7 +110,7 @@ export default function PriceComparator({
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeNav, setActiveNav] = useState<NavItem>('inicio')
   const [isDark, setIsDark] = useState(false)
-  const [contableSubTab, setContableSubTab] = useState<'ventas' | 'gastos' | 'reportes' | 'comisiones'>('ventas')
+  const [contableSubTab, setContableSubTab] = useState<'ventas' | 'gastos' | 'reportes' | 'comisiones' | 'caja-diaria'>('ventas')
   const [viewMode, setViewMode] = useState<'merged' | 'columns'>('columns')
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set())
   const mainRef = useRef<HTMLElement>(null)
@@ -795,10 +796,11 @@ export default function PriceComparator({
               {/* Sub-pestañas: Ventas / Gastos / Reportes */}
               <div style={{ display: 'flex', gap: 2, marginBottom: 18, borderBottom: '1px solid var(--border)' }}>
                 {([
-                  { id: 'ventas'     as const, label: '💵 Ventas',      show: p.canViewVentas      && (modulesCfg ? modulesCfg['ventas']      !== false : true) },
-                  { id: 'gastos'     as const, label: '🧾 Gastos',      show: p.canViewGastos      && (modulesCfg ? modulesCfg['gastos']      !== false : true) },
-                  { id: 'comisiones' as const, label: '👤 Comisiones',  show: p.canViewComisiones  && (modulesCfg ? modulesCfg['comisiones']  !== false : true) },
-                  { id: 'reportes'   as const, label: '📊 Reportes',    show: p.canViewReportes    && (modulesCfg ? modulesCfg['reportes']    !== false : true) },
+                  { id: 'ventas'      as const, label: '💵 Ventas',       show: p.canViewVentas      && (modulesCfg ? modulesCfg['ventas']      !== false : true) },
+                  { id: 'gastos'      as const, label: '🧾 Gastos',       show: p.canViewGastos      && (modulesCfg ? modulesCfg['gastos']      !== false : true) },
+                  { id: 'comisiones'  as const, label: '👤 Comisiones',   show: p.canViewComisiones  && (modulesCfg ? modulesCfg['comisiones']  !== false : true) },
+                  { id: 'reportes'    as const, label: '📊 Reportes',     show: p.canViewReportes    && (modulesCfg ? modulesCfg['reportes']    !== false : true) },
+                  { id: 'caja-diaria' as const, label: '🏧 Caja Diaria',  show: true },
                 ] as const).filter(t => t.show).map(tab => (
                   <button
                     key={tab.id}
@@ -814,10 +816,11 @@ export default function PriceComparator({
                   >{tab.label}</button>
                 ))}
               </div>
-              {contableSubTab === 'ventas'     && <VentasMainView key="ventas" />}
-              {contableSubTab === 'gastos'     && <GastosMainView key="gastos" />}
-              {contableSubTab === 'comisiones' && <ComisionesView key="comisiones" />}
-              {contableSubTab === 'reportes'   && <ReportesMainView key="reportes" />}
+              {contableSubTab === 'ventas'      && <VentasMainView key="ventas" />}
+              {contableSubTab === 'gastos'      && <GastosMainView key="gastos" />}
+              {contableSubTab === 'comisiones'  && <ComisionesView key="comisiones" />}
+              {contableSubTab === 'reportes'    && <ReportesMainView key="reportes" />}
+              {contableSubTab === 'caja-diaria' && <CajaDiariaView key="caja-diaria" />}
             </div>
           )}
           {activeNav === 'ventas-equipos' && <VentasEquiposView key="ventas-equipos" />}

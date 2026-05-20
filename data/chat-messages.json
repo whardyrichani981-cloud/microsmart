@@ -180,5 +180,29 @@
     "id": "1779246460616-z7gt1j",
     "createdAt": "2026-05-20T03:07:40.616Z",
     "telegramMsgId": 23
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779286314253-1f4ar0",
+    "createdAt": "2026-05-20T14:11:54.253Z",
+    "telegramMsgId": 24
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779286345644-suv7al",
+    "createdAt": "2026-05-20T14:12:25.644Z",
+    "telegramMsgId": 25
+  },
+  {
+    "sessionId": "1779234053497-8hb7ufmm",
+    "role": "user",
+    "text": "👋",
+    "id": "1779286370722-8abi46",
+    "createdAt": "2026-05-20T14:12:50.722Z",
+    "telegramMsgId": 26
   }
 ]

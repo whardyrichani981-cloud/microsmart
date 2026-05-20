@@ -167,8 +167,14 @@ export default function CajaDiariaView() {
         fetch('/api/sistema/ventas-caja'),
         fetch('/api/sistema/caja-diaria'),
       ])
-      if (vRes.ok) setVentas(await vRes.json())
-      if (cRes.ok) setCierres(await cRes.json())
+      if (vRes.ok) {
+        const d = await vRes.json()
+        setVentas(Array.isArray(d) ? d : (d.items ?? []))
+      }
+      if (cRes.ok) {
+        const d = await cRes.json()
+        setCierres(Array.isArray(d) ? d : [])
+      }
     } finally { setLoading(false) }
   }, [])
 
