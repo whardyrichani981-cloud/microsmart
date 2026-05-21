@@ -5,14 +5,17 @@ export type NotePriority = 'alta' | 'media' | 'baja'
 
 export interface Note {
   id: string
-  author: string
+  author: string          // quien creó la nota (solicitadoPor)
   authorColor: string
+  responsable?: string    // a quien está asignada la tarea
+  solicitadoPor?: string  // alias explícito del creador (mismo que author)
   content: string
   category: NoteCategory
   priority: NotePriority
   product?: string
   resolved: boolean
   resolvedAt?: string
+  resolvedBy?: string     // quién la marcó como completada
   deleted?: boolean
   deletedAt?: string
   createdAt: string

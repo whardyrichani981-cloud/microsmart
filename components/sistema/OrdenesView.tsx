@@ -1,5 +1,6 @@
 ﻿'use client'
 import { useState, useEffect } from 'react'
+import { matchesAny } from '@/lib/search'
 import type { Orden, EstadoOrden, MetodoPago, Moneda, TipoServicio, TipoOrden, ClientePersona, ClienteB2B, OrdenItem, StockItem, Servicio, HistorialItem, NotaOrden, Proveedor } from '@/lib/sistema-types'
 import {
   useApi, fmtARS, today,
@@ -47,6 +48,69 @@ function formatDate(iso: string) {
   if (!iso) return '—'
   try { return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
   catch { return iso }
+}
+
+// ─── Tiempo de reparación ─────────────────────────────────────────────────────
+function diasAbierta(orden: Orden): number {
+  const inicio = orden.createdAt ? new Date(orden.createdAt) : new Date(orden.fecha)
+  const fin = orden.fechaEntregadoAt ? new Date(orden.fechaEntregadoAt) : new Date()
+  return Math.max(0, Math.floor((fin.getTime() - inicio.getTime()) / 86_400_000))
+}
+
+function diasBadgeColor(dias: number, entregado: boolean) {
+  if (entregado) return 'var(--text-secondary)'
+  if (dias <= 2)  return '#4ade80'
+  if (dias <= 5)  return '#fbbf24'
+  if (dias <= 10) return '#f97316'
+  return '#ef4444'
+}
+
+function diasSinMovimiento(orden: Orden): number {
+  // Último evento del historial, o en su defecto createdAt / fecha de ingreso
+  const lastHistorial = orden.historial?.length
+    ? orden.historial[orden.historial.length - 1].fecha
+    : null
+  const ref = lastHistorial || orden.createdAt || orden.fecha
+  if (!ref) return 0
+  return Math.max(0, Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000))
+}
+
+function SinMovimientoBadge({ orden }: { orden: Orden }) {
+  if (orden.estado === 'Entregado') return null
+  const dias = diasSinMovimiento(orden)
+  if (dias < 5) return null
+  const color = dias >= 10 ? '#ef4444' : '#f97316'
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      fontSize: 10, fontWeight: 700, fontFamily: 'monospace',
+      padding: '1px 6px', borderRadius: 6, marginTop: 2,
+      background: `${color}15`, color, border: `1px solid ${color}40`,
+    }} title={`Sin movimiento hace ${dias} día${dias !== 1 ? 's' : ''}`}>
+      ⚠ {dias}d sin mov.
+    </span>
+  )
+}
+
+function DiasBadge({ orden }: { orden: Orden }) {
+  const entregado = orden.estado === 'Entregado'
+  const dias = diasAbierta(orden)
+  const color = diasBadgeColor(dias, entregado)
+  const label = entregado
+    ? `✓ ${dias}d`
+    : dias === 0 ? 'Hoy' : `${dias}d`
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      fontSize: 10, fontWeight: 700, fontFamily: 'monospace',
+      padding: '1px 6px', borderRadius: 6, marginTop: 3,
+      background: entregado ? 'var(--border)' : `${color}18`,
+      color,
+      border: `1px solid ${color}44`,
+    }} title={entregado ? `Entregado en ${dias} días` : `${dias} día${dias !== 1 ? 's' : ''} en taller`}>
+      {entregado ? '✓' : '⏱'} {label}
+    </span>
+  )
 }
 
 function fmtARSPrint(n: number) {
@@ -454,6 +518,169 @@ function printComprobante(orden: Orden, logoBase64 = '', garantia = '') {
   }
 }
 
+// ─── Etiqueta ─────────────────────────────────────────────────────────────────
+function printEtiqueta(orden: Orden, logoBase64 = '', nombreNegocio = '') {
+  const nOrdenPad = String(orden.nOrden).padStart(6, '0')
+  const codigo    = orden.codigoSeguimiento ?? ''
+  const seguimientoUrl = codigo ? `${window.location.origin}/seguimiento/${codigo}` : ''
+  const qrUrl = seguimientoUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(seguimientoUrl)}&bgcolor=ffffff&color=111111&margin=4`
+    : ''
+  const esUrgente = orden.prioridad === 'Urgente'
+  const falla     = (orden.descripcionFalla ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const cliente   = orden.nombreCliente.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const equipo    = orden.modeloEquipo.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Etiqueta #${nOrdenPad}</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ebebeb;
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    @media print {
+      @page { size: 100mm 88mm; margin: 2mm; }
+      body { background: #fff; }
+      .label { box-shadow: none; border-color: #ccc; }
+      .cut { display: none; }
+    }
+    .label {
+      width: 100mm;
+      background: #fff;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+    }
+    /* ── Top strip ── */
+    .top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 10px 4px;
+      border-bottom: 1px solid #eee;
+    }
+    .brand     { font-size: 11px; font-weight: 900; letter-spacing: 0.12em; color: #111; }
+    .brand-sub { font-size: 6.5px; color: #aaa; letter-spacing: 0.06em; margin-top: 1px; }
+    .brand-logo { max-height: 26px; max-width: 52mm; object-fit: contain; display: block; }
+    .urgente   {
+      font-size: 7px; font-weight: 900; letter-spacing: 0.07em;
+      background: #ef4444; color: #fff;
+      padding: 2px 7px; border-radius: 3px; text-transform: uppercase;
+    }
+    .n-badge { font-size: 8.5px; font-weight: 700; color: #888; }
+    /* ── Body ── */
+    .body {
+      display: flex; align-items: flex-start;
+      padding: 9px 10px 7px 11px; gap: 8px;
+    }
+    .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    .n-orden { font-size: 18px; font-weight: 900; color: #111; letter-spacing: -0.02em; line-height: 1; margin-bottom: 2px; }
+    .f  { display: flex; flex-direction: column; gap: 1px; }
+    .fl { font-size: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: #bbb; }
+    .fv { font-size: 9.5px; font-weight: 700; color: #111; line-height: 1.3; }
+    .fv-falla { font-size: 8.5px; font-weight: 500; color: #555; line-height: 1.35; }
+    /* ── QR ── */
+    .qr { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; }
+    .qr img { width: 39mm; height: 39mm; display: block; }
+    .qr-lbl { font-size: 5.5px; color: #bbb; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+    /* ── Barcode ── */
+    .bc-wrap {
+      border-top: 1px solid #eee;
+      padding: 5px 10px 6px;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .bc-wrap svg { max-width: 93mm; height: auto; }
+    /* ── Cut line ── */
+    .cut { text-align: center; font-size: 9px; color: #bbb; padding: 5px 0 0; }
+  </style>
+</head>
+<body>
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="label">
+
+      <!-- Top strip -->
+      <div class="top">
+        <div>
+          ${logoBase64
+            ? `<img src="${logoBase64}" alt="Logo" class="brand-logo" />`
+            : `<div class="brand">${(nombreNegocio || 'Mi negocio').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+          }
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          ${esUrgente ? '<span class="urgente">⚡ Urgente</span>' : ''}
+          <span class="n-badge">#${nOrdenPad}</span>
+        </div>
+      </div>
+
+      <!-- Info + QR -->
+      <div class="body">
+        <div class="info">
+          <div class="n-orden">Orden #${nOrdenPad}</div>
+          <div class="f">
+            <span class="fl">Cliente</span>
+            <span class="fv">${cliente}</span>
+          </div>
+          <div class="f">
+            <span class="fl">Equipo</span>
+            <span class="fv">${equipo}</span>
+          </div>
+          ${falla ? `<div class="f">
+            <span class="fl">Falla</span>
+            <span class="fv-falla">${falla}</span>
+          </div>` : ''}
+        </div>
+        ${qrUrl ? `<div class="qr">
+          <img src="${qrUrl}" alt="QR" id="qr-img"/>
+          <span class="qr-lbl">Seguimiento online</span>
+        </div>` : ''}
+      </div>
+
+      <!-- Barcode -->
+      <div class="bc-wrap">
+        <svg id="barcode"></svg>
+      </div>
+
+    </div>
+    <div class="cut">✂ — cortar aquí —</div>
+  </div>
+
+  <script>
+    function renderAndPrint() {
+      if (typeof JsBarcode === 'undefined') { setTimeout(renderAndPrint, 80); return; }
+      JsBarcode('#barcode', '${nOrdenPad}', {
+        format: 'CODE128',
+        width: 1.9,
+        height: 42,
+        displayValue: true,
+        fontSize: 10,
+        margin: 2,
+        lineColor: '#111',
+        background: 'transparent',
+        textMargin: 3,
+        font: 'Arial',
+      });
+      ${qrUrl ? `
+      var img = document.getElementById('qr-img');
+      if (img && !img.complete) {
+        img.onload  = function(){ setTimeout(function(){ window.print(); }, 150); };
+        img.onerror = function(){ setTimeout(function(){ window.print(); }, 150); };
+      } else { setTimeout(function(){ window.print(); }, 150); }
+      ` : `setTimeout(function(){ window.print(); }, 150);`}
+    }
+    window.onload = renderAndPrint;
+  <\/script>
+</body>
+</html>`
+
+  const win = window.open('', '_blank', 'width=540,height=480')
+  if (win) { win.document.write(html); win.document.close() }
+}
+
 // ─── ClienteCombo ─────────────────────────────────────────────────────────────
 function ClienteCombo({ tipo, nombre, telefono, onNombre, onTelefono, onMail }: {
   tipo: TipoOrden
@@ -819,6 +1046,140 @@ function HistorialClienteModal({
   )
 }
 
+// ─── HistorialEquipoModal ─────────────────────────────────────────────────────
+function HistorialEquipoModal({
+  imei, modelo, ordenActualId, onClose,
+}: { imei: string; modelo: string; ordenActualId: string; onClose: () => void }) {
+  const [ordenes, setOrdenes] = useState<Orden[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/sistema/ordenes')
+      .then(r => r.json())
+      .then((data: Orden[]) => {
+        const imeiClean = imei.replace(/\D/g, '')
+        const matches = data.filter(o => {
+          if (o.id === ordenActualId) return false
+          if (imeiClean.length >= 6) {
+            return o.imei?.replace(/\D/g, '') === imeiClean
+          }
+          // Fallback: mismo modelo (solo si no hay IMEI)
+          return modelo && o.modeloEquipo?.toLowerCase() === modelo.toLowerCase()
+        }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+        setOrdenes(matches)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [imei, modelo, ordenActualId])
+
+  const byImei = imei.replace(/\D/g, '').length >= 6
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--surface)', borderRadius: 14,
+        border: '1px solid var(--border)',
+        width: '90%', maxWidth: 680, maxHeight: '80vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        overflow: 'hidden',
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(96,165,250,0.15)', border: '2px solid rgba(96,165,250,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+          }}>📱</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
+              🔧 Historial del equipo
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+              {modelo}{imei ? ` · ${imei}` : ''} ·{' '}
+              {loading
+                ? 'Buscando…'
+                : `${ordenes.length} reparación${ordenes.length !== 1 ? 'es' : ''} anterior${ordenes.length !== 1 ? 'es' : ''}`
+              }
+            </div>
+            {!byImei && modelo && (
+              <div style={{ fontSize: 11, color: '#fb923c', marginTop: 2 }}>
+                ⚠️ Sin IMEI — se busca por modelo (puede incluir equipos de otros clientes)
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: C.muted, fontSize: 20, padding: '4px 8px', borderRadius: 6,
+          }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: 'center', color: C.muted }}>Buscando…</div>
+          ) : ordenes.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: C.muted }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🆕</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Primera reparación</div>
+              <div style={{ fontSize: 13 }}>No hay reparaciones anteriores registradas para este equipo</div>
+            </div>
+          ) : ordenes.map((o, i) => (
+            <div key={o.id} style={{
+              padding: '13px 20px',
+              borderBottom: i < ordenes.length - 1 ? '1px solid var(--border)' : 'none',
+              display: 'flex', gap: 14, alignItems: 'flex-start',
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+                background: `${getEstadoColor(o.estado)}15`,
+                border: `1px solid ${getEstadoColor(o.estado)}44`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'column', gap: 0,
+              }}>
+                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, lineHeight: 1 }}>#</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: getEstadoColor(o.estado), lineHeight: 1.2 }}>{o.nOrden}</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {o.nombreCliente}
+                  </span>
+                  <span style={{
+                    fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700,
+                    background: `${getEstadoColor(o.estado)}18`, color: getEstadoColor(o.estado),
+                  }}>{o.estado}</span>
+                  {o.prioridad === 'Urgente' && (
+                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: '#ef444418', color: '#ef4444' }}>⚡ Urgente</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>
+                  {o.tipoServicio || 'Sin tipo de servicio'}
+                  {o.descripcionFalla ? ` · ${o.descripcionFalla.slice(0, 70)}${o.descripcionFalla.length > 70 ? '…' : ''}` : ''}
+                </div>
+                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: C.muted, flexWrap: 'wrap' }}>
+                  <span>📅 {formatDate(o.fecha)}</span>
+                  {o.tecnico && <span>👤 {o.tecnico}</span>}
+                  {o.imei && <span style={{ fontFamily: 'monospace' }}>IMEI: {o.imei}</span>}
+                  {o.montoCobrado ? <span style={{ color: COLOR, fontWeight: 700 }}>💰 {fmtARS(o.montoCobrado)}</span> : null}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── OrdenDetailPanel ────────────────────────────────────────────────────────
 function fmtDateTime(iso: string) {
   if (!iso) return '—'
@@ -884,7 +1245,41 @@ function ProveedorCombo({ value, onChange, proveedores }: {
   )
 }
 
-function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estadosOrdenConfig, logoLocal, terminosLocal, garantiaRetiro }: {
+// ─── Helpers WhatsApp (module-scope) ─────────────────────────────────────────
+const WA_DEFAULTS: Record<string, string> = {
+  'Entrada':               'Hola {nombre} 👋 Tu {modelo} (orden #{nOrden}) ingresó al taller Microsmart. Te avisamos cuando esté listo.',
+  'Técnico Saddi':         'Hola {nombre} 🔧 Tu {modelo} (orden #{nOrden}) está siendo revisado por nuestro técnico. Pronto te tenemos novedades.',
+  'Laboratorio':           'Hola {nombre} 🔬 Tu {modelo} (orden #{nOrden}) está en laboratorio para diagnóstico avanzado.',
+  'Salida de laboratorio': 'Hola {nombre} ✅ Tu {modelo} (orden #{nOrden}) salió del laboratorio y está siendo preparado para la entrega.',
+  'Salida':                'Hola {nombre} 🎉 ¡Buenas noticias! Tu {modelo} (orden #{nOrden}) está LISTO para retirar. Te esperamos en el local. ¡Gracias por elegirnos!',
+  'Entregado':             'Hola {nombre} 😊 Tu {modelo} fue entregado. ¡Gracias por confiar en Microsmart! Ante cualquier consulta, estamos a tu disposición.',
+}
+
+function buildWAMessage(
+  orden: { nombreCliente?: string; modeloEquipo?: string; nOrden?: number },
+  estado: string,
+  config: Record<string, string> = {}
+): string {
+  const nombre = orden.nombreCliente?.split(' ')[0] ?? 'cliente'
+  const modelo = orden.modeloEquipo || 'tu equipo'
+  const nOrden = String(orden.nOrden ?? 0).padStart(4, '0')
+  const template = config[estado] ?? WA_DEFAULTS[estado] ?? `Hola {nombre}, el estado de tu orden #{nOrden} ({modelo}) cambió a: ${estado}. — Microsmart`
+  return template
+    .replace(/{nombre}/g, nombre)
+    .replace(/{modelo}/g, modelo)
+    .replace(/{nOrden}/g, nOrden)
+}
+
+function formatWAPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  if (digits.startsWith('549')) return digits
+  if (digits.startsWith('54')) return digits
+  if (digits.length === 10) return `549${digits}`
+  if (digits.length === 11 && digits.startsWith('0')) return `549${digits.slice(1)}`
+  return `549${digits}`
+}
+
+function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estadosOrdenConfig, logoLocal, nombreNegocioLocal, terminosLocal, garantiaRetiro, waMensajesConfig }: {
   orden: Orden
   onBack: () => void
   onEdit: () => void
@@ -892,8 +1287,10 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   currentUser: string
   estadosOrdenConfig: string[]
   logoLocal?: string
+  nombreNegocioLocal?: string
   terminosLocal?: string
   garantiaRetiro?: string
+  waMensajesConfig?: Record<string, string>
 }) {
   const [detailTab, setDetailTab] = useState<'fotos' | 'notas' | 'historial'>('notas')
   const [uploading, setUploading] = useState(false)
@@ -902,10 +1299,15 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   const [editingImei, setEditingImei] = useState(false)
   const [imeiValue, setImeiValue] = useState(orden.imei ?? '')
   const [savingImei, setSavingImei] = useState(false)
+  const [editingModelo, setEditingModelo] = useState(false)
+  const [modeloValue, setModeloValue] = useState(orden.modeloEquipo ?? '')
+  const [colorValue, setColorValue] = useState((orden as any).colorEquipo ?? '')
+  const [savingModelo, setSavingModelo] = useState(false)
   const [accionOpen, setAccionOpen] = useState(false)
   const [accionPos, setAccionPos] = useState<{ top: number; left: number } | null>(null)
   const [copiedDetail, setCopiedDetail] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
+  const [historialEquipoOpen, setHistorialEquipoOpen] = useState(false)
   const [notas2, setNotas2] = useState(orden.notas2 ?? '')
   const [savingNotas, setSavingNotas] = useState(false)
 
@@ -924,10 +1326,43 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
   const [entregaMonto, setEntregaMonto] = useState<number>(orden.montoCobrado ?? 0)
   const [entregaGarantia, setEntregaGarantia] = useState(orden.garantia ?? false)
   const [entregaDiasGarantia, setEntregaDiasGarantia] = useState(orden.diasGarantia ?? 90)
+  const [entregaEsCC, setEntregaEsCC] = useState(false)
 
   // Factura prompt after entrega
   const [showFacturaPrompt, setShowFacturaPrompt] = useState(false)
   const [facturaOrden, setFacturaOrden] = useState<typeof orden | null>(null)
+
+  // WhatsApp notification modal
+  const [waModal, setWaModal] = useState<{ estado: string; mensaje: string } | null>(null)
+
+  // Edición inline de cliente
+  const [editingCliente, setEditingCliente] = useState(false)
+  const [clienteNombre, setClienteNombre] = useState(orden.nombreCliente ?? '')
+  const [clienteTelefono, setClienteTelefono] = useState(orden.telefonoCliente ?? '')
+  const [clienteTipo, setClienteTipo] = useState<TipoOrden>(orden.tipo ?? 'Cliente final')
+  const [savingCliente, setSavingCliente] = useState(false)
+
+  const saveCliente = async () => {
+    const nombre = clienteNombre.trim()
+    if (!nombre) return
+    setSavingCliente(true)
+    try {
+      const cambios: string[] = []
+      if (nombre !== orden.nombreCliente) cambios.push(`Cliente: "${orden.nombreCliente}" → "${nombre}"`)
+      if (clienteTelefono !== orden.telefonoCliente) cambios.push(`Teléfono: "${orden.telefonoCliente || '—'}" → "${clienteTelefono || '—'}"`)
+      if (clienteTipo !== orden.tipo) cambios.push(`Tipo: "${orden.tipo}" → "${clienteTipo}"`)
+      if (cambios.length === 0) { setEditingCliente(false); return }
+      const entry = mkEntry('estado', cambios.join(' · '), currentUser)
+      const newHist = [...(orden.historial ?? []), entry]
+      await fetch(`/api/sistema/ordenes/${orden.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...orden, imagenes, nombreCliente: nombre, telefonoCliente: clienteTelefono, tipo: clienteTipo, historial: newHist }),
+      })
+      setEditingCliente(false)
+      onRefresh()
+    } finally { setSavingCliente(false) }
+  }
 
   // Cargar días de garantía por defecto al abrir el modal
   useEffect(() => {
@@ -1017,13 +1452,55 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
     setAccionOpen(false)
     setEntregaMetodoPago(orden.metodoPago ?? 'Efectivo')
     setEntregaMonto(orden.montoCobrado ?? 0)
+    setEntregaEsCC(false)
     setShowEntregaConfirm(true)
   }
 
   const confirmarEntrega = async () => {
     setEntregaLoading(true)
     try {
-      if (orden.tipo === 'Cliente final') {
+      if (entregaEsCC) {
+        // ── Modo Cuenta Corriente — NO registrar venta, crear cargo CC ────────
+        await fetch('/api/sistema/cuenta-corriente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fecha: today(),
+            clienteTipo: orden.tipo === 'Cliente final' ? 'persona' : 'empresa',
+            clienteNombre: orden.nombreCliente,
+            clienteTelefono: orden.telefonoCliente,
+            tipo: 'cargo',
+            monto: entregaMonto,
+            montoPagado: 0,
+            saldoPendiente: entregaMonto,
+            estado: 'pendiente',
+            concepto: `Orden #${orden.nOrden} — ${orden.modeloEquipo || ''}${orden.tipoServicio ? ' · ' + orden.tipoServicio : ''}`,
+            referenciaId: orden.id,
+            referenciaTipo: 'orden',
+            referenciaNum: orden.nOrden,
+            snapshotOrden: {
+              nOrden: orden.nOrden,
+              tipo: orden.tipo,
+              nombreCliente: orden.nombreCliente,
+              modeloEquipo: orden.modeloEquipo,
+              tipoServicio: orden.tipoServicio,
+              tecnico: orden.tecnico,
+              proveedor: orden.proveedor,
+              tipoRepuesto: orden.tipoRepuesto,
+              costoRepuestoUSD: orden.costoRepuestoUSD,
+              precioDolar: orden.precioDolar,
+              costoRepuestoPesos: orden.costoRepuestoPesos,
+              costoRepuestos: orden.costoRepuestos,
+              moneda: orden.moneda,
+              comisionVendedora: orden.comisionVendedora,
+              comisionTecnico: orden.comisionTecnico,
+              notas: orden.notas,
+              descripcionFalla: orden.descripcionFalla,
+            },
+          }),
+        })
+        // Saltar al bloque de stock y Entregado (sin venta ni comisiones)
+      } else if (orden.tipo === 'Cliente final') {
         const ventaBody = {
           fecha: today(),
           nOrden: orden.nOrden,
@@ -1068,8 +1545,8 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
         })
       }
 
-      // ── Auto-generar comisiones para órdenes de Cliente final ────────────
-      if (orden.tipo === 'Cliente final') {
+      // ── Auto-generar comisiones (solo si NO es CC — para CC se generan al cobrar) ───
+      if (!entregaEsCC && orden.tipo === 'Cliente final') {
         try {
           const reglaRes = await fetch('/api/sistema/reglas-comision')
           if (reglaRes.ok) {
@@ -1111,7 +1588,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       }
 
       // ── Auto-generar comisión para órdenes de Gremio ─────────────────────
-      if (orden.tipo === 'Gremio') {
+      if (!entregaEsCC && orden.tipo === 'Gremio') {
         try {
           const gremioRes = await fetch('/api/sistema/reglas-comision-gremio')
           if (gremioRes.ok) {
@@ -1167,7 +1644,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
             await fetch('/api/sistema/stock', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...stockItem, stock: nuevoStock }),
+              body: JSON.stringify({ ...stockItem, stock: nuevoStock, motivo: `Uso en orden #${orden.nOrden}`, referencia: `Orden #${orden.nOrden}` }),
             })
             stockDescuentos.push(`${item.nombre} ×${item.cantidad}`)
           }
@@ -1178,15 +1655,19 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       const stockLog = stockDescuentos.length > 0
         ? ` · Stock descontado: ${stockDescuentos.join(', ')}.`
         : ''
-      const entry = mkEntry('estado', `Equipo entregado. Venta registrada en reportes (${orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}).${stockLog}`, currentUser)
+      const entregaDesc = entregaEsCC
+        ? `Equipo entregado a Cuenta Corriente. Deuda registrada: ${fmtARS(entregaMonto)}.${stockLog}`
+        : `Equipo entregado. Venta registrada en reportes (${orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}).${stockLog}`
+      const entry = mkEntry('estado', entregaDesc, currentUser)
       const newHist = [...(orden.historial ?? []), entry]
+      const metodoPagoFinal: MetodoPago = entregaEsCC ? 'Cuenta Corriente' : entregaMetodoPago
       await fetch(`/api/sistema/ordenes/${orden.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...orden, imagenes, estado: 'Entregado' as EstadoOrden, metodoPago: entregaMetodoPago, montoCobrado: entregaMonto, garantia: entregaGarantia, diasGarantia: entregaGarantia ? entregaDiasGarantia : 0, historial: newHist }),
+        body: JSON.stringify({ ...orden, imagenes, estado: 'Entregado' as EstadoOrden, metodoPago: metodoPagoFinal, montoCobrado: entregaMonto, garantia: entregaGarantia, diasGarantia: entregaGarantia ? entregaDiasGarantia : 0, historial: newHist, fechaEntregadoAt: orden.fechaEntregadoAt ?? new Date().toISOString() }),
       })
       setShowEntregaConfirm(false)
-      setFacturaOrden({ ...orden, montoCobrado: entregaMonto, metodoPago: entregaMetodoPago })
+      setFacturaOrden({ ...orden, montoCobrado: entregaMonto, metodoPago: metodoPagoFinal })
       setShowFacturaPrompt(true)
       onRefresh()
     } catch (e) {
@@ -1210,6 +1691,29 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       setEditingImei(false)
       onRefresh()
     } finally { setSavingImei(false) }
+  }
+
+  const saveModelo = async () => {
+    const trimmed = modeloValue.trim()
+    if (!trimmed) return
+    const modeloCambio = trimmed !== orden.modeloEquipo
+    const colorCambio = colorValue !== ((orden as any).colorEquipo ?? '')
+    if (!modeloCambio && !colorCambio) { setEditingModelo(false); return }
+    setSavingModelo(true)
+    try {
+      const partes: string[] = []
+      if (modeloCambio) partes.push(`Modelo: "${orden.modeloEquipo}" → "${trimmed}"`)
+      if (colorCambio) partes.push(`Color: "${(orden as any).colorEquipo || '—'}" → "${colorValue || '—'}"`)
+      const entry = mkEntry('estado', partes.join(' · '), currentUser)
+      const newHist = [...(orden.historial ?? []), entry]
+      await fetch(`/api/sistema/ordenes/${orden.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...orden, imagenes, modeloEquipo: trimmed, colorEquipo: colorValue, historial: newHist }),
+      })
+      setEditingModelo(false)
+      onRefresh()
+    } finally { setSavingModelo(false) }
   }
 
   const addHistorial = async (entry: HistorialItem) => {
@@ -1371,7 +1875,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       await fetch(`/api/sistema/stock/${prod.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...prod, stock: newStock, costoTotalARS: newStock * prod.costoUnitario }),
+        body: JSON.stringify({ ...prod, stock: newStock, costoTotalARS: newStock * prod.costoUnitario, motivo: `Uso en orden #${orden.nOrden}`, referencia: `Orden #${orden.nOrden}` }),
       })
       setStockItems(prev => prev.map(s => s.id === prod.id ? { ...s, stock: newStock } : s))
     }
@@ -1397,7 +1901,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       await fetch(`/api/sistema/stock/${prod.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProd),
+        body: JSON.stringify({ ...updatedProd, motivo: `Compra rápida para orden #${orden.nOrden}`, referencia: `Orden #${orden.nOrden}` }),
       })
       // Registrar gasto automático y guardar su ID para poder cancelarlo después
       const nombreProd = `${prod.repuesto}${prod.modelo ? ' ' + prod.modelo : ''}`
@@ -1465,7 +1969,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       await fetch(`/api/sistema/stock/${rep.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...rep, stock: newStock, costoTotalARS: newStock * rep.costoUnitario }),
+        body: JSON.stringify({ ...rep, stock: newStock, costoTotalARS: newStock * rep.costoUnitario, motivo: `Uso en orden #${orden.nOrden}`, referencia: `Orden #${orden.nOrden}` }),
       })
       setStockItems(prev => prev.map(s => s.id === rep.id ? { ...s, stock: newStock } : s))
     }
@@ -1491,7 +1995,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
       await fetch(`/api/sistema/stock/${rep.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedRep),
+        body: JSON.stringify({ ...updatedRep, motivo: `Compra rápida para orden #${orden.nOrden}`, referencia: `Orden #${orden.nOrden}` }),
       })
       // Registrar gasto automático y guardar su ID para poder cancelarlo después
       const nombreRep = `${rep.repuesto}${rep.modelo ? ' ' + rep.modelo : ''}`
@@ -1678,6 +2182,21 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
         >🧾 Comprobante de retiro</button>
 
         <button
+          onClick={() => printEtiqueta(orden, logoLocal ?? '', nombreNegocioLocal)}
+          title="Imprimir etiqueta para pegar en el equipo"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 14px', borderRadius: 8,
+            background: 'rgba(251,146,60,0.08)',
+            border: '1px solid rgba(251,146,60,0.30)',
+            color: '#fb923c', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(251,146,60,0.15)'; e.currentTarget.style.borderColor = 'rgba(251,146,60,0.55)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(251,146,60,0.08)'; e.currentTarget.style.borderColor = 'rgba(251,146,60,0.30)' }}
+        >🏷 Etiqueta</button>
+
+        <button
           onClick={onRefresh}
           title="Actualizar"
           style={{
@@ -1731,6 +2250,33 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               color: '#60a5fa', cursor: 'pointer', transition: 'all 0.15s',
             }}
           >Ver página ↗</button>
+          {/* Enviar por WhatsApp */}
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/seguimiento/${orden.codigoSeguimiento}`
+              const text = `Hola ${orden.nombreCliente?.split(' ')[0] ?? ''}! Podés seguir el estado de tu reparación acá:\n${url}\n\nOrden #${orden.nOrden} · ${orden.modeloEquipo}`
+              const phone = orden.telefonoCliente?.replace(/\D/g, '')
+              window.open(
+                phone
+                  ? `https://wa.me/549${phone}?text=${encodeURIComponent(text)}`
+                  : `https://wa.me/?text=${encodeURIComponent(text)}`,
+                '_blank'
+              )
+            }}
+            title="Enviar link de seguimiento por WhatsApp"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+              background: 'rgba(37,211,102,0.10)',
+              border: '1px solid rgba(37,211,102,0.30)',
+              color: '#25d366', cursor: 'pointer', transition: 'all 0.15s',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            WhatsApp
+          </button>
         </div>
       )}
 
@@ -1746,23 +2292,104 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               fontSize: 20, fontWeight: 800, color: COLOR,
             }}>{initials}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{orden.nombreCliente}</span>
-                <button
-                  onClick={onEdit}
-                  title="Editar orden"
-                  style={{
-                    padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
-                    background: `${COLOR}18`, border: `1px solid ${COLOR}44`,
-                    color: COLOR, cursor: 'pointer', lineHeight: 1.5,
-                  }}
-                >✏ editar</button>
-              </div>
-              <Badge label={orden.tipo} color={orden.tipo === 'Cliente final' ? COLOR : C.blue} />
-              {orden.telefonoCliente && (
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  📞 {orden.telefonoCliente}
+              {editingCliente ? (
+                /* ── Panel inline edición cliente ── */
+                <div style={{
+                  padding: '12px 14px', borderRadius: 10,
+                  background: 'var(--surface2)', border: `1px solid ${COLOR}44`,
+                  display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 6,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Editar cliente
+                  </div>
+                  {/* Tipo */}
+                  <div>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Tipo</div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {(['Cliente final', 'Gremio'] as TipoOrden[]).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setClienteTipo(t)}
+                          style={{
+                            flex: 1, padding: '6px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            border: `1px solid ${clienteTipo === t ? COLOR : 'var(--border)'}`,
+                            background: clienteTipo === t ? `${COLOR}18` : 'var(--surface)',
+                            color: clienteTipo === t ? COLOR : C.muted,
+                          }}
+                        >{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Nombre con buscador */}
+                  <div>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Nombre</div>
+                    <ClienteCombo
+                      tipo={clienteTipo}
+                      nombre={clienteNombre}
+                      telefono={clienteTelefono}
+                      onNombre={setClienteNombre}
+                      onTelefono={setClienteTelefono}
+                    />
+                  </div>
+                  {/* Teléfono */}
+                  <div>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Teléfono</div>
+                    <input
+                      type="tel"
+                      value={clienteTelefono}
+                      onChange={e => setClienteTelefono(e.target.value)}
+                      placeholder="Ej: 1123456789"
+                      data-nocap
+                      style={{ ...inputSt, fontSize: 13 }}
+                    />
+                  </div>
+                  {/* Botones */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={saveCliente}
+                      disabled={savingCliente || !clienteNombre.trim()}
+                      style={{
+                        flex: 1, padding: '7px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700,
+                        background: clienteNombre.trim() ? COLOR : '#aaa', color: '#fff',
+                        cursor: clienteNombre.trim() ? 'pointer' : 'not-allowed',
+                      }}
+                    >{savingCliente ? 'Guardando…' : '✓ Guardar'}</button>
+                    <button
+                      onClick={() => { setEditingCliente(false); setClienteNombre(orden.nombreCliente ?? ''); setClienteTelefono(orden.telefonoCliente ?? ''); setClienteTipo(orden.tipo ?? 'Cliente final') }}
+                      style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 12, background: 'var(--surface)', color: C.muted, cursor: 'pointer' }}
+                    >✕ Cancelar</button>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{orden.nombreCliente}</span>
+                    <button
+                      onClick={() => { setClienteNombre(orden.nombreCliente ?? ''); setClienteTelefono(orden.telefonoCliente ?? ''); setClienteTipo(orden.tipo ?? 'Cliente final'); setEditingCliente(true) }}
+                      title="Cambiar cliente"
+                      style={{
+                        padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                        background: `${COLOR}18`, border: `1px solid ${COLOR}44`,
+                        color: COLOR, cursor: 'pointer', lineHeight: 1.5,
+                      }}
+                    >✏ editar</button>
+                  </div>
+                  <Badge label={orden.tipo} color={orden.tipo === 'Cliente final' ? COLOR : C.blue} />
+                  {orden.telefonoCliente && (
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      📞 {orden.telefonoCliente}
+                      <button
+                        onClick={() => setWaModal({ estado: orden.estado, mensaje: buildWAMessage(orden, orden.estado, waMensajesConfig) })}
+                        title="Enviar notificación por WhatsApp"
+                        style={{
+                          background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.35)',
+                          borderRadius: 6, cursor: 'pointer', fontSize: 13, padding: '2px 7px',
+                          color: '#25d366', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
+                        }}
+                      >💬 WA</button>
+                    </div>
+                  )}
+                </>
               )}
               <button
                 onClick={() => setHistorialOpen(true)}
@@ -1786,7 +2413,75 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               fontSize: 28,
             }}>📱</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 2 }}>{orden.modeloEquipo || '—'}</div>
+              {/* Modelo + Color editable inline */}
+              {editingModelo ? (
+                <div style={{
+                  marginBottom: 8, padding: '12px 14px', borderRadius: 10,
+                  background: 'var(--surface2)', border: `1px solid ${COLOR}44`,
+                  display: 'flex', flexDirection: 'column', gap: 8,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Editar equipo
+                  </div>
+                  {/* Selector de modelo */}
+                  <div>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Modelo</div>
+                    <SearchableSelect
+                      value={modeloValue}
+                      onChange={v => { setModeloValue(v); setColorValue('') }}
+                      options={MODELOS_DISPOSITIVOS}
+                      emptyOption="— Seleccionar modelo —"
+                      placeholder="Buscar modelo..."
+                    />
+                  </div>
+                  {/* Selector de color */}
+                  <div>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Color</div>
+                    {!modeloValue ? (
+                      <div style={{ ...inputSt, color: C.muted, fontSize: 12, display: 'flex', alignItems: 'center', height: 36 }}>
+                        Seleccioná un modelo primero
+                      </div>
+                    ) : (
+                      <select
+                        value={colorValue}
+                        onChange={e => setColorValue(e.target.value)}
+                        style={{ ...inputSt, fontSize: 13 }}
+                      >
+                        <option value="">— Sin especificar —</option>
+                        {getColores(modeloValue).map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  {/* Botones */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={saveModelo}
+                      disabled={savingModelo || !modeloValue}
+                      style={{
+                        flex: 1, padding: '7px', borderRadius: 7, border: 'none',
+                        fontSize: 12, fontWeight: 700,
+                        background: modeloValue ? COLOR : '#aaa', color: '#fff',
+                        cursor: modeloValue ? 'pointer' : 'not-allowed',
+                      }}
+                    >{savingModelo ? 'Guardando…' : '✓ Guardar'}</button>
+                    <button
+                      onClick={() => { setEditingModelo(false); setModeloValue(orden.modeloEquipo ?? ''); setColorValue((orden as any).colorEquipo ?? '') }}
+                      style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 12, background: 'var(--surface)', color: C.muted, cursor: 'pointer' }}
+                    >✕ Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{orden.modeloEquipo || '—'}</span>
+                  <button
+                    onClick={() => { setModeloValue(orden.modeloEquipo ?? ''); setColorValue((orden as any).colorEquipo ?? ''); setEditingModelo(true) }}
+                    title="Editar modelo y color"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '1px 4px', borderRadius: 4, lineHeight: 1 }}
+                    onMouseEnter={e => (e.currentTarget.style.color = COLOR)}
+                    onMouseLeave={e => (e.currentTarget.style.color = C.muted)}
+                  >✏</button>
+                </div>
+              )}
               {(orden as any).colorEquipo && (
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>🎨 {(orden as any).colorEquipo}</div>
               )}
@@ -1859,6 +2554,16 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                   {orden.estado}
                 </span>
               </div>
+              {/* Historial del equipo */}
+              <button
+                onClick={() => setHistorialEquipoOpen(true)}
+                style={{
+                  marginTop: 8, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                  background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.30)',
+                  color: '#60a5fa', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}
+              >🔧 Historial del equipo</button>
+
               {/* Último evento */}
               {lastEvent && (
                 <div style={{
@@ -1910,8 +2615,19 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
           <div>
             <div style={labelSt}>Presupuesto</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.blue, fontFamily: 'monospace' }}>
-              {(orden.presupuesto ?? 0) > 0 ? fmtARS(orden.presupuesto) : '—'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: C.blue, fontFamily: 'monospace' }}>
+                {(orden.presupuesto ?? 0) > 0 ? fmtARS(orden.presupuesto) : '—'}
+              </span>
+              {(orden as any).nPresupuestoRef && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                  background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)',
+                  color: '#818cf8', fontFamily: 'monospace',
+                }}>
+                  📋 Pres. #{String((orden as any).nPresupuestoRef).padStart(4,'0')}
+                </span>
+              )}
             </div>
           </div>
           <div>
@@ -1922,6 +2638,57 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
           </div>
         </div>
       </div>
+
+      {/* ── Tiempo de reparación ── */}
+      {(() => {
+        const entregado = orden.estado === 'Entregado'
+        const dias = diasAbierta(orden)
+        const color = diasBadgeColor(dias, entregado)
+        const inicio = orden.createdAt || orden.fecha
+        const pct = entregado ? 100 : Math.min(100, Math.round((dias / 14) * 100))
+        return (
+          <div style={{ ...cardSt, padding: '14px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                ⏱ Tiempo de reparación
+              </div>
+              <span style={{
+                fontSize: 12, fontWeight: 800, fontFamily: 'monospace',
+                padding: '3px 10px', borderRadius: 20,
+                background: `${color}18`, color, border: `1px solid ${color}44`,
+              }}>
+                {entregado ? `✓ Completado en ${dias} día${dias !== 1 ? 's' : ''}` : dias === 0 ? '⏱ Ingresó hoy' : `⏱ ${dias} día${dias !== 1 ? 's' : ''} en taller`}
+              </span>
+            </div>
+            {/* Barra de progreso */}
+            <div style={{ height: 4, borderRadius: 99, background: 'var(--border)', marginBottom: 10, overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 99, background: color, width: `${pct}%`, transition: 'width 0.4s' }} />
+            </div>
+            {/* Fechas */}
+            <div style={{ display: 'flex', gap: 24, fontSize: 11 }}>
+              <div>
+                <div style={{ color: C.muted, marginBottom: 2 }}>Ingresó</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatDate(inicio)}</div>
+              </div>
+              {entregado && orden.fechaEntregadoAt && (
+                <div>
+                  <div style={{ color: C.muted, marginBottom: 2 }}>Entregado</div>
+                  <div style={{ fontWeight: 600, color: C.green }}>{formatDate(orden.fechaEntregadoAt)}</div>
+                </div>
+              )}
+              {orden.fechaEntrega && !entregado && (
+                <div>
+                  <div style={{ color: C.muted, marginBottom: 2 }}>Entrega prometida</div>
+                  <div style={{ fontWeight: 600, color: new Date() > new Date(orden.fechaEntrega) ? '#ef4444' : 'var(--text-primary)' }}>
+                    {formatDate(orden.fechaEntrega)}
+                    {new Date() > new Date(orden.fechaEntrega) && <span style={{ color: '#ef4444', marginLeft: 4 }}>⚠️ Vencida</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Work description */}
       <div style={cardSt}>
@@ -2715,7 +3482,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Entregar equipo</div>
                   <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                    Esto registrará la venta como {orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}
+                    {entregaEsCC ? '💳 Se cargará a cuenta corriente del cliente' : `Registrará la venta como ${orden.tipo === 'Cliente final' ? 'B2C' : 'B2B'}`}
                   </div>
                 </div>
               </div>
@@ -2738,6 +3505,31 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                 </div>
               ))}
 
+              {/* Banner de seña — solo cuando hay adelanto */}
+              {(orden.adelanto ?? 0) > 0 && (
+                <div style={{
+                  margin: '10px 0 4px',
+                  padding: '10px 13px', borderRadius: 9,
+                  background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.35)',
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    💰 Seña cobrada al ingreso
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Ya cobrado</span>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#fbbf24' }}>{fmtARS(orden.adelanto ?? 0)}</span>
+                  </div>
+                  {(orden.montoCobrado ?? 0) > (orden.adelanto ?? 0) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 3 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Resta cobrar</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#4ade80' }}>
+                        {fmtARS((orden.montoCobrado ?? 0) - (orden.adelanto ?? 0))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Monto cobrado — editable */}
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -2757,26 +3549,46 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               </div>
 
               {/* Método de pago — selector */}
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '8px 0', borderBottom: '1px solid var(--row-border)', fontSize: 12, gap: 12,
-              }}>
-                <span style={{ color: C.muted, fontWeight: 500, flexShrink: 0 }}>Método de pago</span>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '8px 0', borderBottom: '1px solid var(--row-border)', fontSize: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ color: C.muted, fontWeight: 500, flexShrink: 0 }}>Método de pago</span>
+                </div>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {(['Efectivo', 'Transferencia', 'Mercado Pago', 'Tarjeta Débito', 'Tarjeta Crédito'] as MetodoPago[]).map(m => (
                     <button
                       key={m}
-                      onClick={() => setEntregaMetodoPago(m)}
+                      onClick={() => { setEntregaMetodoPago(m); setEntregaEsCC(false) }}
                       style={{
                         padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                        border: `1px solid ${entregaMetodoPago === m ? '#4ade80' : 'var(--border)'}`,
-                        background: entregaMetodoPago === m ? 'rgba(74,222,128,0.15)' : 'var(--hover-bg)',
-                        color: entregaMetodoPago === m ? '#4ade80' : 'var(--text-secondary)',
+                        border: `1px solid ${!entregaEsCC && entregaMetodoPago === m ? '#4ade80' : 'var(--border)'}`,
+                        background: !entregaEsCC && entregaMetodoPago === m ? 'rgba(74,222,128,0.15)' : 'var(--hover-bg)',
+                        color: !entregaEsCC && entregaMetodoPago === m ? '#4ade80' : 'var(--text-secondary)',
                         transition: 'all 0.12s',
                       }}
                     >{m}</button>
                   ))}
+                  {/* CC Button */}
+                  <button
+                    onClick={() => setEntregaEsCC(v => !v)}
+                    style={{
+                      padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                      border: `1px solid ${entregaEsCC ? '#f97316' : 'var(--border)'}`,
+                      background: entregaEsCC ? 'rgba(249,115,22,0.15)' : 'var(--hover-bg)',
+                      color: entregaEsCC ? '#f97316' : 'var(--text-secondary)',
+                      transition: 'all 0.12s',
+                    }}
+                  >💳 Cuenta Corriente</button>
                 </div>
+                {/* CC Warning */}
+                {entregaEsCC && (
+                  <div style={{
+                    marginTop: 8, padding: '8px 12px', borderRadius: 8,
+                    background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)',
+                    fontSize: 11, color: '#f97316', lineHeight: 1.5,
+                  }}>
+                    ⚠️ <strong>Cuenta Corriente:</strong> el equipo se entrega sin cobro inmediato. La venta y ganancia se registran cuando el cliente pague la deuda.
+                  </div>
+                )}
               </div>
 
               {/* Garantía */}
@@ -2830,13 +3642,23 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
               </div>
 
               {/* Warning */}
-              <div style={{
-                marginTop: 10, padding: '10px 12px', borderRadius: 8,
-                background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)',
-                fontSize: 11, color: '#4ade80', lineHeight: 1.5,
-              }}>
-                ✓ Se registrará en reportes y la orden pasará a <strong>Entregado</strong>
-              </div>
+              {!entregaEsCC ? (
+                <div style={{
+                  marginTop: 10, padding: '10px 12px', borderRadius: 8,
+                  background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)',
+                  fontSize: 11, color: '#4ade80', lineHeight: 1.5,
+                }}>
+                  ✓ Se registrará en reportes y la orden pasará a <strong>Entregado</strong>
+                </div>
+              ) : (
+                <div style={{
+                  marginTop: 10, padding: '10px 12px', borderRadius: 8,
+                  background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)',
+                  fontSize: 11, color: '#f97316', lineHeight: 1.5,
+                }}>
+                  💳 La orden pasará a <strong>Entregado</strong> · Deuda de <strong>{fmtARS(entregaMonto)}</strong> quedará en Cuenta Corriente
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -2859,14 +3681,14 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                 disabled={entregaLoading}
                 style={{
                   flex: 2, padding: '10px', borderRadius: 8, cursor: entregaLoading ? 'not-allowed' : 'pointer',
-                  background: entregaLoading ? '#4ade80' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  background: entregaLoading ? '#4ade80' : entregaEsCC ? 'linear-gradient(135deg, #f97316, #ea580c)' : 'linear-gradient(135deg, #22c55e, #16a34a)',
                   border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
                   transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                 }}
               >
                 {entregaLoading
                   ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Registrando...</>
-                  : '📦 Confirmar entrega'
+                  : entregaEsCC ? '💳 Entregar a cuenta corriente' : '📦 Confirmar entrega'
                 }
               </button>
             </div>
@@ -2933,6 +3755,71 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
         </>
       )}
 
+      {/* ─── WhatsApp notification modal ─────────────────────────────────── */}
+      {waModal && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 599, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setWaModal(null)} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 600, width: 420, borderRadius: 16,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#25d36620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                💬
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Notificar al cliente</div>
+                <div style={{ fontSize: 11, color: '#25d366', fontWeight: 600 }}>
+                  Estado → <strong>{waModal.estado}</strong> · {orden.telefonoCliente}
+                </div>
+              </div>
+              <button onClick={() => setWaModal(null)} style={{ marginLeft: 'auto', width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+            </div>
+            {/* Message editor */}
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Mensaje (editable antes de enviar)
+              </div>
+              <textarea
+                value={waModal.mensaje}
+                onChange={e => setWaModal(prev => prev ? { ...prev, mensaje: e.target.value } : null)}
+                rows={5}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text-primary)', fontSize: 13, lineHeight: 1.5,
+                  resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                Se abrirá WhatsApp con este mensaje pre-escrito. Vas a poder revisarlo antes de enviarlo.
+              </div>
+            </div>
+            {/* Buttons */}
+            <div style={{ padding: '0 20px 18px', display: 'flex', gap: 10 }}>
+              <button onClick={() => setWaModal(null)}
+                style={{ flex: 1, padding: '10px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                Omitir
+              </button>
+              <button
+                onClick={() => {
+                  const phone = formatWAPhone(orden.telefonoCliente ?? '')
+                  const url = `https://wa.me/${phone}?text=${encodeURIComponent(waModal.mensaje)}`
+                  window.open(url, '_blank')
+                  setWaModal(null)
+                }}
+                style={{ flex: 2, padding: '10px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #25d366, #128c7e)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span>📲</span> Abrir en WhatsApp
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ─── Lightbox ────────────────────────────────────────────────────── */}
       {historialOpen && (
         <HistorialClienteModal
@@ -2940,6 +3827,15 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
           telefono={orden.telefonoCliente ?? ''}
           ordenActualId={orden.id}
           onClose={() => setHistorialOpen(false)}
+        />
+      )}
+
+      {historialEquipoOpen && (
+        <HistorialEquipoModal
+          imei={orden.imei ?? ''}
+          modelo={orden.modeloEquipo ?? ''}
+          ordenActualId={orden.id}
+          onClose={() => setHistorialEquipoOpen(false)}
         />
       )}
 
@@ -3364,7 +4260,7 @@ function BulkEntregaModal({ ordenes, dolar, currentUser, logoLocal, terminosLoca
     }
     await fetch(`/api/sistema/ordenes/${orden.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...orden, montoCobrado: monto, metodoPago, estado: 'Entregado', historial: [...(orden.historial ?? []), entrada] }),
+      body: JSON.stringify({ ...orden, montoCobrado: monto, metodoPago, estado: 'Entregado', historial: [...(orden.historial ?? []), entrada], fechaEntregadoAt: orden.fechaEntregadoAt ?? new Date().toISOString() }),
     })
   }
 
@@ -3550,7 +4446,7 @@ function BulkEntregaModal({ ordenes, dolar, currentUser, logoLocal, terminosLoca
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function OrdenesView() {
+export default function OrdenesView({ initialSearch = '' }: { initialSearch?: string }) {
   const { data, loading, refresh } = useApi<ApiResponse>('/api/sistema/ordenes')
   const [estadosOrdenConfig, setEstadosOrdenConfig] = useState<string[]>(ESTADOS_ORDEN)
   const [categoriaTab, setCategoriaTab] = useState<'iPhone' | 'Mac/iPad'>('iPhone')
@@ -3565,7 +4461,7 @@ export default function OrdenesView() {
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(initialSearch)
   const [formLightbox, setFormLightbox] = useState<string | null>(null)
   const [accionMenu, setAccionMenu] = useState<{ id: string; top: number; left: number } | null>(null)
   const [entregaListOrdenId, setEntregaListOrdenId] = useState<string | null>(null)
@@ -3579,6 +4475,8 @@ export default function OrdenesView() {
     return 'Ronald'
   })
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [waListOrden, setWaListOrden] = useState<{ orden: Orden; mensaje: string } | null>(null)
+  const [waMensajesConfig, setWaMensajesConfig] = useState<Record<string, string>>({})
 
   // ─── Configuración inline ────────────────────────────────────────────────────
   const [configOpen, setConfigOpen] = useState(false)
@@ -3620,6 +4518,7 @@ export default function OrdenesView() {
   const dolar = data?.dolar ?? 1200
   const list = data?.items ?? []
   const [logoLocal, setLogoLocal] = useState('')
+  const [nombreNegocioLocal, setNombreNegocioLocal] = useState('')
   const [terminosLocal, setTerminosLocal] = useState('')
   const [garantiaRetiro, setGarantiaRetiro] = useState('')
 
@@ -3630,6 +4529,10 @@ export default function OrdenesView() {
     fetch('/api/sistema/estados-orden')
       .then(r => r.json())
       .then((d: string[]) => { if (Array.isArray(d) && d.length) setEstadosOrdenConfig(d) })
+      .catch(() => {})
+    fetch('/api/sistema/negocio')
+      .then(r => r.json())
+      .then((d: { nombre: string }) => setNombreNegocioLocal(d.nombre ?? ''))
       .catch(() => {})
     fetch('/api/sistema/logo')
       .then(r => r.json())
@@ -3643,12 +4546,21 @@ export default function OrdenesView() {
       .then(r => r.json())
       .then((d: { garantia: string }) => setGarantiaRetiro(d.garantia ?? ''))
       .catch(() => {})
+    fetch('/api/sistema/wa-mensajes')
+      .then(r => r.json())
+      .then((d: Record<string, string>) => setWaMensajesConfig(d))
+      .catch(() => {})
   }, [])
 
   // ─── Setters ────────────────────────────────────────────────────────────────
+  // Campos que NO deben auto-capitalizarse (numéricos, técnicos, selectores, códigos)
+  const NO_CAP_KEYS = new Set(['imei', 'telefono', 'telefonoCliente', 'estado', 'tecnico', 'tipo', 'prioridad', 'moneda', 'metodoPago', 'categoriaDispositivo'])
   const set = (k: string, v: unknown) => {
     if (k === 'imei') setImeiCheck({ status: 'idle', msg: '' })
-    setForm(prev => recalc({ ...prev, [k]: v }, dolar))
+    const val = typeof v === 'string' && v.length > 0 && !NO_CAP_KEYS.has(k)
+      ? v.charAt(0).toUpperCase() + v.slice(1)
+      : v
+    setForm(prev => recalc({ ...prev, [k]: val }, dolar))
   }
 
   // ─── CRUD ───────────────────────────────────────────────────────────────────
@@ -3769,19 +4681,31 @@ export default function OrdenesView() {
 
   const cambiarEstado = async (o: Orden, nuevoEstado: string) => {
     setAccionMenu(null)
+    const ahora = new Date().toISOString()
     const entrada: HistorialItem = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       tipo: 'estado',
       descripcion: `Estado cambiado de "${o.estado}" a "${nuevoEstado}"`,
-      fecha: new Date().toISOString(),
+      fecha: ahora,
       usuario: currentUser,
+    }
+    const patch: Partial<Orden> = {
+      estado: nuevoEstado as EstadoOrden,
+      historial: [...(o.historial ?? []), entrada],
+      // Registrar timestamp de entrega
+      ...(nuevoEstado === 'Entregado' && !o.fechaEntregadoAt ? { fechaEntregadoAt: ahora } : {}),
     }
     await fetch(`/api/sistema/ordenes/${o.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...o, estado: nuevoEstado, historial: [...(o.historial ?? []), entrada] }),
+      body: JSON.stringify({ ...o, ...patch }),
     })
     await refresh()
+    // Ofrecer notificación WhatsApp automáticamente al pasar a Salida
+    if (nuevoEstado === 'Salida') {
+      const ordenActualizada = { ...o, ...patch } as Orden
+      setWaListOrden({ orden: ordenActualizada, mensaje: buildWAMessage(ordenActualizada, 'Salida', waMensajesConfig) })
+    }
   }
 
   const confirmarEntregaFromList = async () => {
@@ -3844,7 +4768,7 @@ export default function OrdenesView() {
       await fetch(`/api/sistema/ordenes/${orden.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...orden, montoCobrado: montoFinal, metodoPago: metodoFinal, estado: 'Entregado' as EstadoOrden, historial: [...(orden.historial ?? []), entrada] }),
+        body: JSON.stringify({ ...orden, montoCobrado: montoFinal, metodoPago: metodoFinal, estado: 'Entregado' as EstadoOrden, historial: [...(orden.historial ?? []), entrada], fechaEntregadoAt: orden.fechaEntregadoAt ?? new Date().toISOString() }),
       })
       setEntregaListOrdenId(null)
       await refresh()
@@ -3856,14 +4780,12 @@ export default function OrdenesView() {
   }
 
   // ─── Filtered lists ─────────────────────────────────────────────────────────
-  const q = search.toLowerCase()
   const listByCategoria = list.filter(o => (o.categoriaDispositivo ?? 'iPhone') === categoriaTab)
   const filtered = listByCategoria.filter(o => {
-    const matchSearch = !q || (
-      o.nombreCliente.toLowerCase().includes(q) ||
-      o.modeloEquipo.toLowerCase().includes(q) ||
-      o.imei.toLowerCase().includes(q) ||
-      String(o.nOrden).includes(q)
+    const matchSearch = !search.trim() || (
+      matchesAny([o.nombreCliente, o.modeloEquipo], search) ||
+      o.imei.toLowerCase().includes(search.toLowerCase()) ||
+      String(o.nOrden).includes(search)
     )
     return o.estado === activeTab && matchSearch
   })
@@ -3893,6 +4815,7 @@ export default function OrdenesView() {
   const abiertas = listByCategoria.filter(o => o.estado !== 'Entregado').length
   const urgentes = listByCategoria.filter(o => o.prioridad === 'Urgente').length
   const listas = listByCategoria.filter(o => o.estado === 'Salida').length
+  const sinMovimiento = listByCategoria.filter(o => o.estado !== 'Entregado' && diasSinMovimiento(o) >= 5).length
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -3908,8 +4831,10 @@ export default function OrdenesView() {
           currentUser={currentUser}
           estadosOrdenConfig={estadosOrdenConfig}
           logoLocal={logoLocal}
+          nombreNegocioLocal={nombreNegocioLocal}
           terminosLocal={terminosLocal}
           garantiaRetiro={garantiaRetiro}
+          waMensajesConfig={waMensajesConfig}
         />
       )}
 
@@ -3925,10 +4850,11 @@ export default function OrdenesView() {
       />
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
         <KPICard label="Abiertas" value={String(abiertas)} color={C.blue} icon="📂" />
         <KPICard label="Urgentes" value={String(urgentes)} color="#f87171" icon="🚨" />
         <KPICard label="Listas p/ entregar" value={String(listas)} color={COLOR} icon="✅" />
+        <KPICard label="Sin movimiento" value={String(sinMovimiento)} color={sinMovimiento > 0 ? '#f97316' : C.muted} icon="⚠" />
       </div>
 
       {/* Search + Usuario actual */}
@@ -4298,9 +5224,13 @@ export default function OrdenesView() {
                         />
                       </td>
                     )}
-                    {/* N° */}
+                    {/* N° + días */}
                     <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
-                      <span style={{ fontWeight: 700, fontFamily: 'monospace', color: C.text }}>#{o.nOrden}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontWeight: 700, fontFamily: 'monospace', color: C.text }}>#{o.nOrden}</span>
+                        <DiasBadge orden={o} />
+                        <SinMovimientoBadge orden={o} />
+                      </div>
                     </td>
                     {/* Prioridad */}
                     <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
@@ -4373,26 +5303,14 @@ export default function OrdenesView() {
                         >
                           🖨
                         </button>
-                        {/* Copiar enlace de seguimiento */}
+                        {/* WhatsApp */}
                         <button
-                          onClick={() => copiarEnlace(o)}
-                          title="Copiar enlace de seguimiento para el cliente"
-                          style={{ background: 'none', border: 'none', color: copiedId === o.id ? '#4ade80' : C.muted, cursor: 'pointer', padding: '3px 6px', fontSize: 14, borderRadius: 5 }}
-                          onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-                          onMouseLeave={e => (e.currentTarget.style.color = copiedId === o.id ? '#4ade80' : C.muted)}
-                        >
-                          {copiedId === o.id ? '✓' : '🔗'}
-                        </button>
-                        {/* Editar */}
-                        <button
-                          onClick={() => openEdit(o)}
-                          style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', padding: '3px 6px', fontSize: 14, borderRadius: 5 }}
-                          onMouseEnter={e => (e.currentTarget.style.color = COLOR)}
-                          onMouseLeave={e => (e.currentTarget.style.color = C.muted)}
-                          title="Editar"
-                        >
-                          ✏️
-                        </button>
+                          onClick={() => setWaListOrden({ orden: o, mensaje: buildWAMessage(o, o.estado, waMensajesConfig) })}
+                          title={o.telefonoCliente ? 'Enviar notificación por WhatsApp' : 'Sin teléfono — podés ingresarlo en el modal'}
+                          style={{ background: 'none', border: 'none', color: o.telefonoCliente ? '#25d366' : 'var(--text-secondary)', cursor: 'pointer', padding: '3px 6px', fontSize: 14, borderRadius: 5, opacity: o.telefonoCliente ? 1 : 0.45 }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = o.telefonoCliente ? '1' : '0.45')}
+                        >💬</button>
                         <button
                           onClick={() => del(o)}
                           style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', padding: '3px 6px', fontSize: 14, borderRadius: 5 }}
@@ -4413,6 +5331,89 @@ export default function OrdenesView() {
       )}
 
       </>)}
+
+      {/* ─── WhatsApp modal (lista) ──────────────────────────────────────────── */}
+      {waListOrden && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 599, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setWaListOrden(null)} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 600, width: 420, borderRadius: 16,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden',
+          }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#25d36620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>💬</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Notificar al cliente</div>
+                <div style={{ fontSize: 11, color: '#25d366', fontWeight: 600 }}>
+                  #{waListOrden.orden.nOrden} · {waListOrden.orden.nombreCliente} · estado: {waListOrden.orden.estado}
+                </div>
+              </div>
+              <button onClick={() => setWaListOrden(null)} style={{ marginLeft: 'auto', width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+            </div>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {!waListOrden.orden.telefonoCliente && (
+                <div style={{ padding: '10px 12px', borderRadius: 9, background: 'rgba(251,146,60,0.10)', border: '1px solid rgba(251,146,60,0.3)', fontSize: 12, color: '#fb923c', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ⚠️ Esta orden no tiene teléfono registrado. Ingresalo manualmente abajo.
+                </div>
+              )}
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Teléfono del cliente
+              </div>
+              <input
+                type="tel"
+                placeholder="Ej: 1123456789"
+                defaultValue={waListOrden.orden.telefonoCliente ?? ''}
+                id="wa-list-phone-input"
+                style={{
+                  width: '100%', padding: '8px 12px', borderRadius: 9,
+                  border: '1px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text-primary)', fontSize: 13,
+                  outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 4 }}>
+                Mensaje (editable antes de enviar)
+              </div>
+              <textarea
+                value={waListOrden.mensaje}
+                onChange={e => setWaListOrden(prev => prev ? { ...prev, mensaje: e.target.value } : null)}
+                rows={5}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text-primary)', fontSize: 13, lineHeight: 1.5,
+                  resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                Se abrirá WhatsApp con este mensaje pre-escrito. Podés revisarlo antes de enviarlo.
+              </div>
+            </div>
+            <div style={{ padding: '0 20px 18px', display: 'flex', gap: 10 }}>
+              <button onClick={() => setWaListOrden(null)}
+                style={{ flex: 1, padding: '10px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const phoneInput = document.getElementById('wa-list-phone-input') as HTMLInputElement | null
+                  const rawPhone = phoneInput?.value || waListOrden.orden.telefonoCliente || ''
+                  if (!rawPhone.replace(/\D/g, '')) { alert('Ingresá el teléfono del cliente'); return }
+                  const phone = formatWAPhone(rawPhone)
+                  const url = `https://wa.me/${phone}?text=${encodeURIComponent(waListOrden.mensaje)}`
+                  window.open(url, '_blank')
+                  setWaListOrden(null)
+                }}
+                style={{ flex: 2, padding: '10px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #25d366, #128c7e)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span>📲</span> Abrir en WhatsApp
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ─── Bulk entrega modal ──────────────────────────────────────────────── */}
       {bulkEntregaOpen && (() => {

@@ -4,7 +4,9 @@ import path from 'path'
 import type {
   Turno, VentaCSF, VentaGremio, Gasto, Comision, StockItem,
   ClienteB2B, ClientePersona, Proveedor, TipoCambio, DashboardData, TipoGasto, TipoStock,
-  Orden, Servicio, ReglaComision, ReglaComisionGremio, EquipoUsado, ProveedorEquipo, CompraCliente, VentaCaja, CierreCaja,
+  Orden, Servicio, ReglaComision, ReglaComisionGremio, EquipoUsado, ProveedorEquipo, CompraCliente, VentaCaja, CierreCaja, Presupuesto,
+  StockMovimiento, CuentaCorrienteItem, EstadoCCItem, SesionCaja, AdminIntervencionCaja,
+  MPCuenta,
 } from './sistema-types'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
@@ -12,15 +14,21 @@ const DATA_DIR = path.join(process.cwd(), 'data')
 function file(name: string) { return path.join(DATA_DIR, `sistema-${name}.json`) }
 
 function read<T>(name: string): T[] {
-  try { return JSON.parse(fs.readFileSync(file(name), 'utf-8')) as T[] }
-  catch { return [] }
+  try {
+    let raw = fs.readFileSync(file(name), 'utf-8')
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1) // strip UTF-8 BOM
+    return JSON.parse(raw) as T[]
+  } catch { return [] }
 }
 function write<T>(name: string, data: T[]): void {
   fs.writeFileSync(file(name), JSON.stringify(data, null, 2), 'utf-8')
 }
 function readSingle<T>(name: string, fallback: T): T {
-  try { return JSON.parse(fs.readFileSync(file(name), 'utf-8')) as T }
-  catch { return fallback }
+  try {
+    let raw = fs.readFileSync(file(name), 'utf-8')
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1) // strip UTF-8 BOM
+    return JSON.parse(raw) as T
+  } catch { return fallback }
 }
 function writeSingle<T>(name: string, data: T): void {
   fs.writeFileSync(file(name), JSON.stringify(data, null, 2), 'utf-8')
@@ -463,6 +471,84 @@ export function deleteCierreCaja(id: string): void {
   write('caja-diaria', getCierresCaja().filter(i => i.id !== id))
 }
 
+// ── Presupuestos ──────────────────────────────────────────────────────────────
+export function getPresupuestos(): Presupuesto[] { return read<Presupuesto>('presupuestos') }
+export function getNextPresupuestoNum(): number {
+  const items = getPresupuestos()
+  if (!items.length) return 1
+  return Math.max(...items.map(v => v.nPresupuesto ?? 0)) + 1
+}
+export function addPresupuesto(data: Omit<Presupuesto, 'id'>): Presupuesto {
+  const items = getPresupuestos()
+  const nextNum = items.length ? Math.max(...items.map(v => v.nPresupuesto ?? 0)) + 1 : 1
+  const item: Presupuesto = { id: uid(), ...data, nPresupuesto: nextNum }
+  write('presupuestos', [...items, item])
+  return item
+}
+export function updatePresupuesto(id: string, data: Partial<Presupuesto>): Presupuesto {
+  const items = getPresupuestos()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx === -1) throw new Error('Presupuesto not found')
+  items[idx] = { ...items[idx], ...data }
+  write('presupuestos', items)
+  return items[idx]
+}
+export function deletePresupuesto(id: string): void {
+  write('presupuestos', getPresupuestos().filter(i => i.id !== id))
+}
+
+// ── Cuenta Corriente ──────────────────────────────────────────────────────────
+export function getCuentaCorriente(): CuentaCorrienteItem[] {
+  return read<CuentaCorrienteItem>('cuenta-corriente')
+}
+export function addCCItem(data: Omit<CuentaCorrienteItem, 'id' | 'createdAt'>): CuentaCorrienteItem {
+  const items = getCuentaCorriente()
+  const item: CuentaCorrienteItem = { id: uid(), ...data, createdAt: new Date().toISOString() }
+  write('cuenta-corriente', [...items, item])
+  return item
+}
+export function updateCCItem(id: string, data: Partial<CuentaCorrienteItem>): CuentaCorrienteItem | null {
+  const items = getCuentaCorriente()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx === -1) return null
+  items[idx] = { ...items[idx], ...data }
+  write('cuenta-corriente', items)
+  return items[idx]
+}
+export function deleteCCItem(id: string): void {
+  write('cuenta-corriente', getCuentaCorriente().filter(i => i.id !== id))
+}
+
+// Calcular balance por cliente (solo cargos, excluyendo cancelados)
+export function getCCBalancePorCliente(): Array<{
+  clienteId?: string; clienteNombre: string; clienteTipo: string; clienteTelefono?: string
+  saldoPendiente: number; cargosCount: number; ultimaActividad: string
+}> {
+  const items = getCuentaCorriente()
+  const cargos = items.filter(i => i.tipo === 'cargo' && i.estado !== 'cancelado' && i.saldoPendiente > 0)
+  const map = new Map<string, { clienteId?: string; clienteNombre: string; clienteTipo: string; clienteTelefono?: string; saldoPendiente: number; cargosCount: number; ultimaActividad: string }>()
+  for (const c of cargos) {
+    const k = c.clienteId ?? c.clienteNombre.toLowerCase()
+    if (!map.has(k)) map.set(k, { clienteId: c.clienteId, clienteNombre: c.clienteNombre, clienteTipo: c.clienteTipo, clienteTelefono: c.clienteTelefono, saldoPendiente: 0, cargosCount: 0, ultimaActividad: c.fecha })
+    const g = map.get(k)!
+    g.saldoPendiente += c.saldoPendiente
+    g.cargosCount++
+    if (c.fecha > g.ultimaActividad) g.ultimaActividad = c.fecha
+  }
+  return [...map.values()].sort((a, b) => b.saldoPendiente - a.saldoPendiente)
+}
+
+// ── Stock Movimientos ─────────────────────────────────────────────────────────
+export function getStockMovimientos(): StockMovimiento[] {
+  return read<StockMovimiento>('stock-movimientos')
+}
+export function addStockMovimiento(data: Omit<StockMovimiento, 'id' | 'createdAt'>): StockMovimiento {
+  const items = getStockMovimientos()
+  const item: StockMovimiento = { id: uid(), ...data, createdAt: new Date().toISOString() }
+  write('stock-movimientos', [...items, item])
+  return item
+}
+
 // ── Listas de precios (meta) ──────────────────────────────────────────────────
 export interface ListaMeta {
   filename: string
@@ -556,6 +642,36 @@ export function setLogoLocal(base64: string): void {
   writeSingle<string>('logo', base64)
 }
 
+// ── Nombre del negocio ────────────────────────────────────────────────────────
+export function getNombreNegocio(): string {
+  return readSingle<string>('nombre-negocio', '')
+}
+export function setNombreNegocio(nombre: string): void {
+  writeSingle<string>('nombre-negocio', nombre)
+}
+
+// ── MercadoPago Cuentas ───────────────────────────────────────────────────────
+export function getMPCuentas(): MPCuenta[] {
+  return read<MPCuenta>('mp-cuentas')
+}
+export function addMPCuenta(data: Omit<MPCuenta, 'id' | 'createdAt'>): MPCuenta {
+  const items = getMPCuentas()
+  const item: MPCuenta = { id: uid(), ...data, createdAt: new Date().toISOString() }
+  write('mp-cuentas', [...items, item])
+  return item
+}
+export function updateMPCuenta(id: string, data: Partial<Omit<MPCuenta, 'id' | 'createdAt'>>): MPCuenta | null {
+  const items = getMPCuentas()
+  const idx = items.findIndex(i => i.id === id)
+  if (idx < 0) return null
+  items[idx] = { ...items[idx], ...data }
+  write('mp-cuentas', items)
+  return items[idx]
+}
+export function deleteMPCuenta(id: string): void {
+  write('mp-cuentas', getMPCuentas().filter(i => i.id !== id))
+}
+
 // ── Reglas de Comisión Automática ────────────────────────────────────────────
 export function getReglasComision(): ReglaComision[] {
   return readSingle<ReglaComision[]>('reglas-comision', [])
@@ -646,4 +762,34 @@ export function getDashboard(): DashboardData {
     cantidadTurnos: turnos.filter(t => t.estado === 'Pendiente').length,
     pendientesPago: comisiones.filter(c => c.pagada === 'Pendiente').length,
   }
+}
+
+// ─── Sesiones de Caja ────────────────────────────────────────────────────────
+export function getSesionesCaja(): SesionCaja[] { return read<SesionCaja>('sesiones-caja') }
+
+export function getSesionCajaByFecha(fecha: string): SesionCaja | undefined {
+  return getSesionesCaja().find(s => s.fecha === fecha)
+}
+
+export function getLastEfectivoEnCaja(): number {
+  const sesiones = getSesionesCaja()
+    .filter(s => s.estado === 'cerrada' && s.efectivoEnCaja !== undefined)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
+  return sesiones[0]?.efectivoEnCaja ?? 0
+}
+
+export function addSesionCaja(data: Omit<SesionCaja, 'id'>): SesionCaja {
+  const items = getSesionesCaja()
+  const item: SesionCaja = { id: uid(), ...data }
+  write('sesiones-caja', [...items, item])
+  return item
+}
+
+export function updateSesionCaja(id: string, data: Partial<SesionCaja>): SesionCaja | undefined {
+  const items = getSesionesCaja()
+  const idx = items.findIndex(s => s.id === id)
+  if (idx === -1) return undefined
+  items[idx] = { ...items[idx], ...data }
+  write('sesiones-caja', items)
+  return items[idx]
 }

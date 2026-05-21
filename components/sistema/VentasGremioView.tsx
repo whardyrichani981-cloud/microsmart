@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import type { VentaGremio, MetodoPago, Moneda } from '@/lib/sistema-types'
+import { useState, useEffect } from 'react'
+import type { VentaGremio, VentaCaja, MetodoPago, Moneda } from '@/lib/sistema-types'
 import {
   useApi, fmtARS, today,
   C, Modal, Field, FormGrid, SectionDivider, PageHeader, DataTable, Badge, KPICard,
@@ -88,9 +88,23 @@ export default function VentasGremioView() {
     await refresh()
   }
 
+  const [cajaTotalGremio, setCajaTotalGremio] = useState(0)
+  const [cajaCountGremio, setCajaCountGremio] = useState(0)
+  const [cajaGananciaGremio, setCajaGananciaGremio] = useState(0)
+  useEffect(() => {
+    fetch('/api/sistema/ventas-caja').then(r => r.json()).then((d: { items: VentaCaja[] }) => {
+      const items = (d.items ?? []).filter(v => v.tipoCliente === 'gremio')
+      setCajaTotalGremio(items.reduce((s, v) => s + v.total, 0))
+      setCajaCountGremio(items.length)
+      // Ganancia real de caja: usa el campo calculado si existe, sino 0
+      setCajaGananciaGremio(items.reduce((s, v) => s + (v.gananciaReal ?? 0), 0))
+    }).catch(() => {})
+  }, [])
+
   const list = data?.items ?? []
-  const totalCobrado = list.reduce((s, v) => s + v.equivARS, 0)
-  const totalGanancia = list.reduce((s, v) => s + v.gananciaReal, 0)
+  const totalCobrado = list.reduce((s, v) => s + v.equivARS, 0) + cajaTotalGremio
+  const totalGanancia = list.reduce((s, v) => s + v.gananciaReal, 0) + cajaGananciaGremio
+  const cantidadTotal = list.length + cajaCountGremio
 
   const cols = [
     { key: 'fecha', label: 'Fecha', render: (r: VentaGremio) => <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{r.fecha}</span> },
@@ -114,12 +128,12 @@ export default function VentasGremioView() {
 
   return (
     <div style={{ padding: '0 0 40px' }}>
-      <PageHeader icon="🤝" title="Ventas Gremio (B2B)" desc="Ventas a empresas y gremios" color={COLOR} count={list.length} onNew={openNew} newLabel="Nueva venta" />
+      <PageHeader icon="🤝" title="Ventas Gremio (B2B)" desc="Ventas a empresas y gremios" color={COLOR} count={cantidadTotal} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         <KPICard label="Total Cobrado (ARS)" value={fmtARS(totalCobrado)} color={COLOR} icon="💼" />
         <KPICard label="Ganancia Total" value={fmtARS(totalGanancia)} color={totalGanancia >= 0 ? C.green : C.red} icon="📈" />
-        <KPICard label="Cantidad Ventas" value={String(list.length)} color={COLOR} icon="🧾" />
+        <KPICard label="Cantidad Ventas" value={String(cantidadTotal)} color={COLOR} icon="🧾" />
       </div>
 
       {loading ? (

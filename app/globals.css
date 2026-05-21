@@ -163,6 +163,15 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #636366; }
 }
 
 /* ─── Animations ────────────────────────────────────────────────────────────── */
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); transform: scale(1); }
+  50%       { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); transform: scale(1.1); }
+}
+.badge-pulse {
+  animation: badge-pulse 1.8s ease-in-out infinite;
+  display: inline-block;
+}
+
 @keyframes flash-green {
   0%   { background-color: rgba(34,197,94,0.18); }
   100% { background-color: transparent; }
@@ -187,6 +196,18 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #636366; }
 input::placeholder { color: var(--text-dim); }
 input:focus { border-color: var(--accent) !important; outline: none; }
 select:focus { border-color: var(--accent) !important; outline: none; }
+
+/* ─── Auto-capitalizar primera letra en inputs de texto ─────────────────────── */
+input[type="text"]:not([data-nocap]),
+input:not([type]):not([data-nocap]),
+textarea:not([data-nocap]) {
+  text-transform: capitalize;
+}
+/* Excepción: cuando hay valor numérico, monospace (IMEI, teléfono, etc.) */
+input[type="number"], input[type="tel"], input[type="email"],
+input[type="password"], input[type="date"], input[type="search"] {
+  text-transform: none;
+}
 
 /* ─── Dropdown scroll (proveedores, combos) ─────────────────────────────────── */
 .dropdown-scroll {

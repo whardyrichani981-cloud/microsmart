@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateStockItem, deleteStockItem, calcStock, getUltimoDolar } from '@/lib/sistema-db'
+import { getStock, updateStockItem, deleteStockItem, calcStock, getUltimoDolar, addStockMovimiento } from '@/lib/sistema-db'
 export const dynamic = 'force-dynamic'
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const data = await req.json()
+  const body = await req.json()
+  const { motivo: motivoRaw, referencia, ...data } = body
+  // Capture before-state
+  const before = getStock().find(i => i.id === id)
   const calc = calcStock(data, getUltimoDolar())
   const item = updateStockItem(id, { ...data, ...calc })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  // Log if stock quantity changed
+  if (before && data.stock !== undefined && data.stock !== before.stock) {
+    const delta = (data.stock as number) - before.stock
+    addStockMovimiento({
+      stockItemId: id,
+      tipo: delta > 0 ? 'entrada' : 'salida',
+      delta,
+      stockAntes: before.stock,
+      stockDespues: item.stock,
+      motivo: motivoRaw ?? (delta > 0 ? 'Entrada de stock' : 'Salida de stock'),
+      referencia,
+      repuesto: item.repuesto,
+      modelo: item.modelo,
+      tipoStock: item.tipo,
+      fecha: new Date().toISOString(),
+    })
+  }
   return NextResponse.json(item)
 }
 

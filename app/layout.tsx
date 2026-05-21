@@ -1,18 +1,41 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import ChatWidget from '@/components/ChatWidget'
+import CapProvider from '@/components/CapProvider'
+import PWAInstaller from '@/components/PWAInstaller'
 
 export const metadata: Metadata = {
-  title: 'Microsmart – Comparador de Precios',
-  description: 'Compará precios de múltiples proveedores en un solo lugar',
+  title: 'Microsmart – Sistema de gestión',
+  description: 'Sistema de gestión para Microsmart Especialistas Apple',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Microsmart',
+  },
+  icons: {
+    apple: '/icons/icon-192.png',
+    icon: '/icons/icon-512.png',
+  },
+  other: {
+    'msapplication-TileColor': '#0066CC',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0066CC',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body>
         {children}
         <ChatWidget />
+        <CapProvider />
+        <PWAInstaller />
       </body>
     </html>
   )

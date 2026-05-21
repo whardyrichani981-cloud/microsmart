@@ -1,7 +1,7 @@
 // ─── Shared ──────────────────────────────────────────────────────────────────
-export type MetodoPago = 'Transferencia' | 'Efectivo' | 'Mercado Pago' | 'Tarjeta Débito' | 'Tarjeta Crédito' | 'Cheque'
+export type MetodoPago = 'Transferencia' | 'Efectivo' | 'Mercado Pago' | 'Tarjeta Débito' | 'Tarjeta Crédito' | 'Cheque' | 'Cuenta Corriente'
 export type Moneda = 'ARS $' | 'USD $'
-export type EstadoTurno = 'Pendiente' | 'Confirmado' | 'Finalizado' | 'Cancelado'
+export type EstadoTurno = 'Pendiente' | 'Confirmado' | 'Finalizado' | 'Cancelado' | 'Eliminado'
 export type FuenteCliente = 'Instagram' | 'Facebook' | 'TikTok' | 'WhatsApp' | 'Referido' | 'Otro'
 export type EstadoPago = 'Pendiente' | 'Pagada'
 export type TipoServicio = 'Cambio pantalla' | 'Cambio batería' | 'Reparación placa' | 'Reparación cámara' | 'Reparación conector' | 'Desbloqueo' | 'Software' | 'Otro'
@@ -251,8 +251,10 @@ export interface StockItem {
   stock: number
   stockMinimo: number         // alerta cuando totalStock del grupo < stockMinimo (default 2)
   costoUnitario: number
+  precioVenta?: number        // precio de venta al público (accesorios)
   moneda: Moneda
   costoTotalARS: number       // = stock * costoUnitario * tipoCambio if USD (auto)
+  imagen?: string             // base64 data URI (accesorios)
   notas: string
   updatedAt: string
 }
@@ -311,12 +313,14 @@ export interface Orden {
   imagenes: string[]
   presupuesto: number
   adelanto: number
+  nPresupuestoRef?: number   // N° del presupuesto que originó esta orden
   ordenItems: OrdenItem[]
   notas2: string
   codigoSeguimiento?: string
   historial: HistorialItem[]
   notasLista: NotaOrden[]
   createdAt: string
+  fechaEntregadoAt?: string    // timestamp cuando se marcó como Entregado
 }
 
 export interface HistorialItem {
@@ -404,6 +408,29 @@ export interface Proveedor {
   createdAt: string
 }
 
+// ─── MercadoPago ─────────────────────────────────────────────────────────────
+export interface MPCuenta {
+  id: string
+  nombre: string        // alias descriptivo: "Cuenta principal", "Sharon", etc.
+  accessToken: string   // MP Access Token
+  createdAt: string
+}
+
+export interface MPMovimiento {
+  id: string
+  fecha: string                // ISO date
+  tipo: 'transferencia' | 'tarjeta_credito' | 'tarjeta_debito' | 'qr' | 'otro'
+  monto: number               // transaction_amount
+  montoNeto: number           // net_amount (after MP fees)
+  pagadorNombre: string       // payer name
+  pagadorEmail: string
+  descripcion: string         // payment description
+  estado: string              // approved / pending / etc.
+  metodoPago: string          // raw payment_method_id
+  cuotas?: number
+  cuentaId: string            // which MP account
+}
+
 // ─── Tipo de Cambio ───────────────────────────────────────────────────────────
 export interface TipoCambio {
   id: string
@@ -420,6 +447,7 @@ export interface CartItem {
   cantidad: number
   precioUnitario: number
   subtotal: number
+  costoUnitario?: number  // precio de costo (del stock), para calcular ganancia
   tipo: 'repuesto' | 'accesorio' | 'telefono' | 'orden' | 'manual'
   refId?: string   // stock item id, equipo id, or orden id
 }
@@ -433,7 +461,12 @@ export interface VentaCaja {
   subtotal: number
   descuento: number
   total: number
+  costoTotal?: number      // suma de costoUnitario * cantidad de cada item
+  comisionMP?: number      // 4.5% si método = Mercado Pago
+  iibb?: number            // 4% sobre total
+  gananciaReal?: number    // total - costoTotal - comisionMP - iibb
   metodoPago: MetodoPago
+  pagos?: { metodo: MetodoPago; monto: number }[]   // split payments (si hay >1 método)
   clienteNombre?: string
   clienteTelefono?: string
   clienteCuit?: string
@@ -455,6 +488,154 @@ export interface CierreCaja {
   observaciones?: string
   abiertoPor?: string
   cerradoPor?: string
+}
+
+// ─── Sesión de Caja (apertura + cierre con fondo) ────────────────────────────
+export type EstadoSesionCaja = 'abierta' | 'cerrada'
+
+export interface AdminIntervencionCaja {
+  fechaHora: string
+  operador: string
+  tipo: 'add_venta' | 'del_venta' | 'reabrir'
+  detalle: string
+}
+
+export interface SesionCaja {
+  id: string
+  fecha: string                    // YYYY-MM-DD
+  estado: EstadoSesionCaja
+  // Apertura
+  operadorApertura: string
+  horaApertura: string             // ISO timestamp
+  efectivoInicial: number          // fondo recibido del día anterior
+  // Cierre (se completa al cerrar)
+  operadorCierre?: string
+  horaCierre?: string              // ISO timestamp
+  efectivoVentasEfectivo?: number  // suma ventas método Efectivo ese día
+  efectivoContado?: number         // lo que contó físicamente el operador
+  diferencia?: number              // contado - (inicial + ventas efectivo)
+  efectivoEnCaja?: number          // cuánto queda para el día siguiente
+  efectivoRetirado?: number        // contado - enCaja
+  totalGeneral?: number
+  cantidadVentas?: number
+  desglosePorMetodo?: Record<string, number>
+  ventaIds?: string[]
+  observaciones?: string
+  intervencionesAdmin?: AdminIntervencionCaja[]
+}
+
+// ─── Presupuestos / Cotizaciones ─────────────────────────────────────────────
+export interface PresupuestoItem {
+  id: string
+  descripcion: string
+  tipo: 'servicio' | 'repuesto' | 'otro'
+  refId?: string       // id del Servicio o StockItem seleccionado
+  cantidad: number
+  precioUnitario: number
+  subtotal: number
+}
+
+export interface Presupuesto {
+  id: string
+  nPresupuesto: number
+  fecha: string              // YYYY-MM-DD
+  vigenciaDias: number       // días de validez (default 7)
+  fechaVencimiento: string   // YYYY-MM-DD
+  estado: 'pendiente' | 'aceptado' | 'rechazado' | 'vencido'
+
+  // Cliente
+  clienteTipo: 'clienteFinal' | 'empresa' | 'gremio'
+  clienteNombre: string
+  clienteTelefono?: string
+  clienteEmail?: string
+  clienteCuit?: string
+
+  // Equipo
+  equipoMarca?: string
+  equipoModelo?: string
+  equipoIMEI?: string
+  equipoProblema?: string
+
+  // Items
+  items: PresupuestoItem[]
+  subtotal: number
+  descuento: number
+  total: number
+
+  // Meta
+  tecnico?: string
+  notas?: string
+  createdAt: string
+}
+
+// ─── Cuenta Corriente ─────────────────────────────────────────────────────────
+export type EstadoCCItem = 'pendiente' | 'parcial' | 'pagado' | 'cancelado'
+
+export interface CCSnapshotOrden {
+  nOrden: number
+  tipo: 'Cliente final' | 'Gremio'
+  nombreCliente: string
+  modeloEquipo: string
+  tipoServicio: string
+  tecnico: string
+  proveedor: string
+  tipoRepuesto: string
+  costoRepuestoUSD: number
+  precioDolar: number
+  costoRepuestoPesos: number
+  costoRepuestos: number
+  moneda: Moneda
+  comisionVendedora: number
+  comisionTecnico: number
+  notas: string
+  descripcionFalla?: string
+}
+
+export interface CuentaCorrienteItem {
+  id: string
+  fecha: string              // YYYY-MM-DD
+  // Cliente
+  clienteId?: string
+  clienteTipo: 'persona' | 'empresa'
+  clienteNombre: string
+  clienteTelefono?: string
+  // Financiero
+  tipo: 'cargo' | 'pago'
+  monto: number              // monto original del cargo / monto de este pago
+  montoPagado: number        // acumulado pagado (solo cargo)
+  saldoPendiente: number     // monto - montoPagado (solo cargo)
+  estado: EstadoCCItem       // solo cargo
+  cargoRefId?: string        // para 'pago': referencia al cargo que cancela
+  // Concepto
+  concepto: string           // "Orden #42 — iPhone 14 · Cambio de pantalla"
+  referenciaId?: string      // orden.id
+  referenciaTipo?: 'orden'
+  referenciaNum?: number     // nOrden
+  // Snapshot para poder generar venta al cobrar
+  snapshotOrden?: CCSnapshotOrden
+  // Cuándo se generó la VentaCaja al cobrar
+  ventaCajaId?: string
+  createdAt: string
+}
+
+// ─── Stock Movimientos ────────────────────────────────────────────────────────
+export type TipoMovimiento = 'entrada' | 'salida' | 'ajuste'
+
+export interface StockMovimiento {
+  id: string
+  fecha: string             // ISO timestamp
+  stockItemId: string       // id del StockItem
+  tipo: TipoMovimiento
+  delta: number             // +N entrada / -N salida
+  stockAntes: number
+  stockDespues: number
+  motivo: string            // 'Ingreso de stock', 'Venta en caja', 'Uso en orden #X', etc.
+  referencia?: string       // texto libre — nOrden, nVenta, etc.
+  // Datos denormalizados para display rápido
+  repuesto: string
+  modelo: string
+  tipoStock: TipoStock
+  createdAt: string
 }
 
 // ─── Dashboard (computed) ─────────────────────────────────────────────────────

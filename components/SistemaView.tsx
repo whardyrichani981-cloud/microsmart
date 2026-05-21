@@ -16,6 +16,8 @@ const DashboardView  = lazy(() => import('./sistema/DashboardView'))
 const ChatSoporteView = lazy(() => import('./sistema/ChatSoporteView'))
 const GarantiasView  = lazy(() => import('./sistema/GarantiasView'))
 const CajaDiariaView = lazy(() => import('./sistema/CajaDiariaView'))
+const CuentaCorrienteView = lazy(() => import('./sistema/CuentaCorrienteView'))
+const MercadoPagoView     = lazy(() => import('./sistema/MercadoPagoView'))
 
 type SectionId =
   | 'ordenes'
@@ -32,6 +34,8 @@ type SectionId =
   | 'chat'
   | 'garantias'
   | 'caja-diaria'
+  | 'cuenta-corriente'
+  | 'mercadopago'
 
 interface NavItem { id: SectionId; label: string; icon: string; desc?: string }
 interface NavGroup { group: string; icon: string; color: string; items: NavItem[] }
@@ -59,9 +63,11 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    group: 'Finanzas', icon: '💰', color: '#F5C400',
+    group: 'Administración Contable', icon: '💰', color: '#F5C400',
     items: [
       { id: 'caja-diaria', label: 'Caja Diaria', icon: '🏧', desc: 'Resumen y cierre de caja por día' },
+      { id: 'cuenta-corriente', label: 'Cuenta Corriente', icon: '💳', desc: 'Deudas pendientes por cliente' },
+      { id: 'mercadopago', label: 'MercadoPago', icon: '💳', desc: 'Transferencias y pagos recibidos' },
       { id: 'gastos', label: 'Gastos', icon: '🧾', desc: 'Control de egresos' },
       { id: 'stock', label: 'Stock', icon: '📦', desc: 'Inventario de repuestos' },
       { id: 'comisiones', label: 'Comisiones', icon: '👥', desc: 'Ronald · Sharon · Saddi' },
@@ -112,7 +118,9 @@ function SectionContent({ id }: { id: SectionId }) {
     case 'dashboard':      return <DashboardView />
     case 'chat':           return <ChatSoporteView />
     case 'garantias':      return <GarantiasView />
-    case 'caja-diaria':    return <CajaDiariaView />
+    case 'caja-diaria':       return <CajaDiariaView />
+    case 'cuenta-corriente':  return <CuentaCorrienteView />
+    case 'mercadopago':       return <MercadoPagoView />
   }
 }
 
@@ -121,7 +129,8 @@ export default function SistemaView() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(
     Object.fromEntries(NAV.map(g => [g.group, g.group !== 'Archivo']))
   )
-  const [stockAlerts, setStockAlerts] = useState(0)
+  const [stockAlerts, setStockAlerts] = useState({ agotado: 0, bajo: 0 })
+  const [ccDeuda, setCcDeuda] = useState(0)  // cantidad de clientes con deuda
 
   useEffect(() => {
     const check = () => {
@@ -138,11 +147,27 @@ export default function SistemaView() {
           g.total += item.stock ?? 0
           g.min = Math.max(g.min, item.stockMinimo ?? 2)
         }
-        setStockAlerts([...map.values()].filter(g => g.total <= g.min).length)
+        const groups = [...map.values()]
+        setStockAlerts({
+          agotado: groups.filter(g => g.total === 0).length,
+          bajo: groups.filter(g => g.total > 0 && g.total <= g.min).length,
+        })
       })
     }
     check()
-    const t = setInterval(check, 60000) // recheck every minute
+    const t = setInterval(check, 60_000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const checkCC = () => {
+      fetch('/api/sistema/cuenta-corriente?balances=1')
+        .then(r => r.json())
+        .then(d => setCcDeuda((d.balances ?? []).length))
+        .catch(() => {})
+    }
+    checkCC()
+    const t = setInterval(checkCC, 120_000)
     return () => clearInterval(t)
   }, [])
 
@@ -218,12 +243,24 @@ export default function SistemaView() {
                         color: isActive ? group.color : '#8A8A8A',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
                       }}>{item.label}</span>
-                      {item.id === 'stock' && stockAlerts > 0 && (
+                      {item.id === 'cuenta-corriente' && ccDeuda > 0 && (
                         <span style={{
                           fontSize: 10, fontWeight: 800,
-                          background: '#ef4444', color: '#fff',
-                          padding: '1px 5px', borderRadius: 8, lineHeight: '15px', flexShrink: 0,
-                        }}>{stockAlerts}</span>
+                          background: '#f97316', color: '#fff',
+                          padding: '1px 6px', borderRadius: 8, lineHeight: '16px', flexShrink: 0,
+                        }}>
+                          {ccDeuda}
+                        </span>
+                      )}
+                      {item.id === 'stock' && (stockAlerts.agotado > 0 || stockAlerts.bajo > 0) && (
+                        <span className="badge-pulse" style={{
+                          fontSize: 10, fontWeight: 800,
+                          background: stockAlerts.agotado > 0 ? '#ef4444' : '#f97316',
+                          color: '#fff',
+                          padding: '1px 6px', borderRadius: 8, lineHeight: '16px', flexShrink: 0,
+                        }}>
+                          {stockAlerts.agotado > 0 ? `${stockAlerts.agotado} sin stock` : `${stockAlerts.bajo} bajo`}
+                        </span>
                       )}
                     </button>
                   )

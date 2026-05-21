@@ -5,6 +5,9 @@ export interface SupplierItem {
   priceARS?: number   // secondary price in ARS/pesos (when list has both)
   stock?: string
   category?: string
+  quality?: string    // free text: "Soft OLED X07", "Incell AQ7", "Original", etc.
+  brand?: string      // free text: "Ampsentrix", "Apple", "Mobilesentrix", etc.
+  description?: string // free text: additional notes
 }
 
 export interface SupplierColor {

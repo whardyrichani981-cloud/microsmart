@@ -1,5 +1,7 @@
 ﻿'use client'
 import { useState, useRef } from 'react'
+import * as XLSX from 'xlsx'
+import { matchesAny } from '@/lib/search'
 import type { Servicio, TipoServicioGremio } from '@/lib/sistema-types'
 import {
   useApi, fmtARS,
@@ -209,6 +211,24 @@ export default function ServiciosView() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+    if (isExcel) {
+      // Parse Excel with xlsx library → convert to CSV text and reuse parseCSV
+      const reader = new FileReader()
+      reader.onload = ev => {
+        const data = new Uint8Array(ev.target!.result as ArrayBuffer)
+        const wb   = XLSX.read(data, { type: 'array' })
+        const ws   = wb.Sheets[wb.SheetNames[0]]
+        const csv  = XLSX.utils.sheet_to_csv(ws, { FS: ';' })
+        const rows = parseCSV(csv)
+        setImportRows(rows); setImportMode('add'); setImportDone(null); setImportModal(true)
+      }
+      reader.readAsArrayBuffer(file)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = ev => {
       const text = ev.target?.result as string
@@ -266,12 +286,8 @@ export default function ServiciosView() {
   const tabList = activeTab === 'Gremio' ? gremioList : csfList
   const COLOR_TAB = activeTab === 'Gremio' ? COLOR_GREMIO : COLOR_CSF
 
-  const q = search.toLowerCase()
   const filtered = tabList.filter(s =>
-    !q ||
-    s.nombre.toLowerCase().includes(q) ||
-    s.categoria.toLowerCase().includes(q) ||
-    s.descripcion.toLowerCase().includes(q)
+    !search.trim() || matchesAny([s.nombre, s.categoria, s.descripcion], search)
   )
 
   const activos = tabList.filter(s => s.activo).length
@@ -380,12 +396,12 @@ export default function ServiciosView() {
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#4ade80'; e.currentTarget.style.background = 'rgba(74,222,128,0.15)' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(74,222,128,0.4)'; e.currentTarget.style.background = 'rgba(74,222,128,0.08)' }}
         >
-          ⬆ Importar CSV
+          ⬆ Importar Excel / CSV
         </button>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,.txt"
+          accept=".csv,.txt,.xlsx,.xls"
           style={{ display: 'none' }}
           onChange={handleFileSelect}
         />

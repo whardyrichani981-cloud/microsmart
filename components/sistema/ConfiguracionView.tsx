@@ -442,7 +442,7 @@ export function ComisionesConfigPanel({ onBack, backLabel = '← Volver a Config
 
 // ─── Panel: Pestañas de Órdenes de Trabajo ────────────────────────────────────
 export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configuración' }: { onBack: () => void; backLabel?: string }) {
-  const [activeTab, setActiveTab] = useState<'estados' | 'terminos' | 'garantia'>('estados')
+  const [activeTab, setActiveTab] = useState<'estados' | 'terminos' | 'garantia' | 'whatsapp'>('estados')
 
   const [estados, setEstados] = useState<string[]>([])
   const [nuevo, setNuevo] = useState('')
@@ -453,6 +453,11 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
   // Renaming
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
+
+  // Nombre del negocio
+  const [nombreNegocio, setNombreNegocio] = useState('')
+  const [nombreSaving, setNombreSaving] = useState(false)
+  const [nombreSaved, setNombreSaved] = useState(false)
 
   // Logo
   const [logoBase64, setLogoBase64] = useState('')
@@ -478,11 +483,21 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
   const [diasGarantiaSaving, setDiasGarantiaSaving] = useState(false)
   const [diasGarantiaSaved, setDiasGarantiaSaved] = useState(false)
 
+  // Mensajes WhatsApp
+  const [waMensajes, setWaMensajes] = useState<Record<string, string>>({})
+  const [waLoading, setWaLoading] = useState(true)
+  const [waSaving, setWaSaving] = useState(false)
+  const [waSaved, setWaSaved] = useState(false)
+
   useEffect(() => {
     fetch('/api/sistema/estados-orden')
       .then(r => r.json())
       .then((d: string[]) => { setEstados(d); setLoading(false) })
       .catch(() => setLoading(false))
+    fetch('/api/sistema/negocio')
+      .then(r => r.json())
+      .then((d: { nombre: string }) => setNombreNegocio(d.nombre ?? ''))
+      .catch(() => {})
     fetch('/api/sistema/logo')
       .then(r => r.json())
       .then((d: { logo: string }) => { setLogoBase64(d.logo ?? ''); setLogoLoading(false) })
@@ -499,7 +514,27 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
       .then(r => r.json())
       .then((d: { dias: number }) => { setDiasGarantiaDefault(d.dias ?? 90) })
       .catch(() => {})
+    fetch('/api/sistema/wa-mensajes')
+      .then(r => r.json())
+      .then((d: Record<string, string>) => { setWaMensajes(d); setWaLoading(false) })
+      .catch(() => setWaLoading(false))
   }, [])
+
+  // ── Nombre del negocio ────────────────────────────────────────────────────
+  const handleSaveNombre = async () => {
+    setNombreSaving(true)
+    try {
+      await fetch('/api/sistema/negocio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nombreNegocio }),
+      })
+      setNombreSaved(true)
+      setTimeout(() => setNombreSaved(false), 2500)
+    } finally {
+      setNombreSaving(false)
+    }
+  }
 
   // ── Logo ──────────────────────────────────────────────────────────────────
   const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -666,6 +701,23 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
     }
   }
 
+  const guardarWaMensajes = async () => {
+    setWaSaving(true)
+    try {
+      const res = await fetch('/api/sistema/wa-mensajes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(waMensajes),
+      })
+      const updated: Record<string, string> = await res.json()
+      setWaMensajes(updated)
+      setWaSaved(true)
+      setTimeout(() => setWaSaved(false), 2500)
+    } finally {
+      setWaSaving(false)
+    }
+  }
+
   return (
     <div style={{ padding: '0 0 48px' }}>
 
@@ -733,14 +785,30 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
             {garantiaSaved ? '✓ Guardado' : garantiaSaving ? 'Guardando…' : 'Guardar garantía'}
           </button>
         )}
+        {activeTab === 'whatsapp' && (
+          <button
+            onClick={guardarWaMensajes}
+            disabled={waSaving || waLoading}
+            style={{
+              padding: '9px 22px', borderRadius: 9, border: 'none',
+              background: waSaved ? '#4ade80' : '#25d366',
+              color: '#FFFFFF', fontWeight: 700, fontSize: 13,
+              cursor: (waSaving || waLoading) ? 'not-allowed' : 'pointer',
+              opacity: waSaving ? 0.7 : 1, transition: 'all 0.15s', minWidth: 160,
+            }}
+          >
+            {waSaved ? '✓ Guardado' : waSaving ? 'Guardando…' : '💾 Guardar mensajes'}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
         {([
-          { id: 'estados',  label: '⚙ Etapas del flujo' },
-          { id: 'terminos', label: '📋 Garantía de recepción' },
-          { id: 'garantia', label: '🧾 Garantía de comprobante' },
+          { id: 'estados',   label: '⚙ Etapas del flujo' },
+          { id: 'terminos',  label: '📋 Garantía de recepción' },
+          { id: 'garantia',  label: '🧾 Garantía de comprobante' },
+          { id: 'whatsapp',  label: '💬 Mensajes WhatsApp' },
         ] as const).map(tab => (
           <button
             key={tab.id}
@@ -904,6 +972,87 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
         </div>
       )}
 
+      {/* ════════════════ TAB: WHATSAPP ════════════════ */}
+      {activeTab === 'whatsapp' && (
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
+            Editá el mensaje que se pre-carga al notificar a un cliente por WhatsApp según el estado de su orden.<br />
+            Podés usar las variables <code style={{ background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>{'{nombre}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>{'{modelo}'}</code>{' '}
+            <code style={{ background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>{'{nOrden}'}</code>{' '}
+            que se reemplazan automáticamente.
+          </div>
+          {waLoading ? (
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Cargando…</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {estados.map(estado => (
+                <div key={estado} style={{
+                  padding: '16px 18px', borderRadius: 12,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '3px 10px', borderRadius: 20,
+                      background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)',
+                      fontSize: 12, fontWeight: 700, color: '#25d366',
+                    }}>💬 {estado}</span>
+                    <button
+                      onClick={() => {
+                        // Reset to default
+                        const defaults: Record<string, string> = {
+                          'Entrada':               'Hola {nombre} 👋 Tu {modelo} (orden #{nOrden}) ingresó al taller Microsmart. Te avisamos cuando esté listo.',
+                          'Técnico Saddi':         'Hola {nombre} 🔧 Tu {modelo} (orden #{nOrden}) está siendo revisado por nuestro técnico. Pronto te tenemos novedades.',
+                          'Laboratorio':           'Hola {nombre} 🔬 Tu {modelo} (orden #{nOrden}) está en laboratorio para diagnóstico avanzado.',
+                          'Salida de laboratorio': 'Hola {nombre} ✅ Tu {modelo} (orden #{nOrden}) salió del laboratorio y está siendo preparado para la entrega.',
+                          'Salida':                'Hola {nombre} 🎉 ¡Buenas noticias! Tu {modelo} (orden #{nOrden}) está LISTO para retirar. Te esperamos en el local. ¡Gracias por elegirnos!',
+                          'Entregado':             'Hola {nombre} 😊 Tu {modelo} fue entregado. ¡Gracias por confiar en Microsmart! Ante cualquier consulta, estamos a tu disposición.',
+                        }
+                        if (defaults[estado]) {
+                          setWaMensajes(prev => ({ ...prev, [estado]: defaults[estado] }))
+                          setWaSaved(false)
+                        }
+                      }}
+                      style={{
+                        fontSize: 11, padding: '2px 8px', borderRadius: 6, cursor: 'pointer',
+                        border: '1px solid var(--border)', background: 'var(--surface2)',
+                        color: 'var(--text-secondary)', marginLeft: 'auto',
+                      }}
+                    >↺ Restaurar predeterminado</button>
+                  </div>
+                  <textarea
+                    value={waMensajes[estado] ?? ''}
+                    onChange={e => { setWaMensajes(prev => ({ ...prev, [estado]: e.target.value })); setWaSaved(false) }}
+                    rows={3}
+                    placeholder={`Mensaje para estado "${estado}"…`}
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 9,
+                      border: '1px solid var(--border)', background: 'var(--bg)',
+                      color: 'var(--text-primary)', fontSize: 13, lineHeight: 1.5,
+                      resize: 'vertical', outline: 'none', fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#25d366')}
+                    onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                  />
+                  {waMensajes[estado] && (
+                    <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.15)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#25d366', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Vista previa · </span>
+                      {waMensajes[estado]
+                        .replace(/{nombre}/g, 'Juan')
+                        .replace(/{modelo}/g, 'iPhone 14')
+                        .replace(/{nOrden}/g, '0042')
+                      }
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ════════════════ TAB: ESTADOS ════════════════ */}
       {activeTab === 'estados' && <>
 
@@ -913,6 +1062,41 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
         background: 'var(--surface)', border: '1px solid var(--border)',
       }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
+          🏢 Nombre del negocio
+        </div>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 12, lineHeight: 1.6 }}>
+          Se usa como texto de respaldo cuando no hay logo cargado (en órdenes, etiquetas y presupuestos).
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 420 }}>
+          <input
+            value={nombreNegocio}
+            onChange={e => { setNombreNegocio(e.target.value); setNombreSaved(false) }}
+            placeholder="Ej: Reparaciones El Centro"
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 8,
+              border: '1.5px solid var(--border)', background: 'var(--surface2)',
+              color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+            }}
+            onKeyDown={e => e.key === 'Enter' && handleSaveNombre()}
+          />
+          <button
+            onClick={handleSaveNombre}
+            disabled={nombreSaving}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none',
+              background: nombreSaved ? '#4ade80' : COLOR,
+              color: '#fff', fontSize: 12, fontWeight: 700,
+              cursor: nombreSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Logo ── */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#1D1D1F', marginBottom: 8 }}>
           🖼 Logo para impresión
         </div>
         <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 14, lineHeight: 1.6 }}>
@@ -979,7 +1163,7 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
               </div>
               {!logoBase64 && (
                 <div style={{ fontSize: 11, color: '#6E6E73' }}>
-                  Sin logo: la impresión mostrará "Microsmart" como texto.
+                  Sin logo: la impresión mostrará el nombre del negocio como texto.
                 </div>
               )}
             </div>
@@ -1220,6 +1404,31 @@ export default function ConfiguracionView({
   const [saved, setSaved] = useState(false)
   const [subPanel, setSubPanel] = useState<null>(null)
 
+  // ── Nombre del negocio ──────────────────────────────────────────────────────
+  const [nombreNegocio, setNombreNegocio] = useState('')
+  const [nombreSaving, setNombreSaving] = useState(false)
+  const [nombreSaved, setNombreSaved] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/sistema/negocio')
+      .then(r => r.json())
+      .then((d: { nombre: string }) => setNombreNegocio(d.nombre ?? ''))
+      .catch(() => {})
+  }, [])
+
+  const handleSaveNombre = async () => {
+    setNombreSaving(true)
+    try {
+      await fetch('/api/sistema/negocio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nombreNegocio }),
+      })
+      setNombreSaved(true)
+      setTimeout(() => setNombreSaved(false), 2500)
+    } finally { setNombreSaving(false) }
+  }
+
   useEffect(() => {
     fetch('/api/sistema/modulos', { cache: 'no-store' }).then(r => r.json()).then(setConfig).catch(() => {})
   }, [])
@@ -1366,6 +1575,123 @@ export default function ConfiguracionView({
       {!config && (
         <div style={{ textAlign: 'center', padding: 48, color: '#6E6E73', fontSize: 13 }}>Cargando configuración…</div>
       )}
+
+      {/* ── Nombre del negocio ───────────────────────────────────────────── */}
+      <div style={{
+        marginTop: 32, marginBottom: 24, padding: '18px 20px', borderRadius: 12,
+        background: 'var(--surface)', border: '1px solid var(--border)',
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+          🏢 Nombre del negocio
+        </div>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 12, lineHeight: 1.6 }}>
+          Aparece en órdenes, etiquetas y presupuestos cuando no hay logo cargado.
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 440 }}>
+          <input
+            value={nombreNegocio}
+            onChange={e => { setNombreNegocio(e.target.value); setNombreSaved(false) }}
+            placeholder="Ej: Reparaciones El Centro"
+            onKeyDown={e => e.key === 'Enter' && handleSaveNombre()}
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 8,
+              border: '1.5px solid var(--border)', background: 'var(--surface2)',
+              color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+            }}
+          />
+          <button
+            onClick={handleSaveNombre}
+            disabled={nombreSaving}
+            style={{
+              padding: '8px 18px', borderRadius: 8, border: 'none',
+              background: nombreSaved ? '#4ade80' : COLOR,
+              color: '#fff', fontSize: 12, fontWeight: 700,
+              cursor: nombreSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Sección Backup ────────────────────────────────────────────────── */}
+      <BackupSection />
+    </div>
+  )
+}
+
+function BackupSection() {
+  const [downloading, setDownloading] = useState(false)
+  const [lastBackup, setLastBackup] = useState<string | null>(null)
+
+  const descargarBackup = async () => {
+    setDownloading(true)
+    try {
+      const res = await fetch('/api/sistema/backup')
+      if (!res.ok) throw new Error('Error al generar el backup')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const fecha = new Date().toISOString().slice(0, 10)
+      const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }).replace(':', '-')
+      a.href = url
+      a.download = `microsmart-backup-${fecha}-${hora}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setLastBackup(new Date().toLocaleString('es-AR'))
+    } catch (e) {
+      alert(`Error: ${String(e)}`)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#6E6E73', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+        💾 Backup de datos
+      </div>
+      <div style={{
+        padding: '20px 22px', borderRadius: 12,
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+      }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+          💾
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>Respaldo manual de todos los datos</div>
+          <div style={{ fontSize: 12, color: '#6E6E73', lineHeight: 1.5 }}>
+            Descarga un archivo <code style={{ fontSize: 11, background: 'rgba(0,0,0,0.06)', padding: '1px 5px', borderRadius: 4 }}>.json</code> con todas las órdenes, clientes, stock, ventas, presupuestos y configuración. Guardalo en Google Drive o un disco externo.
+          </div>
+          {lastBackup && (
+            <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4, fontWeight: 600 }}>
+              ✓ Último backup: {lastBackup}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={descargarBackup}
+          disabled={downloading}
+          style={{
+            padding: '10px 22px', borderRadius: 9, border: 'none', cursor: downloading ? 'not-allowed' : 'pointer',
+            background: downloading ? 'var(--surface2)' : 'linear-gradient(135deg, #818cf8, #6366f1)',
+            color: downloading ? '#6E6E73' : '#fff', fontWeight: 700, fontSize: 13,
+            display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+            boxShadow: downloading ? 'none' : '0 2px 8px rgba(99,102,241,0.35)',
+            transition: 'all 0.15s',
+          }}
+        >
+          {downloading
+            ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(0,0,0,0.15)', borderTopColor: '#888', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Generando…</>
+            : <><span>⬇️</span> Descargar backup</>
+          }
+        </button>
+      </div>
+      <div style={{ marginTop: 8, fontSize: 11, color: '#6E6E73', paddingLeft: 4 }}>
+        💡 <strong>Recomendación:</strong> realizá un backup semanal y guardalo en la nube. El archivo incluye todos los datos del sistema.
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

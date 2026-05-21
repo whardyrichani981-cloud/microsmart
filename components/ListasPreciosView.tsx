@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import * as XLSX from 'xlsx'
+import { matchesAny } from '@/lib/search'
 import GremioView from './GremioView'
 import CFView from './CFView'
 import type { GremioData, CFItem } from '@/lib/gremio-parser'
@@ -49,19 +51,14 @@ function slugify(s: string) {
 
 // ── Custom list table ─────────────────────────────────────────────────────────
 function CustomTable({ items, search, color }: { items: SupplierItem[]; search: string; color: string }) {
-  const q = search.trim().toLowerCase()
-  const filtered = q
-    ? items.filter(it =>
-        it.name.toLowerCase().includes(q) ||
-        it.code.toLowerCase().includes(q) ||
-        (it.category ?? '').toLowerCase().includes(q)
-      )
+  const filtered = search.trim()
+    ? items.filter(it => matchesAny([it.name, it.code, it.category, it.quality, it.brand, it.description], search))
     : items
 
   if (!filtered.length) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: '#676767', fontSize: 14 }}>
-        {q ? `Sin resultados para "${search}"` : 'Lista vacía'}
+        {search.trim() ? `Sin resultados para "${search}"` : 'Lista vacía'}
       </div>
     )
   }
@@ -72,16 +69,32 @@ function CustomTable({ items, search, color }: { items: SupplierItem[]; search: 
     border: '1px solid rgba(255,255,255,0.06)',
   }
 
+  // Detect if list has any of the new extended fields
+  const hasQuality = filtered.some(it => it.quality)
+  const hasBrand   = filtered.some(it => it.brand)
+  const hasARS     = filtered.some(it => it.priceARS != null && it.priceARS > 0)
+  const hasDesc    = filtered.some(it => it.description)
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: 'rgba(15,17,28,0.6)' }}>
-            <th style={{ ...th, textAlign: 'left', width: '50%' }}>Producto</th>
-            <th style={{ ...th, textAlign: 'left', width: '12%' }}>Código</th>
-            <th style={{ ...th, textAlign: 'left', width: '18%' }}>Categoría</th>
-            <th style={{ ...th, textAlign: 'right', width: '12%' }}>Precio</th>
-            <th style={{ ...th, textAlign: 'center', width: '8%' }}>Stock</th>
+            <th style={{ ...th, textAlign: 'left' }}>Nombre</th>
+            <th style={{ ...th, textAlign: 'left', width: 90 }}>Código</th>
+            {hasQuality && <th style={{ ...th, textAlign: 'left', width: 160 }}>Calidad</th>}
+            {hasBrand   && <th style={{ ...th, textAlign: 'left', width: 120 }}>Marca</th>}
+            <th style={{ ...th, textAlign: 'left', width: 110 }}>Categoría</th>
+            <th style={{ ...th, textAlign: 'right', width: 100 }}>
+              USD <span style={{ color: '#4ade80' }}>$</span>
+            </th>
+            {hasARS && (
+              <th style={{ ...th, textAlign: 'right', width: 110 }}>
+                ARS <span style={{ color: '#facc15' }}>$</span>
+              </th>
+            )}
+            {hasDesc && <th style={{ ...th, textAlign: 'left', width: 200 }}>Descripción</th>}
+            <th style={{ ...th, textAlign: 'center', width: 90 }}>Stock</th>
           </tr>
         </thead>
         <tbody>
@@ -99,14 +112,40 @@ function CustomTable({ items, search, color }: { items: SupplierItem[]; search: 
               <td style={{ padding: '8px 12px', color: '#676767', fontFamily: 'monospace', fontSize: 12 }}>
                 {it.code || '—'}
               </td>
+              {hasQuality && (
+                <td style={{ padding: '8px 12px', fontSize: 12 }}>
+                  {it.quality
+                    ? <span style={{ padding: '2px 7px', borderRadius: 4, background: `${color}12`, color, fontSize: 11, fontWeight: 600 }}>{it.quality}</span>
+                    : <span style={{ color: '#484848' }}>—</span>}
+                </td>
+              )}
+              {hasBrand && (
+                <td style={{ padding: '8px 12px', color: '#8A8A8A', fontSize: 12 }}>
+                  {it.brand || '—'}
+                </td>
+              )}
               <td style={{ padding: '8px 12px' }}>
                 {it.category
-                  ? <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: `${color}18`, color, fontWeight: 600 }}>{it.category}</span>
+                  ? <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#8A8A8A', fontWeight: 600 }}>{it.category}</span>
                   : <span style={{ color: '#484848' }}>—</span>}
               </td>
-              <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600, fontSize: 13 }}>
-                {it.price.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })}
+              <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 700, fontSize: 13 }}>
+                {it.price > 0
+                  ? `$${it.price.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`
+                  : <span style={{ color: '#484848' }}>—</span>}
               </td>
+              {hasARS && (
+                <td style={{ padding: '8px 12px', textAlign: 'right', color: '#facc15', fontWeight: 600, fontSize: 12 }}>
+                  {it.priceARS != null && it.priceARS > 0
+                    ? `$${it.priceARS.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+                    : <span style={{ color: '#484848' }}>—</span>}
+                </td>
+              )}
+              {hasDesc && (
+                <td style={{ padding: '8px 12px', color: '#676767', fontSize: 12, maxWidth: 200 }}>
+                  {it.description || '—'}
+                </td>
+              )}
               <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                 {it.stock
                   ? <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: /stock/i.test(it.stock) ? 'rgba(74,222,128,0.12)' : 'rgba(250,204,21,0.12)', color: /stock/i.test(it.stock) ? '#4ade80' : '#facc15', fontWeight: 600 }}>{it.stock}</span>
@@ -139,6 +178,8 @@ export default function ListasPreciosView() {
   const [showNewModal,  setShowNewModal]  = useState(false)
   const [newNombre,     setNewNombre]     = useState('')
   const [newFile,       setNewFile]       = useState<File | null>(null)
+  const [newUrl,        setNewUrl]        = useState('')
+  const [newInputMode,  setNewInputMode]  = useState<'file' | 'url'>('file')
   const [creating,      setCreating]      = useState(false)
   const [newFileError,  setNewFileError]  = useState('')
 
@@ -283,7 +324,8 @@ export default function ListasPreciosView() {
 
   // ── Create new custom list ────────────────────────────────────────────────
   const openNewModal = () => {
-    setNewNombre(''); setNewFile(null); setNewFileError(''); setShowNewModal(true)
+    setNewNombre(''); setNewFile(null); setNewUrl(''); setNewInputMode('file')
+    setNewFileError(''); setShowNewModal(true)
   }
 
   const handleNewFilePick = () => {
@@ -297,13 +339,23 @@ export default function ListasPreciosView() {
 
   const handleCreate = async () => {
     if (!newNombre.trim()) return
-    if (!newFile) { setNewFileError('Seleccioná un archivo'); return }
+    if (newInputMode === 'file' && !newFile) { setNewFileError('Seleccioná un archivo'); return }
+    if (newInputMode === 'url'  && !newUrl.trim()) { setNewFileError('Ingresá un enlace'); return }
     setCreating(true); setNewFileError('')
     try {
-      const fd = new FormData()
-      fd.append('nombre', newNombre.trim())
-      fd.append('file', newFile)
-      const res = await fetch('/api/sistema/listas-custom', { method: 'POST', body: fd })
+      let res: Response
+      if (newInputMode === 'url') {
+        res = await fetch('/api/sistema/listas-custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre: newNombre.trim(), url: newUrl.trim() }),
+        })
+      } else {
+        const fd = new FormData()
+        fd.append('nombre', newNombre.trim())
+        fd.append('file', newFile!)
+        res = await fetch('/api/sistema/listas-custom', { method: 'POST', body: fd })
+      }
       const data = await res.json()
       if (res.ok) {
         setCustomListas(prev => [...prev, data as ListaCustom])
@@ -316,6 +368,25 @@ export default function ListasPreciosView() {
     } catch (err) {
       setNewFileError(`Error de red: ${String(err)}`)
     } finally { setCreating(false) }
+  }
+
+  // ── Download supplier template ────────────────────────────────────────────
+  const downloadTemplate = () => {
+    const header = ['Nombre', 'Código', 'Calidad', 'Marca', 'Categoría', 'Precio USD', 'Precio ARS', 'Descripción']
+    const examples = [
+      ['LCD & TP iPhone 15 Pro Max', '5493', 'Soft OLED X07', 'Mobilesentrix', 'módulos', 210, '', 'Apto IC - 120Hz'],
+      ['Batería iPhone 14 Ampsentrix Plus', '5487', 'Ampsentrix Plus', 'Ampsentrix', 'baterías', 23, '', 'Autoprogramable'],
+      ['Vidrio Trasero iPhone 14 Pro Max Negro', '4320', 'Premium', '', 'vidrios', 8, 9200, ''],
+      ['Cámara Trasera iPhone 13 Pro', '3614', 'Original Pull', 'Apple', 'cámaras', 45, '', ''],
+    ]
+    const ws = XLSX.utils.aoa_to_sheet([header, ...examples])
+    ws['!cols'] = [
+      { wch: 42 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
+      { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 28 },
+    ]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Lista de Precios')
+    XLSX.writeFile(wb, 'plantilla-lista-proveedor.xlsx')
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -546,14 +617,14 @@ export default function ListasPreciosView() {
               {/* Name */}
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#8A8A8A', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Nombre de la lista <span style={{ color: '#ef4444' }}>*</span>
+                  Nombre del proveedor / lista <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   value={newNombre}
                   onChange={e => setNewNombre(e.target.value)}
-                  placeholder="Ej: Lista Mayorista, Precios Diciembre..."
+                  placeholder="Ej: Mayorista Norte, Distribuidora XYZ..."
                   autoFocus
-                  onKeyDown={e => e.key === 'Enter' && !newFile && handleNewFilePick()}
+                  onKeyDown={e => e.key === 'Enter' && newInputMode === 'file' && !newFile && handleNewFilePick()}
                   style={{
                     width: '100%', boxSizing: 'border-box',
                     padding: '10px 12px', borderRadius: 8,
@@ -563,62 +634,130 @@ export default function ListasPreciosView() {
                 />
               </div>
 
-              {/* File */}
+              {/* Source toggle */}
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#8A8A8A', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Archivo de precios <span style={{ color: '#ef4444' }}>*</span>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#8A8A8A', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Origen de precios <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <button
-                  onClick={handleNewFilePick}
-                  style={{
-                    width: '100%', padding: '22px 16px',
-                    borderRadius: 10, border: `2px dashed ${newFile ? '#4ade80' : '#333'}`,
-                    background: newFile ? 'rgba(74,222,128,0.06)' : 'var(--surface2)',
-                    cursor: 'pointer', transition: 'all 0.15s',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                  }}
-                  onMouseEnter={e => { if (!newFile) e.currentTarget.style.borderColor = '#60a5fa' }}
-                  onMouseLeave={e => { if (!newFile) e.currentTarget.style.borderColor = '#333' }}
-                >
-                  {newFile ? (
-                    <>
-                      <span style={{ fontSize: 24 }}>✅</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#4ade80' }}>{newFile.name}</span>
-                      <span style={{ fontSize: 11, color: '#676767' }}>Clic para cambiar</span>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ fontSize: 28 }}>📂</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#8A8A8A' }}>Seleccionar archivo</span>
-                      <span style={{ fontSize: 11, color: '#484848' }}>CSV, Excel (.xlsx / .xls)</span>
-                    </>
-                  )}
-                </button>
-                {newFileError && (
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#f87171' }}>{newFileError}</div>
-                )}
+                <div style={{ display: 'flex', gap: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content' }}>
+                  {(['file', 'url'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => { setNewInputMode(mode); setNewFileError('') }}
+                      style={{
+                        padding: '8px 18px', border: 'none', cursor: 'pointer',
+                        fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
+                        background: newInputMode === mode ? '#60a5fa' : 'var(--surface2)',
+                        color: newInputMode === mode ? '#111' : '#8A8A8A',
+                      }}
+                    >
+                      {mode === 'file' ? '📂 Subir archivo' : '🔗 Enlace online'}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* File picker */}
+              {newInputMode === 'file' && (
+                <div>
+                  <button
+                    onClick={handleNewFilePick}
+                    style={{
+                      width: '100%', padding: '22px 16px',
+                      borderRadius: 10, border: `2px dashed ${newFile ? '#4ade80' : '#333'}`,
+                      background: newFile ? 'rgba(74,222,128,0.06)' : 'var(--surface2)',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                    }}
+                    onMouseEnter={e => { if (!newFile) e.currentTarget.style.borderColor = '#60a5fa' }}
+                    onMouseLeave={e => { if (!newFile) e.currentTarget.style.borderColor = '#333' }}
+                  >
+                    {newFile ? (
+                      <>
+                        <span style={{ fontSize: 24 }}>✅</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#4ade80' }}>{newFile.name}</span>
+                        <span style={{ fontSize: 11, color: '#676767' }}>Clic para cambiar</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 28 }}>📂</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#8A8A8A' }}>Seleccionar archivo</span>
+                        <span style={{ fontSize: 11, color: '#484848' }}>CSV, Excel (.xlsx / .xls)</span>
+                      </>
+                    )}
+                  </button>
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#484848', lineHeight: 1.5 }}>
+                    Usá la plantilla para el formato correcto:{' '}
+                    <span style={{ color: '#676767' }}>Nombre, Código, Calidad, Marca, Categoría, Precio USD, Precio ARS, Descripción</span>
+                  </div>
+                </div>
+              )}
+
+              {/* URL input */}
+              {newInputMode === 'url' && (
+                <div>
+                  <input
+                    value={newUrl}
+                    onChange={e => { setNewUrl(e.target.value); setNewFileError('') }}
+                    placeholder="https://docs.google.com/spreadsheets/d/... o link al CSV"
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      padding: '10px 12px', borderRadius: 8,
+                      border: `1px solid ${newUrl ? '#60a5fa60' : 'var(--border)'}`,
+                      background: 'var(--surface2)', color: '#E5E5E3',
+                      fontSize: 13, outline: 'none', fontFamily: 'monospace',
+                    }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#60a5fa' }}
+                    onBlur={e => { e.currentTarget.style.borderColor = newUrl ? '#60a5fa60' : 'var(--border)' }}
+                  />
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#484848', lineHeight: 1.6 }}>
+                    <span style={{ color: '#4ade80', fontWeight: 600 }}>Google Sheets:</span> el archivo debe ser <span style={{ color: '#676767' }}>público</span> (Compartir → Cualquier persona con el enlace → Lector).<br />
+                    También acepta links directos a archivos CSV o Excel en la nube.
+                  </div>
+                </div>
+              )}
+
+              {newFileError && (
+                <div style={{ fontSize: 12, color: '#f87171', marginTop: -8 }}>{newFileError}</div>
+              )}
             </div>
 
             {/* Modal footer */}
-            <div style={{ padding: '14px 22px 18px', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <div style={{ padding: '14px 22px 18px', display: 'flex', gap: 10, alignItems: 'center' }}>
+              {/* Download template — left side */}
+              <button
+                onClick={downloadTemplate}
+                title="Descargar plantilla Excel con el formato correcto"
+                style={{
+                  padding: '8px 14px', borderRadius: 8,
+                  border: '1px solid rgba(96,165,250,0.35)', background: 'transparent',
+                  color: '#60a5fa', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s',
+                  marginRight: 'auto',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(96,165,250,0.1)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                📄 Descargar plantilla
+              </button>
+
               <button
                 onClick={() => setShowNewModal(false)}
                 style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: '#8A8A8A', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
               >Cancelar</button>
               <button
                 onClick={handleCreate}
-                disabled={creating || !newNombre.trim() || !newFile}
+                disabled={creating || !newNombre.trim() || (newInputMode === 'file' ? !newFile : !newUrl.trim())}
                 style={{
                   padding: '8px 22px', borderRadius: 8, border: 'none',
-                  background: creating || !newNombre.trim() || !newFile ? '#333' : '#60a5fa',
-                  color: creating || !newNombre.trim() || !newFile ? '#555' : '#111',
+                  background: creating || !newNombre.trim() || (newInputMode === 'file' ? !newFile : !newUrl.trim()) ? '#333' : '#60a5fa',
+                  color:      creating || !newNombre.trim() || (newInputMode === 'file' ? !newFile : !newUrl.trim()) ? '#555' : '#111',
                   fontSize: 13, fontWeight: 700,
-                  cursor: creating || !newNombre.trim() || !newFile ? 'not-allowed' : 'pointer',
+                  cursor: creating || !newNombre.trim() || (newInputMode === 'file' ? !newFile : !newUrl.trim()) ? 'not-allowed' : 'pointer',
                   transition: 'all 0.15s',
                 }}
               >
-                {creating ? '⏳ Creando...' : '✓ Crear lista'}
+                {creating ? '⏳ Importando...' : '✓ Crear lista'}
               </button>
             </div>
           </div>

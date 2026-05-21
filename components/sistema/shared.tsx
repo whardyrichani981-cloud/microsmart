@@ -86,10 +86,11 @@ interface SearchableSelectProps {
   value: string
   onChange: (val: string) => void
   options: string[]
+  labelMap?: Record<string, string>  // value → display label
   placeholder?: string
   emptyOption?: string
 }
-export function SearchableSelect({ value, onChange, options, placeholder = 'Buscar...', emptyOption }: SearchableSelectProps) {
+export function SearchableSelect({ value, onChange, options, labelMap, placeholder = 'Buscar...', emptyOption }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -115,8 +116,10 @@ export function SearchableSelect({ value, onChange, options, placeholder = 'Busc
   }
   const filtered = options.filter(o => {
     if (!query) return true
-    const lower = o.toLowerCase()
-    return expandSearch(query).some(t => lower.includes(t))
+    const label = labelMap?.[o] ?? o
+    const lower = label.toLowerCase()
+    const valueL = o.toLowerCase()
+    return expandSearch(query).some(t => lower.includes(t) || valueL.includes(t))
   })
 
   useEffect(() => {
@@ -146,7 +149,7 @@ export function SearchableSelect({ value, onChange, options, placeholder = 'Busc
         }}
       >
         <span style={{ color: value ? 'var(--text-primary)' : 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {value || (emptyOption ?? placeholder)}
+          {value ? (labelMap?.[value] ?? value) : (emptyOption ?? placeholder)}
         </span>
         <span style={{ fontSize: 10, color: 'var(--text-dim)', flexShrink: 0, marginLeft: 6 }}>▾</span>
       </div>
@@ -186,9 +189,9 @@ export function SearchableSelect({ value, onChange, options, placeholder = 'Busc
             )}
             {filtered.length === 0 ? (
               <div style={{ padding: '12px', color: 'var(--text-dim)', fontSize: 12, textAlign: 'center' }}>Sin resultados</div>
-            ) : filtered.map(opt => (
+            ) : filtered.map((opt, idx) => (
               <div
-                key={opt}
+                key={`${opt}-${idx}`}
                 onClick={() => select(opt)}
                 style={{
                   padding: '8px 12px', cursor: 'pointer', fontSize: 12,
@@ -199,7 +202,7 @@ export function SearchableSelect({ value, onChange, options, placeholder = 'Busc
                 onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = 'var(--hover-bg)' }}
                 onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background = 'transparent' }}
               >
-                {opt}
+                {labelMap?.[opt] ?? opt}
               </div>
             ))}
           </div>
@@ -233,6 +236,25 @@ export const calcSt: React.CSSProperties = {
   color: '#16a34a', fontWeight: 700, fontFamily: 'monospace',
 }
 export const selectSt: React.CSSProperties = { ...inputSt }
+
+// ─── Capitaliza primera letra del valor ───────────────────────────────────────
+export function capFirst(s: string): string {
+  if (!s) return s
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// Input que auto-capitaliza la primera letra al escribir
+export function CapInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const el = e.currentTarget
+    const caret = el.selectionStart ?? 0
+    if (el.value && el.value[0] !== el.value[0].toUpperCase()) {
+      el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1)
+      el.setSelectionRange(caret, caret)
+    }
+  }
+  return <input {...props} onInput={handleInput} />
+}
 
 // ─── Grid form layout ─────────────────────────────────────────────────────────
 export function FormGrid({ children, cols = 2 }: { children: React.ReactNode; cols?: number }) {
@@ -297,11 +319,12 @@ interface TableProps<T extends object> {
   data: T[]
   onEdit?: (row: T) => void
   onDelete?: (row: T) => void
+  extraActions?: (row: T) => React.ReactNode
   keyField?: keyof T
   emptyMsg?: string
   accentColor?: string
 }
-export function DataTable<T extends object>({ cols, data, onEdit, onDelete, keyField = 'id' as keyof T, emptyMsg = 'Sin registros', accentColor }: TableProps<T>) {
+export function DataTable<T extends object>({ cols, data, onEdit, onDelete, extraActions, keyField = 'id' as keyof T, emptyMsg = 'Sin registros', accentColor }: TableProps<T>) {
   return (
     <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border)' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -312,7 +335,7 @@ export function DataTable<T extends object>({ cols, data, onEdit, onDelete, keyF
                 {c.label}
               </th>
             ))}
-            {(onEdit || onDelete) && <th style={{ width: 70, borderBottom: '1px solid var(--border)' }} />}
+            {(onEdit || onDelete || extraActions) && <th style={{ width: 90, borderBottom: '1px solid var(--border)' }} />}
           </tr>
         </thead>
         <tbody>
@@ -329,8 +352,9 @@ export function DataTable<T extends object>({ cols, data, onEdit, onDelete, keyF
                   {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '')}
                 </td>
               ))}
-              {(onEdit || onDelete) && (
+              {(onEdit || onDelete || extraActions) && (
                 <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
+                  {extraActions && extraActions(row)}
                   {onEdit && <button onClick={() => onEdit(row)} style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', padding: '3px 6px', fontSize: 13, borderRadius: 5 }} onMouseEnter={e => e.currentTarget.style.color = accentColor ?? C.yellow} onMouseLeave={e => e.currentTarget.style.color = C.muted}>✏️</button>}
                   {onDelete && <button onClick={() => { if (confirm('¿Eliminar este registro?')) onDelete(row) }} style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', padding: '3px 6px', fontSize: 13, borderRadius: 5 }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.muted}>🗑️</button>}
                 </td>

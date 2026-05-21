@@ -1,219 +1,184 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 
-function SeguimientoSearch() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function SeguimientoLandingPage() {
   const [codigo, setCodigo] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
-  // Auto-redirect if ?q= param is present
-  useEffect(() => {
-    const q = searchParams.get('q')
-    if (q && q.trim()) {
-      router.push(`/seguimiento/${q.trim().toUpperCase()}`)
-    }
-  }, [searchParams, router])
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmed = codigo.trim().toUpperCase()
-    if (!trimmed) return
-    router.push(`/seguimiento/${trimmed}`)
-  }
-
-  const widgetCode = `<form action="https://TU-DOMINIO/seguimiento" target="_blank" style="display:flex;gap:8px;font-family:sans-serif">
-  <input name="q" placeholder="Código de seguimiento" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;flex:1" />
-  <button type="submit" style="padding:10px 20px;background:#111;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Consultar</button>
-</form>`
-
-  const handleCopyWidget = () => {
-    navigator.clipboard.writeText(widgetCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    const clean = codigo.trim().toUpperCase()
+    if (!clean) { setError('Ingresá tu código de seguimiento'); return }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/seguimiento/${encodeURIComponent(clean)}`)
+      if (res.status === 404) {
+        setError('No encontramos ninguna orden con ese código. Verificá que esté bien escrito.')
+        setLoading(false)
+        return
+      }
+      router.push(`/seguimiento/${clean}`)
+    } catch {
+      setError('Error de conexión. Intentá de nuevo.')
+      setLoading(false)
+    }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f9fa', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#111' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      display: 'flex', flexDirection: 'column',
+    }}>
       {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.5px', color: '#111' }}>Microsmart</span>
+      <header style={{
+        padding: '20px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: 'linear-gradient(135deg, #F5C400, #f97316)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16,
+          }}>🍎</div>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Microsmart</span>
         </div>
-        <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Seguimiento de reparaciones</div>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
+          Seguimiento de reparaciones
+        </span>
       </header>
 
-      <main style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px' }}>
-        {/* Search Card */}
+      {/* Hero */}
+      <main style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px',
+      }}>
+        {/* Icon */}
         <div style={{
-          background: '#fff',
-          borderRadius: 16,
-          border: '1px solid #e5e7eb',
-          padding: '36px 32px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-          marginBottom: 32,
+          width: 80, height: 80, borderRadius: 24,
+          background: 'linear-gradient(135deg, rgba(245,196,0,0.15), rgba(249,115,22,0.15))',
+          border: '1.5px solid rgba(245,196,0,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 36, marginBottom: 28,
+          boxShadow: '0 0 40px rgba(245,196,0,0.1)',
         }}>
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📱</div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111', marginBottom: 8 }}>
-              Consultá el estado de tu equipo
-            </h1>
-            <p style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>
-              Ingresá el código que recibiste en el comprobante de ingreso para ver el estado de tu reparación en tiempo real.
-            </p>
-          </div>
+          🔍
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 12 }}>
-              <input
-                type="text"
-                value={codigo}
-                onChange={e => setCodigo(e.target.value.toUpperCase())}
-                placeholder="Ej: AB3X7Y2K"
-                maxLength={8}
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  border: '1.5px solid #d1d5db',
-                  borderRadius: 10,
-                  fontSize: 18,
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  letterSpacing: '0.15em',
-                  color: '#111',
-                  outline: 'none',
-                  textAlign: 'center',
-                  textTransform: 'uppercase',
-                  boxSizing: 'border-box',
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#111' }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#d1d5db' }}
-                autoComplete="off"
-                autoFocus
-              />
-            </div>
+        <h1 style={{
+          fontSize: 'clamp(24px, 5vw, 36px)',
+          fontWeight: 900, color: '#fff',
+          textAlign: 'center', margin: '0 0 10px',
+          letterSpacing: '-0.5px',
+        }}>
+          Seguí tu reparación
+        </h1>
+        <p style={{
+          fontSize: 15, color: 'rgba(255,255,255,0.5)',
+          textAlign: 'center', margin: '0 0 40px',
+          maxWidth: 380, lineHeight: 1.6,
+        }}>
+          Ingresá el código de seguimiento que recibiste al dejar tu equipo en el taller.
+        </p>
 
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 420 }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: `1.5px solid ${error ? '#ef4444' : 'rgba(255,255,255,0.12)'}`,
+            borderRadius: 14,
+            padding: '6px 6px 6px 18px',
+            display: 'flex', alignItems: 'center', gap: 8,
+            transition: 'border-color 0.2s',
+          }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>🔐</span>
+            <input
+              ref={inputRef}
+              value={codigo}
+              onChange={e => { setCodigo(e.target.value.toUpperCase()); setError('') }}
+              placeholder="Ej: MS-2024-ABC1"
+              autoFocus
+              autoComplete="off"
+              maxLength={30}
+              style={{
+                flex: 1, background: 'none', border: 'none', outline: 'none',
+                fontSize: 18, fontWeight: 700, color: '#fff',
+                fontFamily: 'monospace', letterSpacing: '0.08em',
+                caretColor: '#F5C400', minWidth: 0,
+              }}
+            />
             <button
               type="submit"
+              disabled={loading || !codigo.trim()}
               style={{
-                width: '100%',
-                padding: '14px',
-                background: '#111',
-                color: '#fff',
-                border: 'none',
+                padding: '12px 20px',
                 borderRadius: 10,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#333' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#111' }}
-            >
-              Consultar estado
-            </button>
-          </form>
-
-          <p style={{ textAlign: 'center', fontSize: 12, color: '#9ca3af', marginTop: 14 }}>
-            Encontrás tu código en el comprobante de ingreso
-          </p>
-        </div>
-
-        {/* Info section */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 16,
-          border: '1px solid #e5e7eb',
-          padding: '24px 28px',
-          marginBottom: 24,
-        }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 16 }}>
-            ¿Cómo funciona el seguimiento?
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[
-              { icon: '🔢', title: 'Ingresá tu código', desc: 'Encontrás el código de 8 caracteres en el comprobante que te entregamos al dejar el equipo.' },
-              { icon: '📊', title: 'Ver el estado actual', desc: 'Podés ver en qué etapa del proceso se encuentra tu dispositivo: Entrada, Laboratorio, Salida, etc.' },
-              { icon: '📝', title: 'Notas del técnico', desc: 'Si el técnico dejó notas públicas sobre tu reparación, las podrás ver aquí.' },
-            ].map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{item.icon}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>{item.title}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>{item.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Widget embed section */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 16,
-          border: '1px solid #e5e7eb',
-          padding: '24px 28px',
-          marginBottom: 24,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>
-              Widget para tu sitio web
-            </h2>
-            <button
-              onClick={handleCopyWidget}
-              style={{
-                padding: '6px 14px',
-                background: copied ? '#d1fae5' : '#f3f4f6',
-                border: `1px solid ${copied ? '#6ee7b7' : '#e5e7eb'}`,
-                borderRadius: 7,
-                fontSize: 12,
-                fontWeight: 600,
-                color: copied ? '#065f46' : '#374151',
-                cursor: 'pointer',
+                fontWeight: 700, fontSize: 14,
+                background: loading || !codigo.trim()
+                  ? 'rgba(255,255,255,0.07)'
+                  : 'linear-gradient(135deg, #F5C400, #f97316)',
+                border: 'none',
+                color: loading || !codigo.trim() ? 'rgba(255,255,255,0.3)' : '#0c0d0f',
+                cursor: loading || !codigo.trim() ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
               }}
             >
-              {copied ? '✓ Copiado' : 'Copiar código'}
+              {loading ? '⟳' : 'Consultar →'}
             </button>
           </div>
-          <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
-            Pegá este código HTML en tu sitio web para que los clientes puedan buscar directamente desde ahí:
-          </p>
-          <pre style={{
-            background: '#f9fafb',
-            border: '1px solid #e5e7eb',
-            borderRadius: 8,
-            padding: '12px 14px',
-            fontSize: 11,
-            color: '#374151',
-            overflowX: 'auto',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            margin: 0,
-            lineHeight: 1.6,
+
+          {error && (
+            <div style={{
+              marginTop: 12, padding: '10px 16px',
+              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 10, fontSize: 13, color: '#f87171',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span>⚠️</span>{error}
+            </div>
+          )}
+        </form>
+
+        {/* Hint */}
+        <div style={{
+          marginTop: 32, padding: '16px 20px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 12, maxWidth: 420, width: '100%',
+        }}>
+          <div style={{
+            fontSize: 11, color: 'rgba(255,255,255,0.35)',
+            fontWeight: 700, marginBottom: 8,
+            textTransform: 'uppercase', letterSpacing: '0.07em',
           }}>
-            {widgetCode}
-          </pre>
+            ¿Dónde está mi código?
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+            📄 En el comprobante impreso que te dimos al dejar el equipo.<br />
+            💬 También lo podés solicitar llamándonos o escribiéndonos.
+          </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer style={{ textAlign: 'center', padding: '24px', fontSize: 12, color: '#9ca3af', borderTop: '1px solid #f3f4f6' }}>
-        Microsmart © 2025
+      <footer style={{
+        textAlign: 'center', padding: '20px 24px',
+        fontSize: 12, color: 'rgba(255,255,255,0.2)',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        Microsmart · Reparaciones Apple
       </footer>
     </div>
-  )
-}
-
-export default function SeguimientoPage() {
-  return (
-    <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', color: '#6b7280' }}>
-        Cargando...
-      </div>
-    }>
-      <SeguimientoSearch />
-    </Suspense>
   )
 }

@@ -209,15 +209,15 @@ function AppleDeviceDropdown({ value, onChange }: { value: string; onChange: (v:
 
 // ─── Add Note Modal ──────────────────────────────────────────────────────────
 function AddNoteModal({
-  author,
-  onAuthorChange,
+  solicitadoPor,
+  availableUsers,
   onSubmit,
   onClose,
   loading,
 }: {
-  author: string
-  onAuthorChange: (v: string) => void
-  onSubmit: (data: { content: string; category: NoteCategory; priority: NotePriority; product: string; reminderAt?: string }) => void
+  solicitadoPor: string
+  availableUsers: string[]
+  onSubmit: (data: { content: string; category: NoteCategory; priority: NotePriority; product: string; reminderAt?: string; responsable: string }) => void
   onClose: () => void
   loading: boolean
 }) {
@@ -225,6 +225,7 @@ function AddNoteModal({
   const [category, setCategory] = useState<NoteCategory>('repuesto')
   const [priority, setPriority] = useState<NotePriority>('media')
   const [product, setProduct] = useState('')
+  const [responsable, setResponsable] = useState(solicitadoPor)
   const [reminderEnabled, setReminderEnabled] = useState(false)
   const [reminderDate, setReminderDate] = useState(() => {
     const now = new Date()
@@ -236,11 +237,11 @@ function AddNoteModal({
   useEffect(() => { textRef.current?.focus() }, [])
 
   const submit = () => {
-    if (!content.trim() || !author.trim()) return
+    if (!content.trim() || !responsable.trim()) return
     const reminderAt = reminderEnabled && reminderDate
       ? new Date(reminderDate).toISOString()
       : undefined
-    onSubmit({ content, category, priority, product, reminderAt })
+    onSubmit({ content, category, priority, product, reminderAt, responsable })
   }
 
   const inputStyle: React.CSSProperties = {
@@ -297,15 +298,29 @@ function AddNoteModal({
           >×</button>
         </div>
 
-        {/* Author */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Tu nombre</label>
-          <input
-            value={author}
-            onChange={e => onAuthorChange(e.target.value)}
-            placeholder="Ej: Rony, Lucas, María..."
-            style={inputStyle}
-          />
+        {/* Solicitado por + Responsable */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div>
+            <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Solicitado por</label>
+            <div style={{ ...inputStyle, background: 'rgba(255,255,255,0.04)', color: '#8A8A8A', cursor: 'default', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#F5C40022', border: '1.5px solid #F5C40066', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#F5C400', flexShrink: 0 }}>
+                {solicitadoPor.slice(0, 2).toUpperCase()}
+              </span>
+              {solicitadoPor}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#676767', display: 'block', marginBottom: 5 }}>Responsable</label>
+            <select
+              value={responsable}
+              onChange={e => setResponsable(e.target.value)}
+              style={{ ...inputStyle, cursor: 'pointer' }}
+            >
+              {availableUsers.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Category + Priority */}
@@ -433,13 +448,13 @@ function AddNoteModal({
           >Cancelar</button>
           <button
             onClick={submit}
-            disabled={loading || !content.trim() || !author.trim()}
+            disabled={loading || !content.trim() || !responsable.trim()}
             style={{
               flex: 2, padding: '10px 0', borderRadius: 8, fontWeight: 600, fontSize: 13,
-              background: loading || !content.trim() || !author.trim() ? 'var(--surface2)' : '#F5C400',
+              background: loading || !content.trim() || !responsable.trim() ? 'var(--surface2)' : '#F5C400',
               border: 'none',
-              color: loading || !content.trim() || !author.trim() ? '#484848' : '#0c0d0f',
-              cursor: loading || !content.trim() || !author.trim() ? 'not-allowed' : 'pointer',
+              color: loading || !content.trim() || !responsable.trim() ? '#484848' : '#0c0d0f',
+              cursor: loading || !content.trim() || !responsable.trim() ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s',
             }}
           >{loading ? 'Guardando...' : '+ Guardar nota'}</button>
@@ -466,13 +481,15 @@ function fmtTime(iso: string) {
 }
 
 function NoteCard({
-  note, onToggle, onDelete, onPermanentDelete, isSuperAdmin,
+  note, onToggle, onDelete, onPermanentDelete, isSuperAdmin, currentUserName, isAdmin,
 }: {
   note: Note
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   onPermanentDelete?: (id: string) => void
   isSuperAdmin?: boolean
+  currentUserName?: string
+  isAdmin?: boolean
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmPerm, setConfirmPerm] = useState(false)
@@ -481,6 +498,12 @@ function NoteCard({
 
   const borderColor = isDeleted ? '#ef4444' : note.resolved ? '#22c55e' : cat.border
   const topColor   = isDeleted ? '#ef4444' : note.resolved ? '#22c55e' : cat.border
+
+  // Only the responsable (or admin) can mark it done
+  const canToggle = isAdmin || isSuperAdmin || !note.responsable || currentUserName === note.responsable
+
+  const solicitante = note.solicitadoPor ?? note.author
+  const responsable = note.responsable
 
   return (
     <div style={{
@@ -505,7 +528,34 @@ function NoteCard({
           {note.author.slice(0, 2).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: '#E5E5E3' }}>{note.author}</div>
+          {/* Solicitado por → Responsable */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: '#8A8A8A' }}>{solicitante}</span>
+            {responsable && responsable !== solicitante && (
+              <>
+                <span style={{ fontSize: 11, color: '#484848' }}>→</span>
+                <span style={{
+                  fontSize: 12, fontWeight: 700,
+                  color: currentUserName === responsable ? '#F5C400' : '#E5E5E3',
+                }}>
+                  {responsable}
+                  {currentUserName === responsable && (
+                    <span style={{ fontSize: 10, color: '#F5C400', marginLeft: 3 }}>(tú)</span>
+                  )}
+                </span>
+              </>
+            )}
+            {responsable && responsable === solicitante && (
+              <span style={{
+                fontSize: 12, fontWeight: 700,
+                color: currentUserName === responsable ? '#F5C400' : '#E5E5E3',
+              }}>
+                {currentUserName === responsable && (
+                  <span style={{ fontSize: 10, color: '#F5C400', marginLeft: 3 }}>(tú)</span>
+                )}
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: 11, color: '#676767' }}>Creada: {fmtTime(note.createdAt)}</div>
         </div>
         <span title={`Prioridad: ${note.priority}`} style={{ fontSize: 16 }}>
@@ -565,7 +615,7 @@ function NoteCard({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {note.resolvedAt && (
             <div style={{ fontSize: 11, color: '#4ade80' }}>
-              ✓ Resuelto: {fmtTime(note.resolvedAt)}
+              ✓ Completado {note.resolvedBy ? `por ${note.resolvedBy}` : ''}: {fmtTime(note.resolvedAt)}
             </div>
           )}
           {note.deletedAt && (
@@ -580,17 +630,19 @@ function NoteCard({
       {!isDeleted && (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
         <button
-          onClick={() => onToggle(note.id)}
+          onClick={() => canToggle ? onToggle(note.id) : undefined}
+          title={!canToggle ? 'Solo el responsable puede marcar como completado' : undefined}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            fontSize: 12, padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
-            background: note.resolved ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${note.resolved ? '#22c55e' : 'var(--border)'}`,
-            color: note.resolved ? '#4ade80' : '#676767',
-            fontWeight: 500, transition: 'all 0.15s',
+            fontSize: 12, padding: '5px 12px', borderRadius: 7,
+            cursor: canToggle ? 'pointer' : 'not-allowed',
+            background: note.resolved ? 'rgba(34,197,94,0.12)' : canToggle ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${note.resolved ? '#22c55e' : canToggle ? 'var(--border)' : 'var(--border)'}`,
+            color: note.resolved ? '#4ade80' : canToggle ? '#676767' : '#333',
+            fontWeight: 500, transition: 'all 0.15s', opacity: canToggle ? 1 : 0.45,
           }}
         >
-          {note.resolved ? '✓ Resuelto' : 'Marcar resuelto'}
+          {note.resolved ? '✓ Completado' : canToggle ? 'Marcar resuelto' : '🔒 Solo responsable'}
         </button>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
@@ -690,10 +742,12 @@ export default function NotasBoard({
   onNotesChange,
   currentUserName,
   isSuperAdmin,
+  role,
 }: {
   onNotesChange?: (pending: number) => void
   currentUserName?: string
   isSuperAdmin?: boolean
+  role?: string
 }) {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(false)
@@ -701,7 +755,10 @@ export default function NotasBoard({
   const [showForm, setShowForm] = useState(false)
   const [author, setAuthor] = useState('')
   const [filter, setFilter] = useState<'pending' | 'resolved' | 'all' | 'deleted' | NoteCategory>('pending')
+  const [availableUsers, setAvailableUsers] = useState<string[]>([])
   const firedReminders = useRef<Set<string>>(new Set())
+
+  const isAdmin = isSuperAdmin || role === 'admin' || role === 'superadmin'
 
   useEffect(() => {
     if (currentUserName) {
@@ -712,10 +769,15 @@ export default function NotasBoard({
     }
   }, [currentUserName])
 
-  const handleAuthorChange = (v: string) => {
-    setAuthor(v)
-    if (!currentUserName) localStorage.setItem('ms-author', v)
-  }
+  // Load system users for responsable dropdown
+  useEffect(() => {
+    fetch('/api/sistema/usuarios')
+      .then(r => r.json())
+      .then((users: { displayName: string; role: string }[]) => {
+        setAvailableUsers(users.map(u => u.displayName))
+      })
+      .catch(() => {})
+  }, [])
 
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default')
 
@@ -771,15 +833,19 @@ export default function NotasBoard({
     return () => clearInterval(id)
   }, [notes])
 
+  // Sync pending count to parent — always after notes state settles, never inside a setState updater
+  useEffect(() => {
+    onNotesChange?.(notes.filter(n => !n.resolved && !n.deleted).length)
+  }, [notes, onNotesChange])
+
   const fetchNotes = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/notes')
       const data: Note[] = await res.json()
       setNotes(data)
-      onNotesChange?.(data.filter(n => !n.resolved).length)
     } finally { setLoading(false) }
-  }, [onNotesChange])
+  }, [])
 
   useEffect(() => { fetchNotes() }, [fetchNotes])
   useEffect(() => {
@@ -787,35 +853,36 @@ export default function NotasBoard({
     return () => clearInterval(id)
   }, [fetchNotes])
 
-  const handleSubmit = async (data: { content: string; category: NoteCategory; priority: NotePriority; product: string; reminderAt?: string }) => {
+  const handleSubmit = async (data: { content: string; category: NoteCategory; priority: NotePriority; product: string; reminderAt?: string; responsable: string }) => {
     setSubmitting(true)
     try {
       const res = await fetch('/api/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ author, ...data, reminderAt: data.reminderAt }),
+        body: JSON.stringify({
+          author,
+          ...data,
+          solicitadoPor: author,
+          responsable: data.responsable,
+        }),
       })
       if (res.ok) {
         const note: Note = await res.json()
-        setNotes(prev => {
-          const next = [note, ...prev]
-          onNotesChange?.(next.filter(n => !n.resolved).length)
-          return next
-        })
+        setNotes(prev => [note, ...prev])
         setShowForm(false)
       }
     } finally { setSubmitting(false) }
   }
 
   const handleToggle = async (id: string) => {
-    const res = await fetch(`/api/notes/${id}`, { method: 'PATCH' })
+    const res = await fetch(`/api/notes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolvedBy: currentUserName ?? author }),
+    })
     if (res.ok) {
       const updated: Note = await res.json()
-      setNotes(prev => {
-        const next = prev.map(n => n.id === id ? updated : n)
-        onNotesChange?.(next.filter(n => !n.resolved).length)
-        return next
-      })
+      setNotes(prev => prev.map(n => n.id === id ? updated : n))
     }
   }
 
@@ -823,32 +890,33 @@ export default function NotasBoard({
     const res = await fetch(`/api/notes/${id}`, { method: 'DELETE' })
     if (res.ok) {
       const updated: Note = await res.json()
-      setNotes(prev => {
-        const next = prev.map(n => n.id === id ? updated : n)
-        onNotesChange?.(next.filter(n => !n.resolved && !n.deleted).length)
-        return next
-      })
+      setNotes(prev => prev.map(n => n.id === id ? updated : n))
     }
   }
 
   const handlePermanentDelete = async (id: string) => {
     const res = await fetch(`/api/notes/${id}/permanent`, { method: 'DELETE' })
     if (res.ok) {
-      setNotes(prev => {
-        const next = prev.filter(n => n.id !== id)
-        onNotesChange?.(next.filter(n => !n.resolved && !n.deleted).length)
-        return next
-      })
+      setNotes(prev => prev.filter(n => n.id !== id))
     }
   }
 
-  const active = notes.filter(n => !n.deleted)
+  // Visibility: admins see all; others only see notes they requested or are responsible for
+  const visibleNotes = notes.filter(n => {
+    if (isAdmin) return true
+    if (!author) return true  // no user identity yet — show all (graceful fallback)
+    const isResponsable = n.responsable === author
+    const isSolicitante = (n.solicitadoPor ?? n.author) === author
+    return isResponsable || isSolicitante
+  })
+
+  const active = visibleNotes.filter(n => !n.deleted)
   const pending = active.filter(n => !n.resolved)
   const highPriority = active.filter(n => !n.resolved && n.priority === 'alta')
   const resolvedNotes = active.filter(n => n.resolved)
-  const deletedNotes = notes.filter(n => n.deleted)
+  const deletedNotes = visibleNotes.filter(n => n.deleted)
 
-  const filtered = notes.filter(n => {
+  const filtered = visibleNotes.filter(n => {
     if (filter === 'deleted') return !!n.deleted
     if (n.deleted) return false
     if (filter === 'pending') return !n.resolved
@@ -997,6 +1065,8 @@ export default function NotasBoard({
               onDelete={handleDelete}
               onPermanentDelete={handlePermanentDelete}
               isSuperAdmin={isSuperAdmin}
+              currentUserName={author}
+              isAdmin={isAdmin}
             />
           ))}
         </div>
@@ -1005,8 +1075,8 @@ export default function NotasBoard({
       {/* Add note modal */}
       {showForm && (
         <AddNoteModal
-          author={author}
-          onAuthorChange={handleAuthorChange}
+          solicitadoPor={author || 'Usuario'}
+          availableUsers={availableUsers.length > 0 ? availableUsers : (author ? [author] : ['Usuario'])}
           onSubmit={handleSubmit}
           onClose={() => setShowForm(false)}
           loading={submitting}

@@ -30,6 +30,13 @@ import ServiciosView from './sistema/ServiciosView'
 import VentasEquiposView from './sistema/VentasEquiposView'
 import CajaView from './sistema/CajaView'
 import CajaDiariaView from './sistema/CajaDiariaView'
+import CuentaCorrienteView from './sistema/CuentaCorrienteView'
+import MercadoPagoView from './sistema/MercadoPagoView'
+import PresupuestosView from './sistema/PresupuestosView'
+import NotaRapidaFloat from './sistema/NotaRapidaFloat'
+import BackupView from './sistema/BackupView'
+import GlobalSearch from './GlobalSearch'
+import PWAInstaller from './PWAInstaller'
 import type { UserRole, Permissions } from '@/lib/roles'
 import { SUPERADMIN_PERMISSIONS } from '@/lib/roles'
 
@@ -43,7 +50,7 @@ interface Props {
 }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja'
+type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos' | 'backup'
 
 const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions; adminOnly?: boolean }[] = [
   { id: 'inicio',         label: 'Inicio',                   icon: '🏠' },
@@ -52,6 +59,7 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'notasdash',      label: 'Tareas y Pedidos',         icon: '📋', permKey: 'canViewNotas' },
   { id: 'imei',           label: 'Verificar IMEI',           icon: '🔍', permKey: 'canViewIMEI' },
   { id: 'ordenes',        label: 'Órdenes de trabajo',       icon: '🔧', permKey: 'canViewOrdenes' },
+  { id: 'presupuestos',   label: 'Presupuestos',             icon: '📋', permKey: 'canViewOrdenes' },
   { id: 'servicios',      label: 'Servicios',                icon: '🛠', permKey: 'canViewServicios' },
   { id: 'clientes',       label: 'Clientes',                 icon: '👥', permKey: 'canViewClientes' },
   { id: 'agenda',         label: 'Turnos',                   icon: '📅', permKey: 'canViewAgenda' },
@@ -59,6 +67,7 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'ventas-equipos', label: 'Ventas Equipos',           icon: '📱' },
   { id: 'contable',       label: 'Administración contable',  icon: '📒' },
   { id: 'caja',           label: 'Caja de mostrador',        icon: '🖥️', permKey: 'canViewOrdenes' },
+  { id: 'backup',         label: 'Backup del sistema',        icon: '💾', adminOnly: true },
   { id: 'administracion', label: 'Configuración del sistema', icon: '⚙️', adminOnly: true },
 ]
 
@@ -106,11 +115,16 @@ export default function PriceComparator({
   const [sort, setSort] = useState<SortState>({ col: 'name', dir: 1 })
   const [refreshing, setRefreshing] = useState(false)
   const [pendingNotes, setPendingNotes] = useState(0)
+  const [ccDeuda, setCcDeuda] = useState(0)
+  const [stockAlertas, setStockAlertas] = useState(0)
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
+  const [navSearch, setNavSearch] = useState<{ nav: 'ordenes' | 'clientes'; term: string } | null>(null)
+
   const [activeCategories, setActiveCategories] = useState<Set<AppleCategory>>(new Set())
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeNav, setActiveNav] = useState<NavItem>('inicio')
   const [isDark, setIsDark] = useState(false)
-  const [contableSubTab, setContableSubTab] = useState<'ventas' | 'gastos' | 'reportes' | 'comisiones' | 'caja-diaria'>('ventas')
+  const [contableSubTab, setContableSubTab] = useState<'ventas' | 'gastos' | 'reportes' | 'comisiones' | 'caja-diaria' | 'cuenta-corriente' | 'mercadopago'>('ventas')
   const [viewMode, setViewMode] = useState<'merged' | 'columns'>('columns')
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<Set<string>>(new Set())
   const mainRef = useRef<HTMLElement>(null)
@@ -129,6 +143,108 @@ export default function PriceComparator({
       document.documentElement.classList.toggle('dark', dark)
     } catch {}
   }, [])
+
+  // Auto-backup silencioso al abrir el sistema (solo admins)
+  // Si pasaron más de 24h desde el último backup, lo dispara en background
+  useEffect(() => {
+    if (!isSuperAdmin) return
+    const check = async () => {
+      try {
+        const res = await fetch('/api/sistema/backup?list=1')
+        if (!res.ok) return
+        const { meta } = await res.json() as { meta: { lastBackup: string | null } }
+        const lastBackup = meta?.lastBackup ? new Date(meta.lastBackup).getTime() : 0
+        const hoursAgo = (Date.now() - lastBackup) / 3_600_000
+        if (hoursAgo >= 24) {
+          console.log('[backup] Auto-backup triggered — last backup was', Math.round(hoursAgo), 'h ago')
+          await fetch('/api/sistema/backup', { method: 'POST' })
+        }
+      } catch { /* silencioso */ }
+    }
+    // Correr con un pequeño delay para no bloquear la carga inicial
+    const t = setTimeout(check, 8_000)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Stock alerts — browser notifications on startup
+  useEffect(() => {
+    const NOTIFIED_KEY = 'ms-stock-notified'
+    const run = async () => {
+      try {
+        const [rep, acc] = await Promise.all([
+          fetch('/api/sistema/stock?tipo=repuestos').then(r => r.json()),
+          fetch('/api/sistema/stock?tipo=accesorios').then(r => r.json()),
+        ])
+        interface StockItemLite { nombre?: string; modelo?: string; color?: string; stock: number; stockMinimo?: number }
+        const allItems: StockItemLite[] = [...(rep?.items ?? []), ...(acc?.items ?? [])]
+
+        // Group by name key and accumulate totals
+        const map = new Map<string, { label: string; total: number; min: number }>()
+        for (const item of allItems) {
+          const key = [item.nombre, item.modelo, item.color].filter(Boolean).join('|').toLowerCase()
+          const label = [item.nombre, item.modelo, item.color].filter(Boolean).join(' – ')
+          if (!map.has(key)) map.set(key, { label, total: 0, min: item.stockMinimo ?? 2 })
+          const g = map.get(key)!
+          g.total += item.stock
+          g.min = Math.max(g.min, item.stockMinimo ?? 2)
+        }
+
+        const critical = [...map.values()].filter(g => g.total <= g.min)
+
+        // Read already-notified set
+        let notified: string[] = []
+        try { notified = JSON.parse(localStorage.getItem(NOTIFIED_KEY) ?? '[]') } catch {}
+        const notifiedSet = new Set(notified)
+
+        // Request permission lazily if needed
+        if (critical.length > 0 && 'Notification' in window && Notification.permission === 'default') {
+          await Notification.requestPermission()
+        }
+
+        const toNotify = critical.filter(g => !notifiedSet.has(g.label))
+        if (toNotify.length === 0) return
+
+        if (Notification.permission === 'granted') {
+          if (toNotify.length === 1) {
+            new Notification('⚠️ Stock crítico — Microsmart', {
+              body: `${toNotify[0].label} está en stock mínimo (${toNotify[0].total} unidad/es).`,
+              icon: '/favicon.ico',
+            })
+          } else {
+            new Notification(`⚠️ ${toNotify.length} productos en stock mínimo`, {
+              body: toNotify.slice(0, 4).map(g => `• ${g.label} (${g.total})`).join('\n'),
+              icon: '/favicon.ico',
+            })
+          }
+        }
+
+        // Mark as notified for this session
+        const newNotified = [...notifiedSet, ...toNotify.map(g => g.label)]
+        try { localStorage.setItem(NOTIFIED_KEY, JSON.stringify(newNotified)) } catch {}
+      } catch { /* silencioso */ }
+    }
+    const t = setTimeout(run, 5_000)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Ctrl+K → abrir búsqueda global
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setGlobalSearchOpen(o => !o)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const handleGlobalNavigate = (nav: 'ordenes' | 'clientes', term: string) => {
+    setNavSearch({ nav, term })
+    setActiveNav(nav)
+  }
 
   const toggleTheme = () => {
     const newDark = !isDark
@@ -152,6 +268,18 @@ export default function PriceComparator({
     load()
     const id = setInterval(load, 60_000)
     return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const checkCC = () => {
+      fetch('/api/sistema/cuenta-corriente?balances=1')
+        .then(r => r.json())
+        .then(d => setCcDeuda((d.balances ?? []).length))
+        .catch(() => {})
+    }
+    checkCC()
+    const t = setInterval(checkCC, 120_000)
+    return () => clearInterval(t)
   }, [])
 
   const activeSuppliers = suppliers.filter(s => s.items.length > 0)
@@ -233,9 +361,17 @@ export default function PriceComparator({
 
   const handleNav = (id: NavItem) => {
     setActiveNav(id)
+    setNavSearch(null)
     if (id !== 'comparador') setSelectedSupplierIds(new Set())
     if (id === 'contable') setContableSubTab('ventas')
   }
+
+  // Exponer handleNav al window para que HomeView (accesos rápidos) pueda navegar
+  useEffect(() => {
+    ;(window as any).__msNav = (nav: string) => handleNav(nav as NavItem)
+    return () => { delete (window as any).__msNav }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Drag-and-drop nav order ────────────────────────────────────────────────
   const [navOrder, setNavOrder] = useState<NavItem[]>([])
@@ -453,6 +589,30 @@ export default function PriceComparator({
                     {pendingNotes}
                   </span>
                 )}
+                {item.id === 'contable' && ccDeuda > 0 && (
+                  <span style={{
+                    background: '#f97316', color: '#FFFFFF',
+                    borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px',
+                    marginLeft: sidebarOpen ? 'auto' : undefined,
+                    position: sidebarOpen ? 'relative' : 'absolute',
+                    top: sidebarOpen ? undefined : 4, right: sidebarOpen ? undefined : 4,
+                    minWidth: 18, textAlign: 'center',
+                  }}>
+                    {ccDeuda}
+                  </span>
+                )}
+                {item.id === 'stock' && stockAlertas > 0 && (
+                  <span style={{
+                    background: '#ef4444', color: '#FFFFFF',
+                    borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px',
+                    marginLeft: sidebarOpen ? 'auto' : undefined,
+                    position: sidebarOpen ? 'relative' : 'absolute',
+                    top: sidebarOpen ? undefined : 4, right: sidebarOpen ? undefined : 4,
+                    minWidth: 18, textAlign: 'center',
+                  }}>
+                    {stockAlertas}
+                  </span>
+                )}
               </button>
             </div>
           )
@@ -563,6 +723,28 @@ export default function PriceComparator({
           }}>×</button>
         )}
       </div>
+
+      {/* Global search button */}
+      <button
+        onClick={() => setGlobalSearchOpen(true)}
+        title="Búsqueda global (Ctrl+K)"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '6px 12px', borderRadius: 999, fontSize: 12,
+          background: 'var(--surface2)', border: '1px solid var(--border-light)',
+          color: 'var(--text-dim)', cursor: 'pointer', whiteSpace: 'nowrap',
+          transition: 'all 0.15s', flexShrink: 0,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.color = 'var(--text-dim)' }}
+      >
+        🔍
+        <kbd style={{
+          fontSize: 10, padding: '1px 5px', borderRadius: 4,
+          background: 'var(--surface3)', border: '1px solid var(--border)',
+          color: 'var(--text-dim)', fontFamily: 'inherit',
+        }}>Ctrl K</kbd>
+      </button>
 
       {/* Date */}
       <div style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
@@ -782,15 +964,16 @@ export default function PriceComparator({
           )}
           {activeNav === 'proveedores' && <ProveedoresView key="proveedores" />}
           {activeNav === 'notasdash' && (
-            <NotasBoard key="notasdash" onNotesChange={setPendingNotes} currentUserName={displayName || undefined} isSuperAdmin={isSuperAdmin} />
+            <NotasBoard key="notasdash" onNotesChange={setPendingNotes} currentUserName={displayName || undefined} isSuperAdmin={isSuperAdmin} role={role} />
           )}
           {activeNav === 'imei' && <IMEIView key="imei" />}
-          {activeNav === 'ordenes' && <OrdenesView key="ordenes" />}
+          {activeNav === 'ordenes' && <OrdenesView key={`ordenes-${navSearch?.nav === 'ordenes' ? navSearch.term : ''}`} initialSearch={navSearch?.nav === 'ordenes' ? navSearch.term : ''} />}
+          {activeNav === 'presupuestos' && <PresupuestosView key="presupuestos" />}
           {activeNav === 'servicios' && <ServiciosView key="servicios" />}
           {activeNav === 'agenda' && <TurnosView key="agenda" />}
-          {activeNav === 'stock' && <StockMainView key="stock" />}
+          {activeNav === 'stock' && <StockMainView key="stock" onAlertCountChange={setStockAlertas} />}
           {activeNav === 'comisiones' && <ComisionesView key="comisiones" />}
-          {activeNav === 'clientes' && <ClientesView key="clientes" />}
+          {activeNav === 'clientes' && <ClientesView key={`clientes-${navSearch?.nav === 'clientes' ? navSearch.term : ''}`} initialSearch={navSearch?.nav === 'clientes' ? navSearch.term : ''} />}
           {activeNav === 'contable' && (
             <div key="contable">
               {/* Sub-pestañas: Ventas / Gastos / Reportes */}
@@ -800,7 +983,9 @@ export default function PriceComparator({
                   { id: 'gastos'      as const, label: '🧾 Gastos',       show: p.canViewGastos      && (modulesCfg ? modulesCfg['gastos']      !== false : true) },
                   { id: 'comisiones'  as const, label: '👤 Comisiones',   show: p.canViewComisiones  && (modulesCfg ? modulesCfg['comisiones']  !== false : true) },
                   { id: 'reportes'    as const, label: '📊 Reportes',     show: p.canViewReportes    && (modulesCfg ? modulesCfg['reportes']    !== false : true) },
-                  { id: 'caja-diaria' as const, label: '🏧 Caja Diaria',  show: true },
+                  { id: 'caja-diaria'       as const, label: '🏧 Caja Diaria',       show: true },
+                  { id: 'cuenta-corriente' as const, label: '💳 Cuenta Corriente', show: true },
+                  { id: 'mercadopago'      as const, label: '💳 MercadoPago',       show: true },
                 ] as const).filter(t => t.show).map(tab => (
                   <button
                     key={tab.id}
@@ -820,11 +1005,14 @@ export default function PriceComparator({
               {contableSubTab === 'gastos'      && <GastosMainView key="gastos" />}
               {contableSubTab === 'comisiones'  && <ComisionesView key="comisiones" />}
               {contableSubTab === 'reportes'    && <ReportesMainView key="reportes" />}
-              {contableSubTab === 'caja-diaria' && <CajaDiariaView key="caja-diaria" />}
+              {contableSubTab === 'caja-diaria'       && <CajaDiariaView key="caja-diaria" currentUser={displayName || currentUser} role={role} />}
+              {contableSubTab === 'cuenta-corriente'  && <CuentaCorrienteView key="cuenta-corriente" />}
+              {contableSubTab === 'mercadopago'       && <MercadoPagoView key="mercadopago" />}
             </div>
           )}
           {activeNav === 'ventas-equipos' && <VentasEquiposView key="ventas-equipos" />}
-          {activeNav === 'caja' && <CajaView key="caja" />}
+          {activeNav === 'caja' && <CajaView key="caja" currentUser={displayName || currentUser} role={role} />}
+          {activeNav === 'backup' && <BackupView key="backup" />}
           {activeNav === 'administracion' && <AdminView key="administracion" onModulosChange={handleModulosChange} onModulosSaved={handleModulosSaved} />}
         </main>
       </div>
@@ -839,6 +1027,14 @@ export default function PriceComparator({
           onClose={() => setShowSettings(false)}
         />
       )}
+
+      <GlobalSearch
+        open={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        onNavigate={handleGlobalNavigate}
+      />
+
+      <NotaRapidaFloat />
 
 <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

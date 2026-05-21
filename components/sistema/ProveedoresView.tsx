@@ -1,5 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import * as XLSX from 'xlsx'
+import { matchesAny } from '@/lib/search'
 import type { Proveedor } from '@/lib/sistema-types'
 import type { SupplierItem } from '@/lib/types'
 import {
@@ -64,21 +66,27 @@ function Highlight({ text, q }: { text: string; q: string }) {
 
 // ── Items table ────────────────────────────────────────────────────────────────
 function ItemsTable({ items, search }: { items: SupplierItem[]; search: string }) {
-  const q = search.trim().toLowerCase()
-  const filtered = q
-    ? items.filter(it =>
-        it.name.toLowerCase().includes(q) ||
-        it.code.toLowerCase().includes(q) ||
-        (it.category ?? '').toLowerCase().includes(q)
-      )
+  const filtered = search.trim()
+    ? items.filter(it => matchesAny([it.name, it.code, it.category, it.quality, it.brand, it.description], search))
     : items
 
   if (filtered.length === 0) {
     return (
       <div style={{ padding: '24px 0', textAlign: 'center', color: C.muted, fontSize: 13 }}>
-        {q ? `Sin resultados para "${search}"` : 'Lista vacía'}
+        {search.trim() ? `Sin resultados para "${search}"` : 'Lista vacía'}
       </div>
     )
+  }
+
+  const hasQuality = filtered.some(it => it.quality)
+  const hasBrand   = filtered.some(it => it.brand)
+  const hasARS     = filtered.some(it => it.priceARS != null && it.priceARS > 0)
+  const hasDesc    = filtered.some(it => it.description)
+
+  const thSt: React.CSSProperties = {
+    padding: '8px 12px', textAlign: 'left', color: C.muted,
+    fontWeight: 600, fontSize: 11, textTransform: 'uppercase',
+    letterSpacing: 0.5, borderBottom: '1px solid var(--border)',
   }
 
   return (
@@ -86,23 +94,21 @@ function ItemsTable({ items, search }: { items: SupplierItem[]; search: string }
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr style={{ background: 'rgba(0,0,0,0.25)' }}>
-            <th style={{ padding: '8px 12px', textAlign: 'left', color: C.muted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)' }}>
-              Producto
+            <th style={thSt}>Nombre</th>
+            <th style={{ ...thSt, width: 90 }}>Código</th>
+            {hasQuality && <th style={{ ...thSt, width: 160 }}>Calidad</th>}
+            {hasBrand   && <th style={{ ...thSt, width: 120 }}>Marca</th>}
+            <th style={{ ...thSt, width: 110 }}>Categoría</th>
+            <th style={{ ...thSt, textAlign: 'right', width: 100 }}>
+              <span style={{ color: '#4ade80' }}>USD $</span>
             </th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', color: C.muted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)', width: 100 }}>
-              Código
-            </th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', color: C.muted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)', width: 120 }}>
-              Categoría
-            </th>
-            <th style={{ padding: '8px 12px', textAlign: 'right', color: C.muted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)', width: 140 }}>
-              Precio
-              <span style={{ color: '#4ade80', marginLeft: 4, fontWeight: 400 }}>USD</span>
-              <span style={{ color: '#facc15', marginLeft: 4, fontWeight: 400 }}>/ ARS</span>
-            </th>
-            <th style={{ padding: '8px 12px', textAlign: 'center', color: C.muted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--border)', width: 90 }}>
-              Stock
-            </th>
+            {hasARS && (
+              <th style={{ ...thSt, textAlign: 'right', width: 110 }}>
+                <span style={{ color: '#facc15' }}>ARS $</span>
+              </th>
+            )}
+            {hasDesc && <th style={{ ...thSt, width: 200 }}>Descripción</th>}
+            <th style={{ ...thSt, textAlign: 'center', width: 90 }}>Stock</th>
           </tr>
         </thead>
         <tbody>
@@ -120,26 +126,48 @@ function ItemsTable({ items, search }: { items: SupplierItem[]; search: string }
               <td style={{ padding: '7px 12px', color: C.muted, fontFamily: 'monospace', fontSize: 12 }}>
                 {it.code || '—'}
               </td>
+              {hasQuality && (
+                <td style={{ padding: '7px 12px' }}>
+                  {it.quality
+                    ? <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: `${COLOR}15`, color: COLOR, fontWeight: 600 }}>
+                        <Highlight text={it.quality} q={search} />
+                      </span>
+                    : <span style={{ color: C.muted }}>—</span>}
+                </td>
+              )}
+              {hasBrand && (
+                <td style={{ padding: '7px 12px', color: C.muted, fontSize: 12 }}>
+                  {it.brand
+                    ? <Highlight text={it.brand} q={search} />
+                    : '—'}
+                </td>
+              )}
               <td style={{ padding: '7px 12px' }}>
                 {it.category ? (
-                  <span style={{
-                    fontSize: 11, padding: '2px 7px', borderRadius: 4,
-                    background: `${COLOR}18`, color: COLOR, fontWeight: 600,
-                  }}>
+                  <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#8A8A8A', fontWeight: 600 }}>
                     <Highlight text={it.category} q={search} />
                   </span>
                 ) : <span style={{ color: C.muted }}>—</span>}
               </td>
               <td style={{ padding: '7px 12px', textAlign: 'right' }}>
-                <div style={{ color: '#4ade80', fontWeight: 600, fontSize: 13 }}>
+                <div style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>
                   {fmtUSD(it.price)}
                 </div>
-                {it.priceARS != null && it.priceARS > 0 && (
-                  <div style={{ color: '#facc15', fontWeight: 600, fontSize: 11, marginTop: 1 }}>
-                    {fmtARS(it.priceARS)}
-                  </div>
-                )}
               </td>
+              {hasARS && (
+                <td style={{ padding: '7px 12px', textAlign: 'right' }}>
+                  {it.priceARS != null && it.priceARS > 0
+                    ? <div style={{ color: '#facc15', fontWeight: 600, fontSize: 12 }}>{fmtARS(it.priceARS)}</div>
+                    : <span style={{ color: C.muted }}>—</span>}
+                </td>
+              )}
+              {hasDesc && (
+                <td style={{ padding: '7px 12px', color: C.muted, fontSize: 12 }}>
+                  {it.description
+                    ? <Highlight text={it.description} q={search} />
+                    : '—'}
+                </td>
+              )}
               <td style={{ padding: '7px 12px', textAlign: 'center' }}>
                 {it.stock ? (
                   <span style={{
@@ -177,6 +205,12 @@ export default function ProveedoresView() {
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null)
   const fileInputRef                  = useRef<HTMLInputElement>(null)
+
+  // URL upload modal
+  const [urlModal, setUrlModal]       = useState<{ id: string; nombre: string } | null>(null)
+  const [urlInput, setUrlInput]       = useState('')
+  const [urlError, setUrlError]       = useState('')
+  const [urlMode, setUrlMode]         = useState<'file' | 'url'>('file')
 
   // Expanded card state
   const [expandedId, setExpandedId]   = useState<string | null>(null)
@@ -297,11 +331,62 @@ export default function ProveedoresView() {
     await refresh()
   }
 
-  const handleUploadClick = (id: string) => {
-    setUploadTargetId(id)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-      fileInputRef.current.click()
+  const handleUploadClick = (id: string, nombre: string) => {
+    setUrlInput(''); setUrlError(''); setUrlMode('file')
+    setUrlModal({ id, nombre })
+  }
+
+  const handleUrlModalFile = () => {
+    if (!urlModal) return
+    setUploadTargetId(urlModal.id)
+    setUrlModal(null)
+    if (fileInputRef.current) { fileInputRef.current.value = ''; fileInputRef.current.click() }
+  }
+
+  const handleUrlModalSubmit = async () => {
+    if (!urlModal) return
+    if (!urlInput.trim()) { setUrlError('Ingresá un enlace'); return }
+    const id = urlModal.id
+    setUrlModal(null)
+    setUploadingId(id)
+    try {
+      const res = await fetch(`/api/sistema/proveedores/${id}/lista`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      })
+      await afterUpload(id, res)
+    } catch (err) {
+      alert(`Error de red: ${String(err)}`)
+    } finally {
+      setUploadingId(null)
+    }
+  }
+
+  /** Shared post-upload logic for both file and URL modes */
+  const afterUpload = async (id: string, res: Response) => {
+    if (res.ok) {
+      const result = await res.json()
+      if (result.items === 0 && result.preview) {
+        const previewStr = (result.preview as string[][])
+          .map((row: string[], i: number) => `Fila ${i}: ${row.filter(Boolean).join(' | ')}`)
+          .join('\n')
+        alert(
+          `⚠️ No se encontraron productos en "${result.filename}".\n\n` +
+          `Encabezados detectados:\n${previewStr}\n\n` +
+          `Copiá esto y compartilo para ajustar el parser.`
+        )
+      }
+      const metaRes = await fetch(`/api/sistema/proveedores/${id}/lista`, { cache: 'no-store' })
+      if (metaRes.ok) {
+        const data = await metaRes.json()
+        if (data) setUploaded(prev => ({ ...prev, [id]: data as ListaConItems }))
+      }
+      setExpandedId(id)
+      setExpandSearch('')
+    } else {
+      const err = await res.json()
+      alert(`Error al subir: ${err.error ?? 'Error desconocido'}`)
     }
   }
 
@@ -311,37 +396,11 @@ export default function ProveedoresView() {
     const id = uploadTargetId
     setUploadingId(id)
     setUploadTargetId(null)
-
     try {
       const fd = new FormData()
       fd.append('file', file)
       const res = await fetch(`/api/sistema/proveedores/${id}/lista`, { method: 'POST', body: fd })
-      if (res.ok) {
-        const result = await res.json()
-        // Warn when parser found 0 items — show the raw file structure
-        if (result.items === 0 && result.preview) {
-          const previewStr = (result.preview as string[][])
-            .map((row: string[], i: number) => `Fila ${i}: ${row.filter(Boolean).join(' | ')}`)
-            .join('\n')
-          alert(
-            `⚠️ No se encontraron productos en "${result.filename}".\n\n` +
-            `Encabezados detectados:\n${previewStr}\n\n` +
-            `Copiá esto y compartilo para ajustar el parser.`
-          )
-        }
-        // Reload full lista with items
-        const metaRes = await fetch(`/api/sistema/proveedores/${id}/lista`, { cache: 'no-store' })
-        if (metaRes.ok) {
-          const data = await metaRes.json()
-          if (data) setUploaded(prev => ({ ...prev, [id]: data as ListaConItems }))
-        }
-        // Auto-expand to show the new list
-        setExpandedId(id)
-        setExpandSearch('')
-      } else {
-        const err = await res.json()
-        alert(`Error al subir: ${err.error ?? 'Error desconocido'}`)
-      }
+      await afterUpload(id, res)
     } catch (err) {
       alert(`Error de red: ${String(err)}`)
     } finally {
@@ -378,23 +437,35 @@ export default function ProveedoresView() {
         onNew={viewTab === 'directorio' ? openNew : undefined}
         newLabel="+ Agregar proveedor"
         extra={
-          <a
-            href="/plantilla-lista-precios.csv"
-            download="plantilla-lista-precios.csv"
-            title="Descargá la plantilla CSV para armar listas de precios compatibles"
+          <button
+            onClick={() => {
+              const header = ['Nombre', 'Código', 'Calidad', 'Marca', 'Categoría', 'Precio USD', 'Precio ARS', 'Descripción']
+              const examples = [
+                ['LCD & TP iPhone 15 Pro Max Soft OLED', '5493', 'Soft OLED X07', 'Mobilesentrix', 'módulos', 210, '', 'Apto IC - 120Hz'],
+                ['Batería iPhone 14 Ampsentrix Plus', '5487', 'Ampsentrix Plus', 'Ampsentrix', 'baterías', 23, '', 'Autoprogramable'],
+                ['Vidrio Trasero iPhone 14 Pro Max Negro', '4320', 'Premium', '', 'vidrios', 8, 9200, ''],
+                ['Cámara Trasera iPhone 13 Pro Triple', '3614', 'Original Pull', 'Apple', 'cámaras', 45, '', ''],
+                ['Flex Carga iPhone 12', '3191', 'Compatible', '', 'flex', 5, '', ''],
+              ]
+              const ws = XLSX.utils.aoa_to_sheet([header, ...examples])
+              ws['!cols'] = [{ wch: 42 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 13 }, { wch: 11 }, { wch: 11 }, { wch: 28 }]
+              const wb = XLSX.utils.book_new()
+              XLSX.utils.book_append_sheet(wb, ws, 'Lista de Precios')
+              XLSX.writeFile(wb, 'plantilla-lista-proveedor.xlsx')
+            }}
+            title="Descargá la plantilla Excel para armar listas de precios"
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '7px 14px', borderRadius: 8,
               border: '1px solid #333', background: 'transparent',
               color: '#676767', fontSize: 12, fontWeight: 600,
-              textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
+              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#555'; e.currentTarget.style.color = '#E5E5E3' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#676767' }}
           >
-            📥 Plantilla CSV
-          </a>
+            📥 Plantilla Excel
+          </button>
         }
       />
 
@@ -451,13 +522,9 @@ export default function ProveedoresView() {
               : { items: [], source: 'none' as const }
 
             // Filter for search within expanded view
-            const searchQ = expandSearch.trim().toLowerCase()
+            const searchQ = expandSearch.trim()
             const filteredItems = searchQ
-              ? expandedItems.filter(it =>
-                  it.name.toLowerCase().includes(searchQ) ||
-                  it.code.toLowerCase().includes(searchQ) ||
-                  (it.category ?? '').toLowerCase().includes(searchQ)
-                )
+              ? expandedItems.filter(it => matchesAny([it.name, it.code, it.category, it.quality, it.brand, it.description], searchQ))
               : expandedItems
 
             return (
@@ -535,7 +602,7 @@ export default function ProveedoresView() {
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
                     {/* Upload */}
                     <button
-                      onClick={() => handleUploadClick(p.id)}
+                      onClick={() => handleUploadClick(p.id, p.nombre)}
                       disabled={isUploading}
                       title="Subir lista de precios"
                       style={{
@@ -667,6 +734,114 @@ export default function ProveedoresView() {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
+
+      {/* ── URL / File upload modal ─────────────────────────────────── */}
+      {urlModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          onClick={e => { if (e.target === e.currentTarget) setUrlModal(null) }}
+        >
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14,
+            width: 440, maxWidth: '92vw', overflow: 'hidden',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E3' }}>
+                ⬆️ Subir lista — <span style={{ color: COLOR }}>{urlModal.nombre}</span>
+              </div>
+              <button onClick={() => setUrlModal(null)} style={{ background: 'none', border: 'none', color: '#676767', cursor: 'pointer', fontSize: 20 }}>×</button>
+            </div>
+
+            {/* Toggle */}
+            <div style={{ padding: '18px 22px 0' }}>
+              <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', width: 'fit-content', marginBottom: 18 }}>
+                {(['file', 'url'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => { setUrlMode(m); setUrlError('') }}
+                    style={{
+                      padding: '8px 18px', border: 'none', cursor: 'pointer',
+                      fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
+                      background: urlMode === m ? COLOR : 'var(--surface2)',
+                      color: urlMode === m ? '#111' : '#8A8A8A',
+                    }}
+                  >
+                    {m === 'file' ? '📂 Subir archivo' : '🔗 Enlace online'}
+                  </button>
+                ))}
+              </div>
+
+              {urlMode === 'file' ? (
+                <div style={{ paddingBottom: 22 }}>
+                  <button
+                    onClick={handleUrlModalFile}
+                    style={{
+                      width: '100%', padding: '20px 16px', borderRadius: 10,
+                      border: '2px dashed #333', background: 'var(--surface2)',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', gap: 8, transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = COLOR }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#333' }}
+                  >
+                    <span style={{ fontSize: 28 }}>📂</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#8A8A8A' }}>Seleccionar archivo</span>
+                    <span style={{ fontSize: 11, color: '#484848' }}>CSV, Excel (.xlsx / .xls / .xlsm)</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ paddingBottom: 4 }}>
+                  <input
+                    value={urlInput}
+                    onChange={e => { setUrlInput(e.target.value); setUrlError('') }}
+                    placeholder="https://docs.google.com/spreadsheets/d/... o link al CSV"
+                    autoFocus
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      padding: '10px 12px', borderRadius: 8,
+                      border: `1px solid ${urlInput ? `${COLOR}60` : 'var(--border)'}`,
+                      background: 'var(--surface2)', color: '#E5E5E3',
+                      fontSize: 13, outline: 'none', fontFamily: 'monospace',
+                    }}
+                    onFocus={e => { e.currentTarget.style.borderColor = COLOR }}
+                    onBlur={e => { e.currentTarget.style.borderColor = urlInput ? `${COLOR}60` : 'var(--border)' }}
+                    onKeyDown={e => e.key === 'Enter' && handleUrlModalSubmit()}
+                  />
+                  <div style={{ marginTop: 8, marginBottom: 18, fontSize: 11, color: '#484848', lineHeight: 1.6 }}>
+                    <span style={{ color: '#4ade80', fontWeight: 600 }}>Google Sheets:</span> el archivo debe ser <span style={{ color: '#676767' }}>público</span> (Compartir → Cualquier persona con el enlace → Lector).
+                  </div>
+                  {urlError && <div style={{ fontSize: 12, color: '#f87171', marginBottom: 12 }}>{urlError}</div>}
+                </div>
+              )}
+            </div>
+
+            {/* Footer — only for URL mode */}
+            {urlMode === 'url' && (
+              <div style={{ padding: '0 22px 18px', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setUrlModal(null)}
+                  style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: '#8A8A8A', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                >Cancelar</button>
+                <button
+                  onClick={handleUrlModalSubmit}
+                  disabled={!urlInput.trim()}
+                  style={{
+                    padding: '8px 22px', borderRadius: 8, border: 'none',
+                    background: urlInput.trim() ? COLOR : '#333',
+                    color: urlInput.trim() ? '#111' : '#555',
+                    fontSize: 13, fontWeight: 700,
+                    cursor: urlInput.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.15s',
+                  }}
+                >
+                  ✓ Importar lista
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Add / Edit modal ────────────────────────────────────────── */}
       {modal && (

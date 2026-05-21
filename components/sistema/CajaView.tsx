@@ -1,11 +1,11 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { MetodoPago, StockItem, EquipoUsado, Orden, CartItem, VentaCaja, Proveedor, ClientePersona, ClienteB2B } from '@/lib/sistema-types'
 import { fmtARS, C, inputSt } from './shared'
 import { printTicket, printFactura } from '@/lib/print-caja'
 
 const COLOR = '#4ade80'
-const METODOS: MetodoPago[] = ['Efectivo', 'Transferencia', 'Mercado Pago', 'Tarjeta Débito', 'Tarjeta Crédito', 'Cheque']
+const METODOS: MetodoPago[] = ['Efectivo', 'Transferencia', 'Mercado Pago', 'Tarjeta Débito', 'Tarjeta Crédito', 'Cheque', 'Cuenta Corriente']
 
 function uid() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }
 
@@ -303,10 +303,120 @@ interface OrdenProduct {
 type AnyProduct = StockProduct | EquipoProduct | OrdenProduct
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function CajaView() {
+interface CajaViewProps {
+  currentUser?: string
+  role?: string
+}
+
+function todayISO() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+function fmtCajaTime(iso: string) {
+  try { return new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) } catch { return '' }
+}
+
+export default function CajaView({ currentUser = 'Sistema', role = 'employee' }: CajaViewProps) {
+  const isAdmin = role === 'admin' || role === 'superadmin'
+
+  // ── Sesión de caja ──────────────────────────────────────────────────────────
+  type SesionCajaLocal = { id: string; estado: 'abierta' | 'cerrada'; operadorApertura: string; horaApertura: string; efectivoInicial: number; operadorCierre?: string; horaCierre?: string; efectivoEnCaja?: number }
+  const [sesionHoy, setSesionHoy] = useState<SesionCajaLocal | null>(null)
+  const [fondoInicial, setFondoInicial] = useState(0)
+  const [sesionLoading, setSesionLoading] = useState(true)
+  const [showAbrirCaja, setShowAbrirCaja] = useState(false)
+  const [showCerrarCaja, setShowCerrarCaja] = useState(false)
+  const [pasoCierre, setPasoCierre] = useState<1 | 2 | 3>(1)
+  const [efectivoContado, setEfectivoContado] = useState(0)
+  const [efectivoEnCaja, setEfectivoEnCaja] = useState(0)
+  const [obsCierre, setObsCierre] = useState('')
+  const [cajaOpSaving, setCajaOpSaving] = useState(false)
+  const [ventasEfectivo, setVentasEfectivo] = useState(0)
+
+  const loadSesion = useCallback(async () => {
+    setSesionLoading(true)
+    try {
+      const [hoyRes, ventasRes] = await Promise.all([
+        fetch(`/api/sistema/sesiones-caja?fecha=${todayISO()}`).then(r => r.json()).catch(() => ({ sesion: null, efectivoInicial: 0 })),
+        fetch('/api/sistema/ventas-caja').then(r => r.json()).catch(() => ({ items: [] })),
+      ])
+      setSesionHoy(hoyRes.sesion ?? null)
+      setFondoInicial(hoyRes.efectivoInicial ?? 0)
+      // Calcular efectivo de ventas de hoy
+      const ventasDia = (ventasRes.items ?? []).filter((v: { fecha: string; metodoPago: string; total: number }) => v.fecha === todayISO())
+      setVentasEfectivo(ventasDia.reduce((s: number, v: { metodoPago: string; total: number; pagos?: { metodo: string; monto: number }[] }) => {
+        if (v.pagos && v.pagos.length > 1) return s + (v.pagos.find(p => p.metodo === 'Efectivo')?.monto ?? 0)
+        return s + (v.metodoPago === 'Efectivo' ? v.total : 0)
+      }, 0))
+    } finally { setSesionLoading(false) }
+  }, [])
+
+  useEffect(() => { loadSesion() }, [loadSesion])
+
+  const abrirCaja = async () => {
+    setCajaOpSaving(true)
+    try {
+      const res = await fetch('/api/sistema/sesiones-caja', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha: todayISO(), operadorApertura: currentUser, horaApertura: new Date().toISOString(), efectivoInicial: fondoInicial }),
+      })
+      if (res.ok) { await loadSesion(); setShowAbrirCaja(false) }
+    } finally { setCajaOpSaving(false) }
+  }
+
+  const cerrarCaja = async () => {
+    if (!sesionHoy) return
+    setCajaOpSaving(true)
+    const efectivoEsperado = fondoInicial + ventasEfectivo
+    const diferencia = efectivoContado - efectivoEsperado
+    const desglosePorMetodo: Record<string, number> = { 'Efectivo': ventasEfectivo }
+    try {
+      await fetch('/api/sistema/sesiones-caja', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: sesionHoy.id, estado: 'cerrada',
+          operadorCierre: currentUser, horaCierre: new Date().toISOString(),
+          efectivoVentasEfectivo: ventasEfectivo,
+          efectivoContado, diferencia,
+          efectivoEnCaja, efectivoRetirado: Math.max(0, efectivoContado - efectivoEnCaja),
+          desglosePorMetodo,
+          observaciones: obsCierre.trim() || undefined,
+        }),
+      })
+      await loadSesion()
+      setShowCerrarCaja(false)
+      setPasoCierre(1)
+      setObsCierre('')
+    } finally { setCajaOpSaving(false) }
+  }
+
+  const reabrirCaja = async () => {
+    if (!sesionHoy) return
+    setCajaOpSaving(true)
+    try {
+      await fetch('/api/sistema/sesiones-caja', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: sesionHoy.id, adminReabrir: true, adminOperador: currentUser }),
+      })
+      await loadSesion()
+    } finally { setCajaOpSaving(false) }
+  }
+
+  const abrirModalCierre = () => {
+    setPasoCierre(1)
+    setEfectivoContado(fondoInicial + ventasEfectivo)
+    setEfectivoEnCaja(0)
+    setObsCierre('')
+    setShowCerrarCaja(true)
+  }
+
   // Data
   const [repuestos, setRepuestos] = useState<StockProduct[]>([])
   const [accesorios, setAccesorios] = useState<StockProduct[]>([])
+  const [accesoriosFull, setAccesoriosFull] = useState<StockItem[]>([])
   const [telefonos, setTelefonos] = useState<EquipoProduct[]>([])
   const [ordenes, setOrdenes] = useState<OrdenProduct[]>([])
   const [loading, setLoading] = useState(true)
@@ -328,6 +438,7 @@ export default function CajaView() {
   // Search / tabs
   const [tab, setTab] = useState<TabId>('repuestos')
   const [search, setSearch] = useState('')
+  const [accCatFilter, setAccCatFilter] = useState<string>('Todas')
   const searchRef = useRef<HTMLInputElement>(null)
 
   // Barcode detection
@@ -359,6 +470,10 @@ export default function CajaView() {
   const [cobrarCuit, setCobrarCuit] = useState('')
   const [cobrarLoading, setCobrarLoading] = useState(false)
   const [ventaCreada, setVentaCreada] = useState<VentaCaja | null>(null)
+  const [ccCreadoMonto, setCcCreadoMonto] = useState<number | null>(null) // null = no CC, number = CC cargo creado
+  // Split payment
+  const [splitMode, setSplitMode] = useState(false)
+  const [splitPagos, setSplitPagos] = useState<{ metodo: MetodoPago; monto: number }[]>([])
 
   // Edición inline de precio
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
@@ -394,9 +509,11 @@ export default function CajaView() {
           id: i.id, nombre: i.repuesto, modelo: i.modelo, stock: i.stock,
           precio: i.costoUnitario, tipo: 'repuesto' as const,
         })))
-        setAccesorios(items.filter(i => i.tipo === 'accesorios').map(i => ({
+        const accItems = items.filter(i => i.tipo === 'accesorios')
+        setAccesoriosFull(accItems)
+        setAccesorios(accItems.map(i => ({
           id: i.id, nombre: i.repuesto, modelo: i.modelo, stock: i.stock,
-          precio: i.costoUnitario, tipo: 'accesorio' as const,
+          precio: i.precioVenta ?? i.costoUnitario, tipo: 'accesorio' as const,
         })))
       }
       if (equiposRes.ok) {
@@ -438,9 +555,22 @@ export default function CajaView() {
     }
   })()
 
-  const filtered = search.trim()
-    ? currentProducts.filter(p => matchText(p.nombre, search) || matchText(p.modelo, search))
-    : currentProducts
+  const accCategorias = useMemo(() => {
+    const cats = [...new Set(accesoriosFull.map(i => i.categoria).filter(Boolean))] as string[]
+    return cats.sort()
+  }, [accesoriosFull])
+
+  const filtered = useMemo(() => {
+    let list = currentProducts
+    if (tab === 'accesorios' && accCatFilter !== 'Todas') {
+      list = list.filter(p => {
+        const full = accesoriosFull.find(a => a.id === p.id)
+        return full?.categoria === accCatFilter
+      })
+    }
+    if (search.trim()) list = list.filter(p => matchText(p.nombre, search) || matchText(p.modelo, search))
+    return list
+  }, [currentProducts, search, tab, accCatFilter, accesoriosFull])
 
   // ── Cart actions ─────────────────────────────────────────────────────────────
   const doAddToCart = useCallback((product: AnyProduct) => {
@@ -454,6 +584,7 @@ export default function CajaView() {
       return [...prev, {
         id: uid(), nombre: product.nombre, cantidad: 1,
         precioUnitario: product.precio, subtotal: product.precio,
+        costoUnitario: product.precio,  // precio de costo del stock al momento de vender
         tipo: product.tipo as CartItem['tipo'], refId: product.id,
       }]
     })
@@ -505,7 +636,7 @@ export default function CajaView() {
     if (isNaN(precio) || precio < 0) return
     const item: CartItem = {
       id: uid(), nombre: nombre.trim(), cantidad: 1,
-      precioUnitario: precio, subtotal: precio, tipo: 'manual',
+      precioUnitario: precio, subtotal: precio, costoUnitario: 0, tipo: 'manual',
     }
     setCart(prev => [...prev, item])
   }
@@ -551,13 +682,106 @@ export default function CajaView() {
     setTipoCliente(clienteTipoPreset)
     setCobrarCuit(clienteCuit)
     setVentaCreada(null)
+    setCcCreadoMonto(null)
+    setSplitMode(false)
+    setSplitPagos([{ metodo: metodoPago, monto: total }])
     setShowCobrar(true)
   }
+
+  // ── Split payment helpers ─────────────────────────────────────────────────────
+  const updateSplitPago = (idx: number, field: 'metodo' | 'monto', value: string | number) => {
+    setSplitPagos(prev => prev.map((p, i) => i === idx ? { ...p, [field]: value } : p))
+  }
+  const addSplitPago = () => {
+    const used = splitPagos.map(p => p.metodo)
+    const next = (METODOS as MetodoPago[]).find(m => m !== 'Cuenta Corriente' && !used.includes(m)) ?? 'Efectivo'
+    setSplitPagos(prev => [...prev, { metodo: next, monto: 0 }])
+  }
+  const removeSplitPago = (idx: number) => setSplitPagos(prev => prev.filter((_, i) => i !== idx))
 
   const confirmarCobro = async () => {
     setCobrarLoading(true)
     try {
       const now = new Date()
+
+      if (metodoPago === 'Cuenta Corriente') {
+        // ── Modo CC: crear cargo en CC, NO crear VentaCaja ────────────────────
+        if (!clienteNombre.trim()) {
+          alert('Ingresá el nombre del cliente para registrar en Cuenta Corriente')
+          setCobrarLoading(false)
+          return
+        }
+        const conceptoItems = cart.map(i => `${i.nombre} ×${i.cantidad}`).join(', ')
+        await fetch('/api/sistema/cuenta-corriente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fecha: now.toISOString().slice(0, 10),
+            clienteTipo: tipoCliente === 'gremio' || tipoCliente === 'empresa' ? 'empresa' : 'persona',
+            clienteNombre: clienteNombre.trim(),
+            clienteTelefono: clienteTelefono || undefined,
+            tipo: 'cargo',
+            monto: total,
+            montoPagado: 0,
+            saldoPendiente: total,
+            estado: 'pendiente',
+            concepto: `Venta mostrador — ${conceptoItems}`,
+            referenciaTipo: undefined,
+            snapshotOrden: undefined,
+          }),
+        })
+        setCcCreadoMonto(total)
+
+        // Deducir stock igual (el producto salió de la tienda)
+        const stockItems = cart.filter(i => (i.tipo === 'repuesto' || i.tipo === 'accesorio') && i.refId)
+        if (stockItems.length > 0) {
+          const [repRes, accRes] = await Promise.all([
+            fetch('/api/sistema/stock?tipo=repuestos').then(r => r.json()).catch(() => ({ items: [] })),
+            fetch('/api/sistema/stock?tipo=accesorios').then(r => r.json()).catch(() => ({ items: [] })),
+          ])
+          const allStock: StockItem[] = [...(repRes?.items ?? []), ...(accRes?.items ?? [])]
+          for (const cartItem of stockItems) {
+            const stockItem = allStock.find(s => s.id === cartItem.refId)
+            if (!stockItem) continue
+            const nuevoStock = Math.max(0, (stockItem.stock ?? 0) - cartItem.cantidad)
+            await fetch('/api/sistema/stock', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...stockItem, stock: nuevoStock, motivo: `CC — Venta mostrador · ${clienteNombre.trim()}`, referencia: `CC ${clienteNombre.trim()}` }),
+            })
+          }
+        }
+        // Marcar órdenes como entregadas (CC)
+        for (const item of cart.filter(i => i.tipo === 'orden' && i.refId)) {
+          await fetch(`/api/sistema/ordenes/${item.refId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: 'Entregado', metodoPago: 'Cuenta Corriente' }),
+          })
+        }
+        setCart([])
+        setDescuento(0)
+        setClienteNombre('')
+        setClienteTelefono('')
+        setClienteCuit('')
+        setObservaciones('')
+        setSearch('')
+        setCobrarLoading(false)
+        return
+      }
+
+      // Determinar pagos efectivos (split o único)
+      const pagosEfectivos = splitMode && splitPagos.length > 1
+        ? splitPagos.filter(p => p.monto > 0)
+        : [{ metodo: metodoPago, monto: total }]
+      const metodoPagoFinal = pagosEfectivos[0]?.metodo ?? metodoPago
+      const montoMP = pagosEfectivos.find(p => p.metodo === 'Mercado Pago')?.monto ?? 0
+
+      const costoTotal = cart.reduce((s, i) => s + (i.costoUnitario ?? 0) * i.cantidad, 0)
+      const comisionMP = montoMP > 0 ? Math.round(montoMP * 0.045) : 0
+      const iibb = Math.round(total * 0.04)
+      const gananciaReal = total - costoTotal - comisionMP - iibb
+
       const ventaBody = {
         fecha: now.toISOString().slice(0, 10),
         hora: now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
@@ -565,7 +789,12 @@ export default function CajaView() {
         subtotal,
         descuento,
         total,
-        metodoPago,
+        costoTotal,
+        comisionMP,
+        iibb,
+        gananciaReal,
+        metodoPago: metodoPagoFinal,
+        pagos: pagosEfectivos.length > 1 ? pagosEfectivos : undefined,
         clienteNombre: clienteNombre || undefined,
         clienteTelefono: clienteTelefono || undefined,
         clienteCuit: cobrarCuit || clienteCuit || undefined,
@@ -579,7 +808,14 @@ export default function CajaView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ventaBody),
       })
-      if (!res.ok) throw new Error('Error al guardar la venta')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        if (err.error === 'caja_cerrada') {
+          alert('⚠️ La caja está cerrada para hoy.\nSolo un administrador puede registrar ventas en un día cerrado.')
+          return
+        }
+        throw new Error('Error al guardar la venta')
+      }
       const venta: VentaCaja = await res.json()
       setVentaCreada(venta)
 
@@ -599,7 +835,7 @@ export default function CajaView() {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             // Enviamos el item completo para que calcStock recalcule costoTotalARS correctamente
-            body: JSON.stringify({ ...stockItem, stock: nuevoStock }),
+            body: JSON.stringify({ ...stockItem, stock: nuevoStock, motivo: `Venta en caja #${venta.nVenta}`, referencia: `Venta #${venta.nVenta}` }),
           })
         }
       }
@@ -651,6 +887,7 @@ export default function CajaView() {
             stock: nuevoStock,
             costoUnitario: stockModalCosto || stockItem.costoUnitario,
             proveedor: stockModalProveedor || stockItem.proveedor,
+            motivo: 'Reposición de stock',
           }),
         })
       }
@@ -675,13 +912,70 @@ export default function CajaView() {
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '16px 20px 0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <div style={{ width: 38, height: 38, borderRadius: 10, background: `${COLOR}18`, border: `1.5px solid ${COLOR}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🖥️</div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>Caja de mostrador</div>
               <div style={{ fontSize: 11, color: C.muted }}>Seleccioná productos para agregar al carrito</div>
             </div>
           </div>
+
+          {/* ── Banner estado de caja ── */}
+          {!sesionLoading && (() => {
+            const sinAbrir = !sesionHoy
+            const abierta = sesionHoy?.estado === 'abierta'
+            const cerrada = sesionHoy?.estado === 'cerrada'
+            return (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+                padding: '9px 14px', borderRadius: 10,
+                background: sinAbrir ? 'rgba(245,196,0,0.08)' : abierta ? 'rgba(74,222,128,0.08)' : 'rgba(107,114,128,0.08)',
+                border: `1px solid ${sinAbrir ? 'rgba(245,196,0,0.3)' : abierta ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
+              }}>
+                <span style={{ fontSize: 18 }}>{sinAbrir ? '🔓' : abierta ? '✅' : '🔒'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {sinAbrir && (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#F5C400' }}>Caja sin abrir</div>
+                      <div style={{ fontSize: 10, color: C.muted }}>Fondo: <strong style={{ color: '#4ade80' }}>${fondoInicial.toLocaleString('es-AR')}</strong></div>
+                    </>
+                  )}
+                  {abierta && (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>Caja abierta</div>
+                      <div style={{ fontSize: 10, color: C.muted }}>
+                        {sesionHoy!.operadorApertura} · {fmtCajaTime(sesionHoy!.horaApertura)} · Fondo: ${sesionHoy!.efectivoInicial.toLocaleString('es-AR')}
+                      </div>
+                    </>
+                  )}
+                  {cerrada && (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>🔒 Caja cerrada{isAdmin ? ' · Modo admin' : ''}</div>
+                      <div style={{ fontSize: 10, color: C.muted }}>
+                        {sesionHoy!.operadorCierre} · {fmtCajaTime(sesionHoy!.horaCierre!)}
+                        {sesionHoy!.efectivoEnCaja !== undefined && ` · Fondo mañana: $${sesionHoy!.efectivoEnCaja.toLocaleString('es-AR')}`}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {sinAbrir && (
+                  <button onClick={() => setShowAbrirCaja(true)} style={{ padding: '5px 12px', borderRadius: 7, background: '#F5C400', color: '#000', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                    Abrir
+                  </button>
+                )}
+                {abierta && (
+                  <button onClick={abrirModalCierre} style={{ padding: '5px 12px', borderRadius: 7, background: 'transparent', color: '#6b7280', border: '1px solid var(--border)', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                    Cerrar caja
+                  </button>
+                )}
+                {cerrada && isAdmin && (
+                  <button onClick={reabrirCaja} disabled={cajaOpSaving} style={{ padding: '5px 12px', borderRadius: 7, background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', fontSize: 11, fontWeight: 700, cursor: cajaOpSaving ? 'wait' : 'pointer', flexShrink: 0 }}>
+                    🔑 Reabrir
+                  </button>
+                )}
+              </div>
+            )
+          })()}
           {/* Search */}
           <div style={{ position: 'relative', marginBottom: 12 }}>
             <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: C.muted, pointerEvents: 'none' }}>🔍</span>
@@ -713,13 +1007,88 @@ export default function CajaView() {
           </div>
         </div>
 
-        {/* Product list */}
+        {/* Filtro de categorías — solo en accesorios */}
+        {tab === 'accesorios' && accCategorias.length > 0 && (
+          <div style={{ padding: '6px 20px 0', display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
+            {['Todas', ...accCategorias].map(cat => (
+              <button key={cat} onClick={() => setAccCatFilter(cat)} style={{
+                padding: '4px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                fontSize: 11, fontWeight: 600, transition: 'all .15s',
+                background: accCatFilter === cat ? '#fb923c' : 'var(--surface2)',
+                color: accCatFilter === cat ? '#fff' : C.muted,
+              }}>{cat}</button>
+            ))}
+          </div>
+        )}
+
+        {/* Product list / grid */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center', color: C.muted, fontSize: 13 }}>Cargando productos…</div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: C.muted, fontSize: 13 }}>Sin resultados{search ? ` para "${search}"` : ''}</div>
+          ) : tab === 'accesorios' ? (
+            /* ── Grilla de accesorios ── */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+              {filtered.map(p => {
+                const full = accesoriosFull.find(a => a.id === p.id)
+                const sinStock = (p.stock ?? 0) === 0
+                return (
+                  <div key={p.id}
+                    onClick={() => addToCart(p)}
+                    style={{
+                      background: 'var(--surface)', border: `1px solid ${sinStock ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+                      borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column',
+                      transition: 'box-shadow 0.13s, transform 0.13s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(251,146,60,0.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+                  >
+                    {/* Imagen */}
+                    <div style={{ height: 110, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                      {full?.imagen
+                        ? <img src={full.imagen} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 36, opacity: 0.25 }}>🛍️</span>
+                      }
+                      {/* Badge stock */}
+                      <div style={{
+                        position: 'absolute', top: 6, right: 6,
+                        background: sinStock ? 'rgba(239,68,68,0.9)' : 'rgba(34,197,94,0.9)',
+                        color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 10, fontWeight: 700,
+                      }}>
+                        {sinStock ? 'Sin stock' : `${p.stock} u.`}
+                      </div>
+                      {/* Badge categoría */}
+                      {full?.categoria && (
+                        <div style={{
+                          position: 'absolute', bottom: 6, left: 6,
+                          background: 'rgba(251,146,60,0.88)', color: '#fff',
+                          borderRadius: 20, padding: '1px 7px', fontSize: 9, fontWeight: 600,
+                        }}>{full.categoria}</div>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div style={{ padding: '8px 10px', flex: 1 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3, marginBottom: 2 }}
+                        title={p.nombre}>{p.nombre}</div>
+                      {p.modelo && <div style={{ fontSize: 10, color: C.muted }}>{p.modelo}</div>}
+                      <div style={{ fontSize: 14, fontWeight: 800, color: '#fb923c', marginTop: 4, fontFamily: 'monospace' }}>{fmtARS(p.precio)}</div>
+                    </div>
+                    {/* Botón agregar */}
+                    <div style={{ padding: '0 10px 10px' }}>
+                      <div style={{
+                        width: '100%', padding: '6px 0', borderRadius: 7, border: 'none',
+                        background: `${COLOR}18`, color: COLOR, fontSize: 12, fontWeight: 700,
+                        textAlign: 'center',
+                      }}>+ Agregar</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           ) : (
+            /* ── Lista para el resto de tabs ── */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {filtered.map(p => (
                 <div
@@ -917,7 +1286,7 @@ export default function CajaView() {
         <>
           <div
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 499 }}
-            onClick={() => { if (!cobrarLoading && !ventaCreada) setShowCobrar(false) }}
+            onClick={() => { if (!cobrarLoading && !ventaCreada && ccCreadoMonto === null) setShowCobrar(false) }}
           />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
@@ -927,21 +1296,46 @@ export default function CajaView() {
           }}>
             <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
-                {ventaCreada ? '✅ Venta registrada' : '💳 Confirmar cobro'}
+                {ventaCreada ? '✅ Venta registrada' : ccCreadoMonto !== null ? '💳 Cuenta Corriente registrada' : metodoPago === 'Cuenta Corriente' ? '💳 Registrar en Cuenta Corriente' : '💳 Confirmar cobro'}
               </span>
               {!cobrarLoading && (
-                <button onClick={() => { setShowCobrar(false); setVentaCreada(null) }} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: C.muted, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                <button onClick={() => { setShowCobrar(false); setVentaCreada(null); setCcCreadoMonto(null) }} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: C.muted, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
               )}
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {!ventaCreada ? (
+              {ccCreadoMonto !== null ? (
+                /* CC success screen */
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 48, marginBottom: 10 }}>💳</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#f97316', marginBottom: 4 }}>¡Cargo en Cuenta Corriente!</div>
+                  <div style={{ fontSize: 13, color: C.muted, marginBottom: 6 }}>{clienteNombre || 'Cliente'}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#f97316', fontFamily: 'monospace', marginBottom: 16 }}>{fmtARS(ccCreadoMonto)}</div>
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', fontSize: 12, color: '#f97316', marginBottom: 20 }}>
+                    El stock fue descontado. La venta y ganancia se registran cuando el cliente pague la deuda.
+                  </div>
+                  <button
+                    onClick={() => { setShowCobrar(false); setCcCreadoMonto(null) }}
+                    style={{ padding: '11px 24px', borderRadius: 9, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
+                  >Cerrar y nueva venta</button>
+                </div>
+              ) : !ventaCreada ? (
                 <>
+                  {/* CC warning banner */}
+                  {metodoPago === 'Cuenta Corriente' && (
+                    <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.35)', fontSize: 12, color: '#f97316', lineHeight: 1.5 }}>
+                      ⚠️ <strong>Cuenta Corriente:</strong> no entra dinero a caja. El stock se descuenta y la deuda queda registrada al cliente. La ganancia se contabiliza cuando pague.
+                    </div>
+                  )}
                   {/* Summary */}
                   <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.muted, marginBottom: 4 }}>
                       <span>{cart.length} ítem{cart.length !== 1 ? 's' : ''}</span>
-                      <span>Método: {metodoPago}</span>
+                      <span>
+                        {splitMode && splitPagos.length > 1
+                          ? splitPagos.filter(p => p.monto > 0).map(p => p.metodo).join(' + ')
+                          : `Método: ${metodoPago}`}
+                      </span>
                     </div>
                     {descuento > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#f87171', marginBottom: 4 }}>
@@ -953,6 +1347,96 @@ export default function CajaView() {
                     </div>
                     {clienteNombre && <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>Cliente: {clienteNombre}</div>}
                   </div>
+
+                  {/* ── Método de pago ── */}
+                  {metodoPago !== 'Cuenta Corriente' && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Método de pago</span>
+                        {!splitMode ? (
+                          <button
+                            onClick={() => { setSplitMode(true); setSplitPagos([{ metodo: metodoPago, monto: total }, { metodo: (METODOS as MetodoPago[]).find(m => m !== metodoPago && m !== 'Cuenta Corriente') ?? 'Transferencia', monto: 0 }]) }}
+                            style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6, background: 'transparent', border: '1px solid var(--border)', color: C.muted, cursor: 'pointer' }}
+                          >＋ Dividir</button>
+                        ) : (
+                          <button
+                            onClick={() => { setSplitMode(false); setSplitPagos([{ metodo: metodoPago, monto: total }]) }}
+                            style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6, background: 'transparent', border: '1px solid var(--border)', color: '#f87171', cursor: 'pointer' }}
+                          >✕ Pago único</button>
+                        )}
+                      </div>
+
+                      {!splitMode ? (
+                        /* Single method chips */
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {(METODOS as MetodoPago[]).filter(m => m !== 'Cuenta Corriente').map(m => (
+                            <button
+                              key={m}
+                              onClick={() => { setMetodoPago(m); setSplitPagos([{ metodo: m, monto: total }]) }}
+                              style={{
+                                padding: '5px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                                border: `1px solid ${metodoPago === m ? COLOR : 'var(--border)'}`,
+                                background: metodoPago === m ? `${COLOR}18` : 'var(--surface2)',
+                                color: metodoPago === m ? COLOR : C.muted,
+                                transition: 'all 0.12s',
+                              }}
+                            >{m}</button>
+                          ))}
+                        </div>
+                      ) : (
+                        /* Split rows */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {splitPagos.map((pago, idx) => {
+                            const splitTotal = splitPagos.reduce((s, p) => s + p.monto, 0)
+                            return (
+                              <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <select
+                                  value={pago.metodo}
+                                  onChange={e => updateSplitPago(idx, 'metodo', e.target.value)}
+                                  style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-primary)', fontSize: 12 }}
+                                >
+                                  {(METODOS as MetodoPago[]).filter(m => m !== 'Cuenta Corriente').map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={pago.monto || ''}
+                                  onChange={e => updateSplitPago(idx, 'monto', Number(e.target.value))}
+                                  placeholder="$0"
+                                  style={{ width: 110, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, fontFamily: 'monospace', textAlign: 'right' }}
+                                />
+                                {splitPagos.length > 2 && (
+                                  <button onClick={() => removeSplitPago(idx)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface2)', color: '#f87171', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+                                )}
+                              </div>
+                            )
+                          })}
+                          {splitPagos.length < 4 && (
+                            <button
+                              onClick={addSplitPago}
+                              style={{ alignSelf: 'flex-start', padding: '5px 14px', borderRadius: 7, border: '1px dashed var(--border)', background: 'transparent', color: C.muted, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                            >＋ Agregar método</button>
+                          )}
+                          {/* Balance indicator */}
+                          {(() => {
+                            const asignado = splitPagos.reduce((s, p) => s + p.monto, 0)
+                            const restante = total - asignado
+                            const ok = Math.abs(restante) < 1
+                            return (
+                              <div style={{ padding: '8px 12px', borderRadius: 8, background: ok ? 'rgba(74,222,128,0.08)' : 'rgba(245,196,0,0.08)', border: `1px solid ${ok ? 'rgba(74,222,128,0.3)' : 'rgba(245,196,0,0.3)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: 12, color: C.muted }}>{ok ? '✓ Total asignado' : restante > 0 ? '⚠ Falta asignar' : '⚠ Excede el total'}</span>
+                                <span style={{ fontSize: 13, fontWeight: 800, fontFamily: 'monospace', color: ok ? '#4ade80' : '#F5C400' }}>
+                                  {ok ? fmtARS(total) : `${fmtARS(asignado)} / ${fmtARS(total)}`}
+                                </span>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Tipo de cliente — determinado por el cliente seleccionado */}
                   {(() => {
@@ -1010,6 +1494,13 @@ export default function CajaView() {
                       />
                     </div>
                   )}
+
+                  {/* CC: cliente requerido */}
+                  {metodoPago === 'Cuenta Corriente' && !clienteNombre.trim() && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', fontSize: 12, color: '#f87171' }}>
+                      ⚠️ Ingresá el nombre del cliente (campo "Cliente" arriba) antes de confirmar.
+                    </div>
+                  )}
                 </>
               ) : (
                 /* Post-sale actions */
@@ -1037,27 +1528,43 @@ export default function CajaView() {
               )}
             </div>
 
-            {!ventaCreada && (
+            {!ventaCreada && ccCreadoMonto === null && (
               <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
                 <button
                   onClick={() => setShowCobrar(false)}
                   disabled={cobrarLoading}
                   style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border)', color: C.muted, fontSize: 13, fontWeight: 600 }}
                 >Cancelar</button>
-                <button
-                  onClick={confirmarCobro}
-                  disabled={cobrarLoading}
-                  style={{
-                    flex: 2, padding: '10px', borderRadius: 8, cursor: cobrarLoading ? 'not-allowed' : 'pointer',
-                    background: cobrarLoading ? COLOR : 'linear-gradient(135deg, #22c55e, #16a34a)',
-                    border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  {cobrarLoading
-                    ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Registrando…</>
-                    : `✅ Confirmar ${fmtARS(total)}`}
-                </button>
+                {(() => {
+                  const splitAsignado = splitPagos.reduce((s, p) => s + p.monto, 0)
+                  const splitOk = !splitMode || splitPagos.length < 2 || Math.abs(splitAsignado - total) < 1
+                  const ccSinCliente = metodoPago === 'Cuenta Corriente' && !clienteNombre.trim()
+                  const disabled = cobrarLoading || ccSinCliente || !splitOk
+                  return (
+                    <button
+                      onClick={confirmarCobro}
+                      disabled={disabled}
+                      style={{
+                        flex: 2, padding: '10px', borderRadius: 8,
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                        background: cobrarLoading ? COLOR
+                          : metodoPago === 'Cuenta Corriente' ? 'linear-gradient(135deg, #f97316, #ea580c)'
+                          : 'linear-gradient(135deg, #22c55e, #16a34a)',
+                        border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        opacity: disabled && !cobrarLoading ? 0.5 : 1,
+                      }}
+                    >
+                      {cobrarLoading
+                        ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Registrando…</>
+                        : !splitOk
+                          ? `⚠ Completá el pago`
+                          : metodoPago === 'Cuenta Corriente'
+                            ? `💳 Cargar a CC ${fmtARS(total)}`
+                            : `✅ Confirmar ${fmtARS(total)}`}
+                    </button>
+                  )
+                })()}
               </div>
             )}
           </div>
@@ -1229,6 +1736,143 @@ export default function CajaView() {
           </div>
         </>
       )}
+
+      {/* ── Modal Abrir Caja ──────────────────────────────────────────────────── */}
+      {showAbrirCaja && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 799, backdropFilter: 'blur(3px)' }} onClick={() => !cajaOpSaving && setShowAbrirCaja(false)} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 800, width: 380, borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 24px 60px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>🔓 Abrir Caja</span>
+              {!cajaOpSaving && <button onClick={() => setShowAbrirCaja(false)} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: C.muted, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>}
+            </div>
+            <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(245,196,0,0.08)', border: '1px solid rgba(245,196,0,0.25)' }}>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Operador</div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>👤 {currentUser}</div>
+              </div>
+              <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)' }}>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Fondo inicial en caja</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#4ade80', fontFamily: 'monospace' }}>${fondoInicial.toLocaleString('es-AR')}</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fondoInicial > 0 ? 'Dejado por el cierre anterior' : 'Primera apertura del día'}</div>
+              </div>
+            </div>
+            <div style={{ padding: '0 22px 20px', display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowAbrirCaja(false)} disabled={cajaOpSaving} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={abrirCaja} disabled={cajaOpSaving} style={{ flex: 2, padding: '10px', borderRadius: 8, border: 'none', background: '#F5C400', color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {cajaOpSaving ? <><span style={{ width: 13, height: 13, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Abriendo...</> : '🔓 Confirmar Apertura'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Modal Cerrar Caja ─────────────────────────────────────────────────── */}
+      {showCerrarCaja && (() => {
+        const efectivoEsperado = fondoInicial + ventasEfectivo
+        const diferencia = efectivoContado - efectivoEsperado
+        return (
+          <>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 799, backdropFilter: 'blur(4px)' }} onClick={() => { if (!cajaOpSaving) { setShowCerrarCaja(false); setPasoCierre(1) } }} />
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 800, width: 460, maxHeight: '90vh', borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 24px 60px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* Header */}
+              <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>🔒 Cerrar Caja — Paso {pasoCierre} de 3</div>
+                  <div style={{ fontSize: 11, color: C.muted }}>{pasoCierre === 1 ? 'Conteo de efectivo' : pasoCierre === 2 ? 'Fondo para mañana' : 'Confirmar cierre'}</div>
+                </div>
+                {!cajaOpSaving && <button onClick={() => { setShowCerrarCaja(false); setPasoCierre(1) }} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: C.muted, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>}
+              </div>
+              {/* Progress */}
+              <div style={{ display: 'flex', padding: '8px 22px', gap: 6 }}>
+                {([1, 2, 3] as const).map(n => <div key={n} style={{ flex: 1, height: 3, borderRadius: 99, background: pasoCierre >= n ? '#F5C400' : 'var(--border)' }} />)}
+              </div>
+              {/* Body */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {pasoCierre === 1 && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div style={{ padding: '9px 12px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--row-border)' }}>
+                        <div style={{ fontSize: 10, color: C.muted, marginBottom: 2, fontWeight: 700 }}>FONDO INICIAL</div>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14 }}>${fondoInicial.toLocaleString('es-AR')}</div>
+                      </div>
+                      <div style={{ padding: '9px 12px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--row-border)' }}>
+                        <div style={{ fontSize: 10, color: C.muted, marginBottom: 2, fontWeight: 700 }}>VENTAS EN EFECTIVO</div>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14, color: '#4ade80' }}>+${ventasEfectivo.toLocaleString('es-AR')}</div>
+                      </div>
+                    </div>
+                    <div style={{ padding: '9px 14px', borderRadius: 8, background: 'rgba(245,196,0,0.08)', border: '1px solid rgba(245,196,0,0.25)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, color: C.muted }}>Efectivo esperado</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#F5C400' }}>${efectivoEsperado.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 6, fontWeight: 600 }}>💵 ¿Cuánto contás físicamente?</label>
+                      <input type="number" value={efectivoContado} onChange={e => setEfectivoContado(Number(e.target.value))} min={0}
+                        style={{ width: '100%', padding: '11px', borderRadius: 8, border: `1px solid ${diferencia === 0 ? 'rgba(74,222,128,0.4)' : diferencia > 0 ? 'rgba(96,165,250,0.4)' : 'rgba(239,68,68,0.4)'}`, background: 'var(--surface2)', color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box', textAlign: 'right' }} />
+                    </div>
+                    <div style={{ padding: '9px 14px', borderRadius: 8, background: diferencia === 0 ? 'rgba(74,222,128,0.08)' : diferencia > 0 ? 'rgba(96,165,250,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${diferencia === 0 ? 'rgba(74,222,128,0.25)' : diferencia > 0 ? 'rgba(96,165,250,0.25)' : 'rgba(239,68,68,0.25)'}`, display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, color: C.muted }}>{diferencia === 0 ? '✓ Cuadra perfecto' : diferencia > 0 ? '↑ Sobrante' : '↓ Faltante'}</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 14, color: diferencia === 0 ? '#4ade80' : diferencia > 0 ? '#60a5fa' : '#ef4444' }}>{diferencia > 0 ? '+' : ''}${diferencia.toLocaleString('es-AR')}</span>
+                    </div>
+                  </>
+                )}
+                {pasoCierre === 2 && (
+                  <>
+                    <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, color: C.muted }}>Efectivo contado</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: '#4ade80' }}>${efectivoContado.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: C.muted, display: 'block', marginBottom: 6, fontWeight: 600 }}>🏦 ¿Cuánto dejás en caja para mañana?</label>
+                      <input type="number" value={efectivoEnCaja} onChange={e => setEfectivoEnCaja(Math.min(Number(e.target.value), efectivoContado))} min={0} max={efectivoContado}
+                        style={{ width: '100%', padding: '11px', borderRadius: 8, border: '1px solid rgba(74,222,128,0.4)', background: 'var(--surface2)', color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box', textAlign: 'right' }} />
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Este será el fondo inicial de mañana.</div>
+                    </div>
+                    <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: C.muted }}>A retirar</div>
+                        <div style={{ fontSize: 10, color: C.muted }}>Contado − Fondo</div>
+                      </div>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 20, color: '#f97316' }}>${Math.max(0, efectivoContado - efectivoEnCaja).toLocaleString('es-AR')}</span>
+                    </div>
+                  </>
+                )}
+                {pasoCierre === 3 && (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {[
+                        { label: 'Fondo inicial', value: `$${fondoInicial.toLocaleString('es-AR')}`, color: 'var(--text-primary)' },
+                        { label: 'Ventas efectivo', value: `+$${ventasEfectivo.toLocaleString('es-AR')}`, color: '#4ade80' },
+                        { label: 'Efectivo contado', value: `$${efectivoContado.toLocaleString('es-AR')}`, color: 'var(--text-primary)' },
+                        { label: 'Diferencia', value: `${diferencia >= 0 ? '+' : ''}$${diferencia.toLocaleString('es-AR')}`, color: diferencia === 0 ? '#4ade80' : diferencia > 0 ? '#60a5fa' : '#ef4444' },
+                        { label: 'Fondo para mañana', value: `$${efectivoEnCaja.toLocaleString('es-AR')}`, color: '#4ade80' },
+                        { label: 'A retirar', value: `$${Math.max(0, efectivoContado - efectivoEnCaja).toLocaleString('es-AR')}`, color: '#f97316' },
+                      ].map(row => (
+                        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', borderRadius: 7, background: 'var(--surface2)' }}>
+                          <span style={{ fontSize: 12, color: C.muted }}>{row.label}</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: row.color }}>{row.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <textarea value={obsCierre} onChange={e => setObsCierre(e.target.value)} rows={2} placeholder="Observaciones (opcional)..."
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text-primary)', fontSize: 12, resize: 'none', boxSizing: 'border-box' }} />
+                  </>
+                )}
+              </div>
+              {/* Footer */}
+              <div style={{ padding: '12px 22px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+                {pasoCierre > 1 && <button onClick={() => setPasoCierre(p => (p - 1) as 1 | 2 | 3)} disabled={cajaOpSaving} style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>← Anterior</button>}
+                {pasoCierre < 3
+                  ? <button onClick={() => setPasoCierre(p => (p + 1) as 1 | 2 | 3)} style={{ flex: 2, padding: '9px', borderRadius: 8, border: 'none', background: '#F5C400', color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Siguiente →</button>
+                  : <button onClick={cerrarCaja} disabled={cajaOpSaving} style={{ flex: 2, padding: '9px', borderRadius: 8, border: 'none', background: cajaOpSaving ? 'var(--border)' : '#F5C400', color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      {cajaOpSaving ? <><span style={{ width: 13, height: 13, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Cerrando...</> : '🔒 Confirmar Cierre'}
+                    </button>
+                }
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

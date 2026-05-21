@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const COOKIE_NAME = 'ms_auth'
-const PUBLIC_PATHS = ['/login', '/api/auth/', '/api/debug/']
+const PUBLIC_PATHS = ['/login', '/api/auth/', '/api/debug/', '/seguimiento', '/api/seguimiento/', '/manifest.json', '/sw.js', '/icons/']
+// Note: /seguimiento and all sub-paths are public (client-facing tracking page + embed)
 // TODO: remove /api/debug/ after testing
 
 async function verify(token: string): Promise<boolean> {

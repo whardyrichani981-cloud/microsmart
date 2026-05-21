@@ -11,13 +11,15 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { author, content, category, priority, product, reminderAt } = body as {
+  const { author, content, category, priority, product, reminderAt, responsable, solicitadoPor } = body as {
     author: string
     content: string
     category: NoteCategory
     priority: NotePriority
     product?: string
     reminderAt?: string
+    responsable?: string
+    solicitadoPor?: string
   }
 
   if (!author?.trim() || !content?.trim()) {
@@ -32,6 +34,8 @@ export async function POST(req: NextRequest) {
     priority: priority ?? 'media',
     product: product?.trim() || undefined,
     reminderAt: reminderAt || undefined,
+    responsable: responsable?.trim() || undefined,
+    solicitadoPor: solicitadoPor?.trim() || author.trim(),
   })
 
   return NextResponse.json(note, { status: 201 })

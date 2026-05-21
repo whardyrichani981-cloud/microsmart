@@ -307,8 +307,12 @@ const MODEL_KW = ['modelo', 'model', 'equipo', 'device']
 // "tipo" = product sub-type to be combined with modelo (e.g. "Pantalla Incell AM")
 const TIPO_KW  = ['tipo producto', 'tipo de producto', 'tipo', 'type', 'componente', 'component', 'pieza', 'parte']
 // Currency-specific column keywords (checked before generic PRICE_KW)
-const USD_KW   = ['usd', 'dolar', 'dólar', 'dolares', 'dólares', 'u$s', 'us$', 'divisa']
-const ARS_KW   = ['ars', 'pesos', 'transferencia', 'efectivo', 'contado', 'nacional', '$ ars']
+const USD_KW   = ['precio usd', 'precio dolar', 'precio dólar', 'usd', 'dolar', 'dólar', 'dolares', 'dólares', 'u$s', 'us$', 'divisa']
+const ARS_KW   = ['precio ars', 'precio pesos', 'ars', 'pesos', 'transferencia', 'efectivo', 'contado', 'nacional', '$ ars']
+// New extended fields (template-provided columns)
+const QUALITY_KW = ['calidad', 'quality', 'tipo calidad', 'especificacion', 'especificación', 'spec']
+const BRAND_KW   = ['marca', 'brand', 'fabricante', 'manufacturer', 'proveedor marca']
+const DESC_KW    = ['descripcion adicional', 'descripción adicional', 'notas', 'notes', 'detalle adicional', 'obs', 'observaciones', 'comentario']
 
 export function parseGeneric(rows: Row[]): SupplierItem[] {
   if (rows.length < 2) return []
@@ -343,12 +347,14 @@ export function parseGeneric(rows: Row[]): SupplierItem[] {
     return -1
   }
 
-  const codeIdx   = findCol(CODE_KW)
-  const catIdx    = findCol(CAT_KW)
-  const modeloIdx = findCol(MODEL_KW)
-  const prodIdx   = findCol(PROD_KW)
-  // Always search for tipo — it can combine with any name column (modelo OR PROD_KW)
-  const tipoIdx   = findCol(TIPO_KW)
+  const codeIdx    = findCol(CODE_KW)
+  const catIdx     = findCol(CAT_KW)
+  const modeloIdx  = findCol(MODEL_KW)
+  const prodIdx    = findCol(PROD_KW)
+  const tipoIdx    = findCol(TIPO_KW)
+  const qualityIdx = findCol(QUALITY_KW)
+  const brandIdx   = findCol(BRAND_KW)
+  const descIdx    = findCol(DESC_KW)
 
   // Primary name column: modelo takes priority, then generic PROD_KW
   let nameIdx = modeloIdx >= 0 ? modeloIdx : prodIdx
@@ -392,7 +398,7 @@ export function parseGeneric(rows: Row[]): SupplierItem[] {
 
   // Debug: log detected columns so issues are visible in server logs
   console.log('[parseGeneric] headerIdx:', headerIdx, 'headers:', headers)
-  console.log('[parseGeneric] columns → name:', nameIdx, 'modelo:', modeloIdx, 'prod:', prodIdx, 'prodDesc:', prodDescIdx, 'tipo:', tipoIdx, 'cat:', catIdx, 'code:', codeIdx, 'usd:', usdIdx, 'ars:', arsIdx, 'price:', genericPriceIdx)
+  console.log('[parseGeneric] columns → name:', nameIdx, 'modelo:', modeloIdx, 'prod:', prodIdx, 'prodDesc:', prodDescIdx, 'tipo:', tipoIdx, 'cat:', catIdx, 'code:', codeIdx, 'usd:', usdIdx, 'ars:', arsIdx, 'price:', genericPriceIdx, 'quality:', qualityIdx, 'brand:', brandIdx, 'desc:', descIdx)
 
   const items: SupplierItem[] = []
   // Forward-fill state: many Excel lists use merged/grouped cells where the
@@ -471,7 +477,18 @@ export function parseGeneric(rows: Row[]): SupplierItem[] {
     }
     if (category === 'otros') category = normalizeCategory(name)
 
-    items.push({ name, code, price, ...(priceARS ? { priceARS } : {}), category })
+    const quality     = qualityIdx >= 0 ? (cells[qualityIdx]?.trim() || undefined) : undefined
+    const brand       = brandIdx   >= 0 ? (cells[brandIdx]?.trim()   || undefined) : undefined
+    const description = descIdx    >= 0 ? (cells[descIdx]?.trim()    || undefined) : undefined
+
+    items.push({
+      name, code, price,
+      ...(priceARS     ? { priceARS }     : {}),
+      ...(quality      ? { quality }      : {}),
+      ...(brand        ? { brand }        : {}),
+      ...(description  ? { description }  : {}),
+      category,
+    })
   }
 
   // Always return sorted by category order, then A-Z within each category

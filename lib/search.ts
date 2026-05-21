@@ -113,3 +113,25 @@ export function matchesQuery(text: string | undefined | null, groups: string[][]
   const lower = text.toLowerCase()
   return groups.every(group => group.some(t => lower.includes(t)))
 }
+
+/**
+ * matchesSearch — single-field convenience wrapper.
+ * Returns true when `raw` query (with alias expansion) matches `text`.
+ * Empty query always returns true.
+ */
+export function matchesSearch(text: string | undefined | null, raw: string): boolean {
+  if (!raw.trim()) return true
+  return matchesQuery(text, expandQuery(raw))
+}
+
+/**
+ * matchesAny — multi-field search with alias expansion.
+ * Returns true when the query matches AT LEAST ONE of the provided fields.
+ * Ideal for table rows with name + code + category + quality + brand + description.
+ * Empty query always returns true.
+ */
+export function matchesAny(fields: (string | undefined | null)[], raw: string): boolean {
+  if (!raw.trim()) return true
+  const groups = expandQuery(raw)
+  return fields.some(f => matchesQuery(f, groups))
+}

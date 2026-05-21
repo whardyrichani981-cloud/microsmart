@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import type { VentaCSF, MetodoPago, TipoServicio } from '@/lib/sistema-types'
+import type { VentaCSF, VentaCaja, MetodoPago, TipoServicio } from '@/lib/sistema-types'
 import {
   useApi, fmtARS, today,
   C, Modal, Field, FormGrid, SectionDivider, PageHeader, DataTable, Badge, KPICard,
@@ -94,9 +94,23 @@ export default function VentasCSFView() {
     await refresh()
   }
 
+  const [cajaTotalCSF, setCajaTotalCSF] = useState(0)
+  const [cajaCountCSF, setCajaCountCSF] = useState(0)
+  const [cajaGananciaCSF, setCajaGananciaCSF] = useState(0)
+  useEffect(() => {
+    fetch('/api/sistema/ventas-caja').then(r => r.json()).then((d: { items: VentaCaja[] }) => {
+      const items = (d.items ?? []).filter(v => v.tipoCliente === 'clienteFinal' || (!v.tipoCliente && v.tipoFactura !== 'A'))
+      setCajaTotalCSF(items.reduce((s, v) => s + v.total, 0))
+      setCajaCountCSF(items.length)
+      // Ganancia real de caja: usa el campo calculado si existe, sino 0 (ventas anteriores sin costo)
+      setCajaGananciaCSF(items.reduce((s, v) => s + (v.gananciaReal ?? 0), 0))
+    }).catch(() => {})
+  }, [])
+
   const list = data?.items ?? []
-  const totalTickets = list.reduce((s, v) => s + v.ticket, 0)
-  const totalGanancia = list.reduce((s, v) => s + v.gananciaReal, 0)
+  const totalTickets = list.reduce((s, v) => s + v.ticket, 0) + cajaTotalCSF
+  const totalGanancia = list.reduce((s, v) => s + v.gananciaReal, 0) + cajaGananciaCSF
+  const cantidadTotal = list.length + cajaCountCSF
 
   const cols = [
     { key: 'fecha', label: 'Fecha', render: (r: VentaCSF) => <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{r.fecha}</span> },
@@ -115,12 +129,12 @@ export default function VentasCSFView() {
 
   return (
     <div style={{ padding: '0 0 40px' }}>
-      <PageHeader icon="💚" title="Ventas CSF (B2C)" desc="Ventas al consumidor final" color={COLOR} count={list.length} onNew={openNew} newLabel="Nueva venta" />
+      <PageHeader icon="💚" title="Ventas CSF (B2C)" desc="Ventas al consumidor final" color={COLOR} count={cantidadTotal} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         <KPICard label="Total Ventas" value={fmtARS(totalTickets)} color={COLOR} icon="💰" />
         <KPICard label="Ganancia Total" value={fmtARS(totalGanancia)} color={totalGanancia >= 0 ? C.green : C.red} icon="📈" />
-        <KPICard label="Cantidad Ventas" value={String(list.length)} color={COLOR} icon="🧾" />
+        <KPICard label="Cantidad Ventas" value={String(cantidadTotal)} color={COLOR} icon="🧾" />
       </div>
 
       {loading ? (

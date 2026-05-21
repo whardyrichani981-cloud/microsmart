@@ -1,5 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
+import { matchesAny } from '@/lib/search'
 import type { StockItem, TipoStock, CategoriaStock, Moneda, Proveedor } from '@/lib/sistema-types'
 import {
   useApi, fmtARS,
@@ -7,6 +8,24 @@ import {
   inputSt, calcSt, AutoCapInput, SearchableSelect,
 } from './shared'
 import { MODELOS_DISPOSITIVOS } from './modelos'
+import ImportExcelModal from './ImportExcelModal'
+
+const STOCK_IMPORT_COLS = [
+  { key: 'repuesto',     label: 'Repuesto',       required: true,  type: 'string' as const },
+  { key: 'categoria',    label: 'Categoría',       required: false, type: 'string' as const, default: 'Otro' },
+  { key: 'modelo',       label: 'Modelo',          required: false, type: 'string' as const, default: '' },
+  { key: 'proveedor',    label: 'Proveedor',       required: false, type: 'string' as const, default: '' },
+  { key: 'stock',        label: 'Stock',           required: false, type: 'number' as const, default: 0 },
+  { key: 'stockMinimo',  label: 'Stock mínimo',    required: false, type: 'number' as const, default: 2, aliases: ['stock minimo', 'minimo', 'stockmin'] },
+  { key: 'costoUnitario',label: 'Costo unit.',     required: false, type: 'number' as const, default: 0, aliases: ['costo', 'precio costo', 'preciocosto'] },
+  { key: 'moneda',       label: 'Moneda',          required: false, type: 'string' as const, default: 'ARS $' },
+  { key: 'notas',        label: 'Notas',           required: false, type: 'string' as const, default: '' },
+]
+
+const STOCK_TEMPLATE_ROWS = [
+  { repuesto: 'Pantalla incell', categoria: 'Pantalla/Módulo', modelo: 'iPhone 14', proveedor: 'Proveedor ABC', stock: 3, stockMinimo: 2, costoUnitario: 15, moneda: 'USD $', notas: '' },
+  { repuesto: 'Batería original', categoria: 'Batería', modelo: 'iPhone 13', proveedor: 'Proveedor XYZ', stock: 5, stockMinimo: 2, costoUnitario: 8, moneda: 'USD $', notas: '' },
+]
 
 const CATEGORIAS: CategoriaStock[] = ['Accesorios', 'Altavoz', 'Batería', 'Cámara', 'Chasis', 'Flex', 'Otro', 'Pantalla/Módulo', 'Parlante', 'Vidrio trasero']
 const MONEDAS: Moneda[] = ['ARS $', 'USD $']
@@ -55,6 +74,7 @@ export default function StockView({ tipo }: StockViewProps) {
   const [saving, setSaving]   = useState(false)
   const [search, setSearch]   = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [importOpen, setImportOpen] = useState(false)
 
   // Nombres de proveedores del sistema para el selector
   const proveedoresOpciones = useMemo(() =>
@@ -131,13 +151,10 @@ export default function StockView({ tipo }: StockViewProps) {
   }
 
   // Filtro de búsqueda
-  const q = search.toLowerCase()
-  const filtered = q
+  const filtered = search.trim()
     ? groups.filter(g =>
-        g.repuesto.toLowerCase().includes(q) ||
-        g.modelo.toLowerCase().includes(q) ||
-        g.categoria.toLowerCase().includes(q) ||
-        g.items.some(i => i.proveedor.toLowerCase().includes(q))
+        matchesAny([g.repuesto, g.modelo, g.categoria], search) ||
+        g.items.some(i => matchesAny([i.proveedor], search))
       )
     : groups
 
@@ -151,7 +168,26 @@ export default function StockView({ tipo }: StockViewProps) {
 
   return (
     <div style={{ padding: '0 0 40px' }}>
-      <PageHeader icon={config.icon} title={config.title} desc={config.desc} color={COLOR} count={totalProductos} onNew={openNew} newLabel="Agregar item" />
+      <PageHeader icon={config.icon} title={config.title} desc={config.desc} color={COLOR} count={totalProductos} onNew={openNew} newLabel="Agregar item"
+        extra={
+          <button
+            onClick={() => setImportOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: `1px solid ${COLOR}44`, background: `${COLOR}10`, color: COLOR, fontWeight: 600, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >📥 Importar Excel</button>
+        }
+      />
+      <ImportExcelModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={() => { setImportOpen(false); refresh() }}
+        title={`Importar ${config.title}`}
+        color={COLOR}
+        cols={STOCK_IMPORT_COLS}
+        apiEndpoint="/api/sistema/stock"
+        buildPayload={row => ({ ...row, tipo })}
+        templateRows={STOCK_TEMPLATE_ROWS}
+        templateFilename={`plantilla-${tipo}.xlsx`}
+      />
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>

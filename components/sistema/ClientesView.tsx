@@ -6,6 +6,7 @@ import {
   C, Modal, Field, FormGrid, PageHeader, DataTable, Badge, KPICard,
   inputSt, selectSt, AutoCapInput,
 } from './shared'
+import ClienteHistorialModal from './ClienteHistorialModal'
 
 const COLOR = '#34d399'
 const COLOR_B2C = '#60a5fa'
@@ -25,7 +26,7 @@ function emptyB2C(): B2CForm {
   return { nombre: '', telefono: '', mail: '', dni: '', notas: '' }
 }
 
-export default function ClientesView() {
+export default function ClientesView({ initialSearch = '' }: { initialSearch?: string }) {
   const [tab, setTab] = useState<'personas' | 'gremio' | 'empresas'>('personas')
 
   const TABS = [
@@ -52,7 +53,7 @@ export default function ClientesView() {
         })}
       </div>
 
-      {tab === 'personas' && <PersonasTab />}
+      {tab === 'personas' && <PersonasTab initialSearch={initialSearch} />}
       {tab === 'gremio'   && <EmpresasTab />}
       {tab === 'empresas' && <EmpresasPlaceholderTab />}
     </div>
@@ -60,13 +61,14 @@ export default function ClientesView() {
 }
 
 // ─── Personas Tab ─────────────────────────────────────────────────────────────
-function PersonasTab() {
+function PersonasTab({ initialSearch = '' }: { initialSearch?: string }) {
   const { data: clientes, loading, refresh } = useApi<ClientePersona[]>('/api/sistema/clientes-personas')
   const [modal, setModal] = useState<false | 'new' | 'edit'>(false)
   const [form, setForm] = useState<B2CForm>(emptyB2C())
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(initialSearch)
+  const [historialCliente, setHistorialCliente] = useState<ClientePersona | null>(null)
 
   const set = (k: string, v: unknown) => setForm(prev => ({ ...prev, [k]: v }))
 
@@ -103,6 +105,19 @@ function PersonasTab() {
     { key: 'telefono', label: 'Teléfono', render: (r: ClientePersona) => <span style={{ fontFamily: 'monospace' }}>{r.telefono || '—'}</span> },
     { key: 'mail', label: 'Mail', render: (r: ClientePersona) => <span style={{ fontSize: 11, color: C.muted }}>{r.mail || '—'}</span> },
     { key: 'dni', label: 'DNI', render: (r: ClientePersona) => <span style={{ fontFamily: 'monospace' }}>{r.dni || '—'}</span> },
+    {
+      key: 'historial', label: 'Historial',
+      render: (r: ClientePersona) => (
+        <button
+          onClick={e => { e.stopPropagation(); setHistorialCliente(r) }}
+          style={{
+            padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+            background: 'var(--surface2)', color: COLOR_B2C, cursor: 'pointer',
+            fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
+          }}
+        >📋 Ver</button>
+      ),
+    },
   ]
 
   return (
@@ -118,6 +133,14 @@ function PersonasTab() {
       </div>
       {loading ? <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Cargando...</div>
         : <DataTable cols={cols} data={filtered} onEdit={openEdit} onDelete={del} accentColor={COLOR_B2C} emptyMsg="No hay clientes personas registrados" />}
+
+      {historialCliente && (
+        <ClienteHistorialModal
+          nombreCliente={historialCliente.nombre}
+          telefonoCliente={historialCliente.telefono}
+          onClose={() => setHistorialCliente(null)}
+        />
+      )}
 
       {modal && (
         <Modal title={modal === 'new' ? 'Nuevo Cliente Persona' : 'Editar Cliente'} onClose={() => setModal(false)}
@@ -153,6 +176,7 @@ function EmpresasTab() {
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [historialCliente, setHistorialCliente] = useState<ClienteB2B | null>(null)
 
   const set = (k: string, v: unknown) => setForm(prev => ({ ...prev, [k]: v }))
   const openNew = () => { setForm(emptyB2B()); setEditId(null); setModal('new') }
@@ -195,6 +219,19 @@ function EmpresasTab() {
         return <Badge label={r.condicionIVA} color={colorMap[r.condicionIVA] ?? C.muted} />
       }
     },
+    {
+      key: 'historial', label: 'Historial',
+      render: (r: ClienteB2B) => (
+        <button
+          onClick={e => { e.stopPropagation(); setHistorialCliente(r) }}
+          style={{
+            padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+            background: 'var(--surface2)', color: COLOR, cursor: 'pointer',
+            fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
+          }}
+        >📋 Ver</button>
+      ),
+    },
   ]
 
   return (
@@ -211,6 +248,14 @@ function EmpresasTab() {
       </div>
       {loading ? <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Cargando...</div>
         : <DataTable cols={cols} data={filtered} onEdit={openEdit} onDelete={del} accentColor={COLOR} emptyMsg="No hay gremios/mayoristas registrados" />}
+
+      {historialCliente && (
+        <ClienteHistorialModal
+          nombreCliente={historialCliente.nombre}
+          telefonoCliente={historialCliente.telefono}
+          onClose={() => setHistorialCliente(null)}
+        />
+      )}
 
       {modal && (
         <Modal title={modal === 'new' ? 'Nuevo Gremio / Mayorista' : 'Editar Gremio / Mayorista'} onClose={() => setModal(false)}

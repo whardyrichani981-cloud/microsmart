@@ -1,9 +1,45 @@
 ﻿'use client'
+import { useState, useEffect } from 'react'
 import { useApi, fmtARS, C, KPICard, Badge } from './shared'
-import type { DashboardData } from '@/lib/sistema-types'
+import type { DashboardData, StockItem } from '@/lib/sistema-types'
+
+interface StockGroup {
+  key: string
+  repuesto: string
+  modelo: string
+  tipo: string
+  totalStock: number
+  stockMinimo: number
+}
+
+function buildStockGroups(items: StockItem[]): StockGroup[] {
+  const map = new Map<string, StockGroup>()
+  for (const item of items) {
+    const k = `${item.tipo}|||${item.repuesto?.toLowerCase()}|||${item.modelo?.toLowerCase()}`
+    if (!map.has(k)) map.set(k, { key: k, repuesto: item.repuesto, modelo: item.modelo, tipo: item.tipo, totalStock: 0, stockMinimo: item.stockMinimo ?? 2 })
+    const g = map.get(k)!
+    g.totalStock += item.stock ?? 0
+    g.stockMinimo = Math.max(g.stockMinimo, item.stockMinimo ?? 2)
+  }
+  return [...map.values()].filter(g => g.totalStock <= g.stockMinimo)
+    .sort((a, b) => a.totalStock - b.totalStock)
+}
 
 export default function DashboardView() {
   const { data, loading, refresh } = useApi<DashboardData>('/api/sistema/dashboard')
+  const [stockGroups, setStockGroups] = useState<StockGroup[]>([])
+  const [stockLoading, setStockLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/sistema/stock?tipo=repuestos').then(r => r.json()).catch(() => ({ items: [] })),
+      fetch('/api/sistema/stock?tipo=accesorios').then(r => r.json()).catch(() => ({ items: [] })),
+    ]).then(([rep, acc]) => {
+      const all: StockItem[] = [...(rep?.items ?? []), ...(acc?.items ?? [])]
+      setStockGroups(buildStockGroups(all))
+      setStockLoading(false)
+    })
+  }, [])
 
   if (loading) return <div style={{ padding: 40, color: C.muted, textAlign: 'center' }}>Cargando dashboard…</div>
   if (!data) return null
@@ -44,6 +80,62 @@ export default function DashboardView() {
         <KPICard label="Ventas Caja" value={String(d.cantidadVentasCaja ?? 0)} color="#fb923c" icon="🖥️" sub={fmtARS(d.ventasCaja ?? 0)} />
       </div>
 
+      {/* ── Panel de Alertas de Stock ── */}
+      {!stockLoading && stockGroups.length > 0 && (() => {
+        const agotados = stockGroups.filter(g => g.totalStock === 0)
+        const bajos    = stockGroups.filter(g => g.totalStock > 0)
+        return (
+          <div style={{ background: 'var(--surface)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 12, overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', background: 'rgba(239,68,68,0.06)', borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>⚠️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Alertas de Stock</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>Productos que requieren reposición</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {agotados.length > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 800, background: '#ef4444', color: '#fff', padding: '3px 10px', borderRadius: 20 }}>
+                    🔴 {agotados.length} sin stock
+                  </span>
+                )}
+                {bajos.length > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 800, background: '#f97316', color: '#fff', padding: '3px 10px', borderRadius: 20 }}>
+                    🟠 {bajos.length} stock bajo
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Tabla */}
+            <div style={{ padding: '0 20px 16px' }}>
+              {/* Sub-sección: Sin stock */}
+              {agotados.length > 0 && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 0 6px' }}>
+                    🔴 Sin stock — urgente
+                  </div>
+                  {agotados.map(g => (
+                    <StockAlertRow key={g.key} g={g} />
+                  ))}
+                </>
+              )}
+              {/* Sub-sección: Stock bajo */}
+              {bajos.length > 0 && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 0 6px' }}>
+                    🟠 Stock bajo — reponer pronto
+                  </div>
+                  {bajos.map(g => (
+                    <StockAlertRow key={g.key} g={g} />
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Waterfall breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Ingresos vs Costos */}
@@ -75,6 +167,49 @@ export default function DashboardView() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function StockAlertRow({ g }: { g: StockGroup }) {
+  const agotado = g.totalStock === 0
+  const pct = Math.min(100, Math.round((g.totalStock / Math.max(g.stockMinimo, 1)) * 100))
+  const barColor = agotado ? '#ef4444' : g.totalStock <= Math.ceil(g.stockMinimo / 2) ? '#f97316' : '#fb923c'
+
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr auto auto',
+      alignItems: 'center', gap: 12,
+      padding: '8px 0', borderBottom: '1px solid var(--row-border)',
+    }}>
+      {/* Nombre */}
+      <div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{g.repuesto}</span>
+        {g.modelo && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>{g.modelo}</span>}
+        {/* Barra de progreso */}
+        <div style={{ marginTop: 4, height: 3, borderRadius: 99, background: 'var(--border)', width: 140, overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: 99, background: barColor, width: `${pct}%`, transition: 'width 0.3s' }} />
+        </div>
+      </div>
+      {/* Stock actual */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>Actual</div>
+        <span style={{
+          fontSize: 13, fontWeight: 800, fontFamily: 'monospace',
+          color: agotado ? '#ef4444' : '#f97316',
+          background: agotado ? 'rgba(239,68,68,0.1)' : 'rgba(249,115,22,0.1)',
+          padding: '2px 8px', borderRadius: 6,
+        }}>
+          {g.totalStock}
+        </span>
+      </div>
+      {/* Mínimo */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>Mínimo</div>
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
+          {g.stockMinimo}
+        </span>
       </div>
     </div>
   )

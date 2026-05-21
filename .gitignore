@@ -9,6 +9,11 @@ out/
 .env.local
 .env*.local
 
+# ── Datos del negocio — NUNCA subir al repo ──────────────────────────────────
+# Contienen datos reales de clientes, órdenes y tokens de acceso
+data/*.json
+data/backups/
+
 # Logs
 *.log
 npm-debug.log*
@@ -20,3 +25,6 @@ Thumbs.db
 # Editor
 .vscode/
 *.swp
+
+# TypeScript build info
+tsconfig.tsbuildinfo

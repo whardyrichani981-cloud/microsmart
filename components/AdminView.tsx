@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import UsuariosView from './sistema/UsuariosView'
 import ConfiguracionView from './sistema/ConfiguracionView'
+import { usePWAInstall, PWAInstructionsModal } from './PWAInstaller'
 
 const COLOR = '#a78bfa'
 
@@ -28,6 +29,7 @@ export default function AdminView({
   onModulosSaved?: (config: Record<string, boolean>) => void
 }) {
   const [section, setSection] = useState<'usuarios' | 'configuracion' | null>(null)
+  const pwa = usePWAInstall()
 
   if (section === 'usuarios') {
     return <UsuariosView onBack={() => setSection(null)} />
@@ -75,7 +77,38 @@ export default function AdminView({
             <div style={{ fontSize: 11, color: COLOR, fontWeight: 600, marginTop: 4 }}>Configurar →</div>
           </button>
         ))}
+
+        {/* Card instalación PWA */}
+        {pwa.showInstallButton && (
+          <button
+            onClick={pwa.install}
+            style={{
+              padding: '22px 20px', borderRadius: 12, border: '1px solid var(--border)',
+              background: 'var(--surface)', cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: 10,
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = '#0A84FF'
+              e.currentTarget.style.background = 'rgba(0,132,255,0.07)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border)'
+              e.currentTarget.style.background = 'var(--surface)'
+            }}
+          >
+            <span style={{ fontSize: 28 }}>📲</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E3', marginBottom: 4 }}>Instalar como app</div>
+              <div style={{ fontSize: 12, color: '#8A8A8A', lineHeight: 1.4 }}>
+                Instalá el sistema en el escritorio para abrirlo sin navegador
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#0A84FF', fontWeight: 600, marginTop: 4 }}>Instalar →</div>
+          </button>
+        )}
       </div>
+
+      {pwa.showModal && <PWAInstructionsModal onClose={() => pwa.setShowModal(false)} />}
     </div>
   )
 }

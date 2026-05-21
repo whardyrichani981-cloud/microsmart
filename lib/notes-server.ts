@@ -65,13 +65,14 @@ export async function addNote(data: Omit<Note, 'id' | 'createdAt' | 'resolved'>)
   return note
 }
 
-export async function toggleResolved(id: string): Promise<Note | null> {
+export async function toggleResolved(id: string, resolvedBy?: string): Promise<Note | null> {
   if (!process.env.DATABASE_URL) {
     const notes = fileRead()
     const note = notes.find(n => n.id === id)
     if (!note) return null
     note.resolved = !note.resolved
     note.resolvedAt = note.resolved ? new Date().toISOString() : undefined
+    note.resolvedBy = note.resolved ? (resolvedBy ?? undefined) : undefined
     fileWrite(notes); return note
   }
   await ensureDB()
@@ -81,6 +82,7 @@ export async function toggleResolved(id: string): Promise<Note | null> {
   const note = rows[0].data
   note.resolved = !note.resolved
   note.resolvedAt = note.resolved ? new Date().toISOString() : undefined
+  note.resolvedBy = note.resolved ? (resolvedBy ?? undefined) : undefined
   await pool.query('UPDATE notes SET data = $1 WHERE id = $2', [JSON.stringify(note), id])
   return note
 }
