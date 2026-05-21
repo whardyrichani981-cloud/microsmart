@@ -5,14 +5,21 @@ import { getUsers } from '@/lib/usuarios-db'
 export async function POST(req: NextRequest) {
   const { user, pass } = await req.json()
 
+  // 1. Intentar con la base de usuarios (archivo local)
   const users = getUsers()
   const found = users.find(u => u.username === (user as string))
 
-  if (!found || pass !== found.password) {
+  // 2. Fallback: variables de entorno AUTH_USER / AUTH_PASS
+  const envUser = process.env.AUTH_USER
+  const envPass = process.env.AUTH_PASS
+  const envMatch = envUser && envPass && user === envUser && pass === envPass
+
+  if (!envMatch && (!found || pass !== found.password)) {
     return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
   }
 
-  const token = makeToken(found.username)
+  const username = found?.username ?? (user as string)
+  const token = makeToken(username)
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
