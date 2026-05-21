@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 // GET — list all accounts (tokens masked)
 export async function GET() {
-  const cuentas = getMPCuentas().map(c => ({
+  const cuentas = (await getMPCuentas()).map(c => ({
     ...c,
     accessToken: maskToken(c.accessToken),
   }))
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No se pudo verificar el token (sin conexión a MP).' }, { status: 422 })
   }
 
-  const cuenta = addMPCuenta({ nombre: nombre.trim(), accessToken: accessToken.trim() })
+  const cuenta = await addMPCuenta({ nombre: nombre.trim(), accessToken: accessToken.trim() })
   return NextResponse.json({ ...cuenta, accessToken: maskToken(cuenta.accessToken) }, { status: 201 })
 }
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const { id, nombre } = await req.json()
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-  const updated = updateMPCuenta(id, { nombre: nombre?.trim() })
+  const updated = await updateMPCuenta(id, { nombre: nombre?.trim() })
   if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json({ ...updated, accessToken: maskToken(updated.accessToken) })
 }
@@ -47,7 +47,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-  deleteMPCuenta(id)
+  await deleteMPCuenta(id)
   return NextResponse.json({ ok: true })
 }
 

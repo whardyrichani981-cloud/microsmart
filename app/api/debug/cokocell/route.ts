@@ -41,7 +41,7 @@ function debugParse(rows: (string | number | null)[][]) {
 export async function GET() {
   try {
     // Find Cokocell lista ID
-    const all = getListasMeta()
+    const all = await getListasMeta()
     const id = Object.keys(all)[0]  // first (only) uploaded lista
     if (!id) return NextResponse.json({ error: 'No uploaded lista found' }, { status: 404 })
 

@@ -3,15 +3,15 @@ import { getCierresCaja, addCierreCaja, deleteCierreCaja } from '@/lib/sistema-d
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json(getCierresCaja())
+  return NextResponse.json(await getCierresCaja())
 }
 export async function POST(req: NextRequest) {
   const data = await req.json()
-  const item = addCierreCaja(data)
+  const item = await addCierreCaja(data)
   return NextResponse.json(item, { status: 201 })
 }
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
-  deleteCierreCaja(id)
+  await deleteCierreCaja(id)
   return NextResponse.json({ ok: true })
 }

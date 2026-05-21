@@ -5,24 +5,24 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const tipo = req.nextUrl.searchParams.get('tipo') as TipoGasto | null
-  return NextResponse.json({ items: getGastos(tipo ?? undefined), dolar: getUltimoDolar() })
+  return NextResponse.json({ items: await getGastos(tipo ?? undefined), dolar: await getUltimoDolar() })
 }
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const dolar = getUltimoDolar()
+  const dolar = await getUltimoDolar()
   const montoARS = body.moneda === 'USD $' ? Math.round(body.monto * dolar) : Math.round(body.monto)
-  return NextResponse.json(addGasto({ ...body, montoARS }), { status: 201 })
+  return NextResponse.json(await addGasto({ ...body, montoARS }), { status: 201 })
 }
 export async function PUT(req: NextRequest) {
   const { id, ...data } = await req.json()
-  const dolar = getUltimoDolar()
+  const dolar = await getUltimoDolar()
   const montoARS = data.moneda === 'USD $' ? Math.round(data.monto * dolar) : Math.round(data.monto)
-  const item = updateGasto(id, { ...data, montoARS })
+  const item = await updateGasto(id, { ...data, montoARS })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(item)
 }
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
-  deleteGasto(id)
+  await deleteGasto(id)
   return NextResponse.json({ ok: true })
 }

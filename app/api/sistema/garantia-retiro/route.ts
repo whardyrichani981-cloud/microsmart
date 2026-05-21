@@ -3,11 +3,11 @@ import { getGarantiaRetiro, setGarantiaRetiro } from '@/lib/sistema-db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json({ garantia: getGarantiaRetiro() })
+  return NextResponse.json({ garantia: await getGarantiaRetiro() })
 }
 
 export async function POST(req: NextRequest) {
   const { garantia } = await req.json()
-  setGarantiaRetiro(typeof garantia === 'string' ? garantia : '')
+  await setGarantiaRetiro(typeof garantia === 'string' ? garantia : '')
   return NextResponse.json({ ok: true })
 }

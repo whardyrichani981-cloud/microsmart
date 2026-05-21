@@ -13,7 +13,7 @@ function uploadDir(id: string) {
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const ordenes = getOrdenes()
+  const ordenes = await getOrdenes()
   const orden = ordenes.find(o => o.id === id)
   if (!orden) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const existing = orden.imagenes ?? []
-  const updated = updateOrden(id, { imagenes: [...existing, ...newFilenames] })
+  const updated = await updateOrden(id, { imagenes: [...existing, ...newFilenames] })
   return NextResponse.json(updated)
 }
 
@@ -43,7 +43,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params
   const { filename } = await req.json()
 
-  const ordenes = getOrdenes()
+  const ordenes = await getOrdenes()
   const orden = ordenes.find(o => o.id === id)
   if (!orden) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -51,7 +51,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const filePath = path.join(uploadDir(id), filename)
   try { fs.unlinkSync(filePath) } catch { /* ya no existe, ignorar */ }
 
-  const updated = updateOrden(id, {
+  const updated = await updateOrden(id, {
     imagenes: (orden.imagenes ?? []).filter(f => f !== filename),
   })
   return NextResponse.json(updated)

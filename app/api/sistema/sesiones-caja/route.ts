@@ -10,23 +10,23 @@ export async function GET(req: NextRequest) {
   const fecha = searchParams.get('fecha')
 
   if (fecha) {
-    const sesion = getSesionCajaByFecha(fecha)
+    const sesion = await getSesionCajaByFecha(fecha)
     // efectivoInicial: si hay sesión para hoy, usar su efectivoInicial; si no, usar el del último cierre
-    const efectivoInicial = sesion?.efectivoInicial ?? getLastEfectivoEnCaja()
+    const efectivoInicial = sesion?.efectivoInicial ?? await getLastEfectivoEnCaja()
     return NextResponse.json({ sesion: sesion ?? null, efectivoInicial })
   }
 
-  return NextResponse.json({ sesiones: getSesionesCaja() })
+  return NextResponse.json({ sesiones: await getSesionesCaja() })
 }
 
 // POST — abrir caja (primera vez en el día)
 export async function POST(req: NextRequest) {
   const data = await req.json()
-  const existing = getSesionCajaByFecha(data.fecha)
+  const existing = await getSesionCajaByFecha(data.fecha)
   if (existing) {
     return NextResponse.json({ error: 'Ya existe una sesión para esta fecha', sesion: existing }, { status: 409 })
   }
-  const item = addSesionCaja({
+  const item = await addSesionCaja({
     ...data,
     estado: 'abierta',
     intervencionesAdmin: [],
@@ -37,13 +37,13 @@ export async function POST(req: NextRequest) {
 // PUT — cerrar caja, reabrir (admin) o registrar intervención
 export async function PUT(req: NextRequest) {
   const { id, adminReabrir, adminOperador, ...data } = await req.json()
-  const sesion = getSesionesCaja().find(s => s.id === id)
+  const sesion = (await getSesionesCaja()).find(s => s.id === id)
   if (!sesion) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   // Reapertura admin: vuelve a estado 'abierta' y registra la intervención
   if (adminReabrir) {
     const intervenciones = sesion.intervencionesAdmin ?? []
-    const item = updateSesionCaja(id, {
+    const item = await updateSesionCaja(id, {
       estado: 'abierta',
       // Limpiar datos del cierre para que quede limpia
       operadorCierre: undefined,
@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(item)
   }
 
-  const item = updateSesionCaja(id, data)
+  const item = await updateSesionCaja(id, data)
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(item)
 }

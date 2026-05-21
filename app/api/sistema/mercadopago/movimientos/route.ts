@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
   if (!cuentaId) return NextResponse.json({ error: 'cuentaId requerido' }, { status: 400 })
 
-  const cuentas = getMPCuentas()
+  const cuentas = await getMPCuentas()
   const cuenta  = cuentas.find(c => c.id === cuentaId)
   if (!cuenta) return NextResponse.json({ error: 'Cuenta no encontrada' }, { status: 404 })
 

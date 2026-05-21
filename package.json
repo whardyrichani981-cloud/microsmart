@@ -10,6 +10,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
     "@types/pg": "^8.20.0",
+    "@upstash/redis": "^1.38.0",
     "next": "^15.3.2",
     "papaparse": "^5.4.1",
     "pg": "^8.20.0",

@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const search = req.nextUrl.searchParams.get('q')?.toLowerCase() ?? ''
   const limit = parseInt(req.nextUrl.searchParams.get('limit') ?? '200')
 
-  let items = getStockMovimientos()
+  let items = (await getStockMovimientos())
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   if (tipo) items = items.filter(m => m.tipo === tipo)

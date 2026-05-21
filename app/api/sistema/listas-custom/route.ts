@@ -56,7 +56,7 @@ function parseRows(buf: ArrayBuffer, ext: string): (string | number | null)[][] 
 
 // GET — all custom lists (without items)
 export async function GET() {
-  return NextResponse.json(getListasCustom())
+  return NextResponse.json(await getListasCustom())
 }
 
 // POST — create a new custom list
@@ -125,11 +125,11 @@ export async function POST(req: NextRequest) {
     const items = parseGeneric(rows)
 
     // Pick a color based on existing count
-    const existing = getListasCustom()
+    const existing = await getListasCustom()
     const color = COLORS[existing.length % COLORS.length]
 
     // Save items to disk
-    const lista = addListaCustom({ nombre, filename, items: items.length, color })
+    const lista = await addListaCustom({ nombre, filename, items: items.length, color })
     const dataFile = path.join(DATA_DIR, `lista-custom-${lista.id}.json`)
     fs.writeFileSync(dataFile, JSON.stringify(items, null, 2), 'utf-8')
 

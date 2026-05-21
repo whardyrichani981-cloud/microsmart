@@ -17,7 +17,7 @@ export default async function Home() {
   const role = getRole(username)
   const permissions = username ? await getUserPermissions(username) : null
   const suppliers = await fetchBuiltinSuppliers()
-  const modulosConfig = getModulos()
+  const modulosConfig = await getModulos()
   return (
     <PriceComparator
       initialSuppliers={suppliers}

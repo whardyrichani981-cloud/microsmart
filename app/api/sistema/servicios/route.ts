@@ -4,11 +4,11 @@ import { getServicios, addServicio } from '@/lib/sistema-db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json(getServicios())
+  return NextResponse.json(await getServicios())
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const item = addServicio(body)
+  const item = await addServicio(body)
   return NextResponse.json(item, { status: 201 })
 }

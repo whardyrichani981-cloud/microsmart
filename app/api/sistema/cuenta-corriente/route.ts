@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
   const balances = req.nextUrl.searchParams.get('balances') === '1'
 
   if (balances) {
-    return NextResponse.json({ balances: getCCBalancePorCliente() })
+    return NextResponse.json({ balances: await getCCBalancePorCliente() })
   }
 
-  let items = getCuentaCorriente()
+  let items = (await getCuentaCorriente())
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   if (clienteId) items = items.filter(i => i.clienteId === clienteId)
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const item = addCCItem(body)
+  const item = await addCCItem(body)
   return NextResponse.json(item, { status: 201 })
 }
 
@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest) {
 
   if (montoPago !== undefined && id) {
     // ── Registrar pago sobre un cargo ──────────────────────────────────────
-    const items = getCuentaCorriente()
+    const items = await getCuentaCorriente()
     const cargo = items.find(i => i.id === id && i.tipo === 'cargo')
     if (!cargo) return NextResponse.json({ error: 'Cargo no encontrado' }, { status: 404 })
 
@@ -56,7 +56,7 @@ export async function PUT(req: NextRequest) {
     const nuevoEstado = nuevoSaldo <= 0 ? 'pagado' : 'parcial'
 
     // 1. Crear item de pago (historial)
-    const pagoItem = addCCItem({
+    const pagoItem = await addCCItem({
       fecha: today(),
       clienteId: cargo.clienteId,
       clienteTipo: cargo.clienteTipo,
@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest) {
     })
 
     // 2. Actualizar el cargo
-    const cargoActualizado = updateCCItem(id, {
+    const cargoActualizado = await updateCCItem(id, {
       montoPagado: nuevoMontoPagado,
       saldoPendiente: Math.max(0, nuevoSaldo),
       estado: nuevoEstado,
@@ -85,7 +85,7 @@ export async function PUT(req: NextRequest) {
     const snap = cargo.snapshotOrden
     let ventaCajaCreada = null
     try {
-      const dolar = getUltimoDolar()
+      const dolar = await getUltimoDolar()
       const conceptoVenta = snap
         ? `Cobro CC — Orden #${snap.nOrden} · ${snap.nombreCliente} · ${snap.modeloEquipo}`
         : `Cobro CC — ${cargo.concepto}`
@@ -97,8 +97,8 @@ export async function PUT(req: NextRequest) {
       const gananciaCC = pagoReal - costoUnitario - comisionMPMonto - iibbMonto
         - (snap?.comisionVendedora ?? 0) - (snap?.comisionTecnico ?? 0)
 
-      const nVenta = getNextVentaCajaNum()
-      ventaCajaCreada = addVentaCaja({
+      const nVenta = await getNextVentaCajaNum()
+      ventaCajaCreada = await addVentaCaja({
         nVenta,
         fecha: today(),
         hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
@@ -127,13 +127,13 @@ export async function PUT(req: NextRequest) {
       })
 
       // Actualizar cargo con ventaCajaId
-      updateCCItem(id, { ventaCajaId: ventaCajaCreada.id })
+      await updateCCItem(id, { ventaCajaId: ventaCajaCreada.id })
 
       // 4. Auto-generar comisiones si hay snapshot y es pago completo
       if (snap && nuevoEstado === 'pagado') {
         try {
           if (snap.tipo === 'Cliente final') {
-            const reglas = getReglasComision()
+            const reglas = await getReglasComision()
             const empleado = snap.tecnico?.trim() || 'Ronald'
             for (const regla of reglas.filter(r => r.activa)) {
               const base = pagoReal
@@ -141,7 +141,7 @@ export async function PUT(req: NextRequest) {
               const comisionCalculada = Math.round(base * regla.porcentaje / 100)
               const totalComision = regla.comisionFija > 0 ? regla.comisionFija : comisionCalculada
               if (totalComision <= 0) continue
-              addComision({
+              await addComision({
                 fecha: today(),
                 empleado: empleado as any,
                 nOrden: String(snap.nOrden),
@@ -156,7 +156,7 @@ export async function PUT(req: NextRequest) {
               })
             }
           } else {
-            const reglasG = getReglasComisionGremio()
+            const reglasG = await getReglasComisionGremio()
             const modelo = (snap.modeloEquipo ?? '').trim().toLowerCase()
             const tipoR  = (snap.tipoServicio  ?? '').trim().toLowerCase()
             const activas = reglasG.filter(r => r.activa && r.comisionFija > 0)
@@ -165,7 +165,7 @@ export async function PUT(req: NextRequest) {
               activas.find(r => !r.modelo && r.tipoReparacion.toLowerCase() === tipoR) ||
               activas.find(r => r.modelo.toLowerCase() === modelo && !r.tipoReparacion)
             if (match) {
-              addComision({
+              await addComision({
                 fecha: today(),
                 empleado: (snap.tecnico?.trim() || 'Ronald') as any,
                 nOrden: String(snap.nOrden),
@@ -188,13 +188,13 @@ export async function PUT(req: NextRequest) {
   }
 
   // ── Update genérico ────────────────────────────────────────────────────────
-  const updated = updateCCItem(id, rest)
+  const updated = await updateCCItem(id, rest)
   if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(updated)
 }
 
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
-  deleteCCItem(id)
+  await deleteCCItem(id)
   return NextResponse.json({ ok: true })
 }

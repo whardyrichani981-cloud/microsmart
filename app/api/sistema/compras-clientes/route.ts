@@ -7,7 +7,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json(getComprasClientes())
+  return NextResponse.json(await getComprasClientes())
 }
 
 export async function POST(req: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const tieneReparaciones = (compraFields.reparaciones ?? []).length > 0
 
     // 1. Crear el equipo en stock o reparación
-    const equipo = addEquipo({
+    const equipo = await addEquipo({
       fecha: compraFields.fecha,
       modelo,
       color,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     })
 
     // 2. Crear el registro de compra referenciando el equipo
-    const compra = addCompraCliente({
+    const compra = await addCompraCliente({
       ...compraFields,
       modelo, color, capacidad, imei, bateria, funciones, detallesFisicos, fotos,
       equipoId: equipo.id,
@@ -61,7 +61,7 @@ export async function PUT(req: NextRequest) {
   try {
     const { id, ...data } = await req.json()
     if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-    const item = updateCompraCliente(id, data)
+    const item = await updateCompraCliente(id, data)
     if (!item) return NextResponse.json({ error: 'no encontrado' }, { status: 404 })
     return NextResponse.json(item)
   } catch (e) {
@@ -72,7 +72,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { id } = await req.json()
-    deleteCompraCliente(id)
+    await deleteCompraCliente(id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

@@ -16,7 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const all  = getListasCustom()
+  const all  = await getListasCustom()
   const meta = all.find(l => l.id === id)
   if (!meta) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -37,7 +37,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const all  = getListasCustom()
+    const all  = await getListasCustom()
     const meta = all.find(l => l.id === id)
     if (!meta) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

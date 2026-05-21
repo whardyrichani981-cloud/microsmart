@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 const PROTECTED = ['Entrada', 'Salida']
 
 export async function GET() {
-  return NextResponse.json(getEstadosOrden())
+  return NextResponse.json(await getEstadosOrden())
 }
 
 export async function PUT(req: NextRequest) {
@@ -13,6 +13,6 @@ export async function PUT(req: NextRequest) {
   // Ensure protected states are always present and in correct positions
   const middle = body.filter(e => !PROTECTED.includes(e))
   const final = ['Entrada', ...middle, 'Salida']
-  setEstadosOrden(final)
+  await setEstadosOrden(final)
   return NextResponse.json(final)
 }

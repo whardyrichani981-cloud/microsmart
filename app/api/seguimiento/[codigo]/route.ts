@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params
-  const orden = getOrdenByCodigo(codigo)
+  const orden = await getOrdenByCodigo(codigo)
   if (!orden) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
   // Sanitize — only return what the customer needs
@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ cod
     ? `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`
     : nameParts[0] ?? '—'
 
-  const estadosConfig = getEstadosOrden()
+  const estadosConfig = await getEstadosOrden()
   // Include 'Entregado' at the end
   const allEstados = estadosConfig.includes('Entregado') ? estadosConfig : [...estadosConfig, 'Entregado']
 

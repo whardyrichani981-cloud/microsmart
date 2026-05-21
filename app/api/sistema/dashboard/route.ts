@@ -3,5 +3,5 @@ import { getDashboard } from '@/lib/sistema-db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json(getDashboard())
+  return NextResponse.json(await getDashboard())
 }

@@ -4,5 +4,5 @@ import { getListasMeta } from '@/lib/sistema-db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json(getListasMeta())
+  return NextResponse.json(await getListasMeta())
 }

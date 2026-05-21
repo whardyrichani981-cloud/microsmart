@@ -15,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const all = getListasMeta()
+  const all = await getListasMeta()
   const meta = all[id]
   if (!meta) return NextResponse.json(null)
   // Include parsed items from disk
@@ -126,7 +126,7 @@ export async function POST(
 
     // Save metadata
     const meta = { filename, items: items.length, updatedAt: new Date().toISOString() }
-    setListaMeta(id, meta)
+    await setListaMeta(id, meta)
 
     // If 0 items parsed, return debug info so we can see what the file looks like
     if (items.length === 0) {
@@ -150,7 +150,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  deleteListaMeta(id)
+  await deleteListaMeta(id)
   const dataFile = path.join(DATA_DIR, `lista-proveedor-${id}.json`)
   if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile)
   return NextResponse.json({ ok: true })
