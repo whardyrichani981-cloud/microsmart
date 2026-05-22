@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { C, inputSt } from './shared'
-import type { TelegramConfig, AutoResponderRule } from '@/lib/chat-db'
+import type { TelegramConfig, AutoResponderRule, AIKnowledgeSections } from '@/lib/chat-db'
 
 const COLOR = '#4ade80'
 
@@ -42,6 +42,353 @@ function Step({ n, label, done, active }: { n: number; label: string; done: bool
   )
 }
 
+// ─── IA Knowledge Panel ───────────────────────────────────────────────────────
+const KNOWLEDGE_SECTIONS: { key: keyof AIKnowledgeSections; icon: string; label: string; desc: string; placeholder: string }[] = [
+  {
+    key: 'negocio', icon: '🏢', label: 'Tu negocio', desc: 'Nombre, dirección, horarios, contacto, qué hacen',
+    placeholder: `Somos Microsmart, servicio técnico especializado en Apple en [ciudad].
+Horario: lunes a sábado de 9 a 18 hs.
+WhatsApp: +54 9 11 XXXX-XXXX
+Dirección: [dirección]
+Trabajamos solo con productos Apple: iPhone, iPad, Mac, Apple Watch, AirPods.`,
+  },
+  {
+    key: 'precios', icon: '💰', label: 'Precios y servicios', desc: 'Lista de precios por modelo, combos, garantías',
+    placeholder: `PANTALLAS (con garantía 90 días):
+- iPhone 15 / 15 Plus: $XXX.000
+- iPhone 14 / 14 Plus: $XXX.000
+- iPhone 13 / 13 mini: $XXX.000
+- iPhone 12: $XXX.000
+- iPhone 11: $XXX.000
+
+BATERÍAS (instalada, garantía 90 días):
+- iPhone 15 / 14: $XX.000
+- iPhone 13 / 12: $XX.000
+- iPhone 11 / XR: $XX.000
+
+OTROS:
+- Conector carga: desde $XX.000
+- Cámara trasera: consultar por modelo
+- Face ID: no reparamos (requiere reemplazo de pantalla original)`,
+  },
+  {
+    key: 'tecnico', icon: '🔧', label: 'Conocimiento técnico', desc: 'Diagnósticos, síntomas comunes, soluciones, qué es reparable',
+    placeholder: `PANTALLA ROTA:
+- Si tiene rayas/no responde al tacto → cambio de pantalla
+- Si se ve imagen pero no toca → digitalizador dañado (mismo cambio)
+- Si no enciende DESPUÉS de caída → puede ser placa o batería, revisar primero
+
+BATERÍA:
+- Si dura poco, se apaga sola o se calienta → cambio de batería
+- Verificar en Ajustes → Batería → Estado de la batería (si está por debajo de 80% conviene cambiarla)
+- iPhone 14 en adelante: la batería se puede cambiar sin perder el porcentaje mostrado si se hace con equipo profesional
+
+FACE ID / TOUCH ID:
+- Face ID roto por caída → casi siempre irrecuperable (está vinculado a pantalla original)
+- Touch ID (botón home) → si falla después de cambio de pantalla, puede recalibrarse
+
+NO ENCIENDE:
+- Primero probar carga 30 min con cable original
+- Si no responde → puede ser batería agotada, conector roto o placa
+- Si vibra pero no muestra imagen → problema de pantalla
+
+AGUA:
+- El iPhone resistente al agua NO es impermeable indefinidamente
+- Si entró agua → apagarlo inmediatamente, no cargarlo, traer al local
+- No meter en arroz (mito, no funciona)
+
+ICLOUD BLOQUEADO:
+- No desbloqueamos iCloud activation lock
+- Solo el dueño original puede quitarlo desde appleid.apple.com`,
+  },
+  {
+    key: 'faq', icon: '❓', label: 'Preguntas frecuentes', desc: 'Las preguntas más comunes y cómo responderlas',
+    placeholder: `P: ¿Cuánto tarda la reparación?
+R: Pantallas y baterías: 30-60 minutos en el momento. Reparaciones de placa: 2-5 días hábiles. Te avisamos cuando está listo.
+
+P: ¿Tienen garantía?
+R: Sí, 90 días en mano de obra y repuestos para todas las reparaciones.
+
+P: ¿Usan repuestos originales?
+R: Trabajamos con repuestos de calidad premium (equivalente original). Los originales de Apple solo se consiguen a través de Apple Store a mayor costo.
+
+P: ¿Pueden perder mis datos?
+R: En cambio de pantalla/batería los datos no se tocan. En reparaciones de placa o software puede ser necesario un backup previo, te avisamos antes.
+
+P: ¿Cómo sé el modelo de mi iPhone?
+R: Ajustes → General → Información → Modelo. O fijate en la parte trasera del equipo.
+
+P: ¿Hacen presupuesto gratis?
+R: Sí, el diagnóstico es sin cargo. Si decidís no reparar, no pagás nada.
+
+P: ¿Trabajan con garantía de compra?
+R: Sí, si el equipo está en garantía de Apple lo derivamos al Apple Service Provider. Si ya venció, lo reparamos nosotros.`,
+  },
+  {
+    key: 'estilo', icon: '💬', label: 'Cómo hablar', desc: 'Tono, forma de responder, qué decir y qué no',
+    placeholder: `TONO:
+- Siempre usar "vos" (nunca "usted")
+- Directo, amable y sin tecnicismos innecesarios
+- Si el cliente está enojado o apurado, priorizar calma y soluciones
+- Respuestas cortas (2-4 líneas), sin rodeos
+
+PREGUNTAR SIEMPRE:
+- Para dar precio: modelo exacto del equipo (ej: iPhone 13 o iPhone 13 Pro Max → tienen precios distintos)
+- Si es urgente o puede esperar
+
+QUÉ NUNCA DECIR:
+- No dar precios sin saber el modelo
+- No prometer tiempos sin ver el equipo
+- No decir "eso no tiene arreglo" sin verlo primero
+
+CUANDO NO SABÉS:
+- "Dejame consultarlo y te confirmo en unos minutos"
+- "Pasate por el local y lo vemos en el momento"`,
+  },
+]
+
+function IAKnowledgePanel({
+  config, setConfig, showApiKey, setShowApiKey,
+  testingAI, aiTestResult, testAI, saving, saved, onSave,
+}: {
+  config: TelegramConfig
+  setConfig: React.Dispatch<React.SetStateAction<TelegramConfig>>
+  showApiKey: boolean
+  setShowApiKey: (v: boolean | ((v: boolean) => boolean)) => void
+  testingAI: boolean
+  aiTestResult: { ok: boolean; msg: string } | null
+  testAI: () => void
+  saving: boolean
+  saved: boolean
+  onSave: () => void
+}) {
+  const [activeSection, setActiveSection] = useState<keyof AIKnowledgeSections>('negocio')
+  const [testMsg, setTestMsg]   = useState('')
+  const [testReply, setTestReply] = useState('')
+  const [testing, setTesting]   = useState(false)
+  const [showTest, setShowTest] = useState(false)
+
+  const sections = config.aiSections ?? { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' }
+  const setSection = (key: keyof AIKnowledgeSections, val: string) =>
+    setConfig(c => ({ ...c, aiSections: { ...(c.aiSections ?? { negocio:'',precios:'',tecnico:'',faq:'',estilo:'' }), [key]: val } }))
+
+  const runTest = async () => {
+    if (!testMsg.trim() || testing) return
+    setTesting(true); setTestReply('')
+    try {
+      // Compilar todo el conocimiento actual (sin guardar)
+      const s = sections
+      const knowledge = [
+        s.negocio && `## NEGOCIO\n${s.negocio}`,
+        s.precios && `## PRECIOS\n${s.precios}`,
+        s.tecnico && `## TÉCNICO\n${s.tecnico}`,
+        s.faq && `## FAQ\n${s.faq}`,
+        s.estilo && `## ESTILO\n${s.estilo}`,
+      ].filter(Boolean).join('\n\n')
+
+      const res = await fetch('/api/chat/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: testMsg, knowledge }),
+      })
+      const data = await res.json() as { reply?: string; error?: string }
+      setTestReply(data.reply ?? data.error ?? 'Sin respuesta')
+    } finally { setTesting(false) }
+  }
+
+  const currentSec = KNOWLEDGE_SECTIONS.find(s => s.key === activeSection)!
+  const hasApiKey = (config.aiProvider ?? 'gemini') === 'gemini' ? !!config.geminiApiKey?.trim() : !!config.anthropicApiKey?.trim()
+  const filledSections = KNOWLEDGE_SECTIONS.filter(s => sections[s.key]?.trim()).length
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Configuración IA — compacta en la parte superior */}
+      <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: 16, border: '1px solid var(--border)' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>⚙️ Configuración del motor de IA</div>
+
+        {/* Selector proveedor */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {([
+            { id: 'gemini' as const, label: '✨ Gemini', desc: 'Gratis', color: '#4285f4' },
+            { id: 'claude' as const, label: '🧠 Claude', desc: 'De pago', color: '#818cf8' },
+          ]).map(p => (
+            <button key={p.id} onClick={() => setConfig(c => ({ ...c, aiProvider: p.id }))}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                background: (config.aiProvider ?? 'gemini') === p.id ? `${p.color}22` : 'var(--surface)',
+                color: (config.aiProvider ?? 'gemini') === p.id ? p.color : C.muted,
+                outline: (config.aiProvider ?? 'gemini') === p.id ? `2px solid ${p.color}` : '2px solid transparent',
+              }}>
+              {p.label} <span style={{ fontWeight: 400, fontSize: 11 }}>({p.desc})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* API key */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <input
+            type={showApiKey ? 'text' : 'password'}
+            value={(config.aiProvider ?? 'gemini') === 'gemini' ? (config.geminiApiKey ?? '') : (config.anthropicApiKey ?? '')}
+            onChange={e => {
+              const val = e.target.value
+              setConfig(c => (config.aiProvider ?? 'gemini') === 'gemini'
+                ? { ...c, geminiApiKey: val }
+                : { ...c, anthropicApiKey: val })
+            }}
+            placeholder={(config.aiProvider ?? 'gemini') === 'gemini' ? 'AIzaSy… (aistudio.google.com → Get API key)' : 'sk-ant-api03-…'}
+            style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
+          />
+          <button onClick={() => setShowApiKey(v => !v)} style={{ padding: '0 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: C.muted, cursor: 'pointer', fontSize: 13 }}>
+            {showApiKey ? '🙈' : '👁'}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => setConfig(c => ({ ...c, aiEnabled: !c.aiEnabled }))}
+            style={{
+              padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+              background: config.aiEnabled ? `${COLOR}22` : 'var(--surface)',
+              color: config.aiEnabled ? COLOR : C.muted,
+              outline: config.aiEnabled ? `1.5px solid ${COLOR}` : '1.5px solid var(--border)',
+            }}>
+            {config.aiEnabled ? '✅ IA activada' : '⭕ IA desactivada'}
+          </button>
+          <button onClick={testAI} disabled={testingAI || !hasApiKey}
+            style={{ padding: '7px 16px', borderRadius: 8, border: 'none', cursor: hasApiKey ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 700, background: '#818cf822', color: '#818cf8', opacity: testingAI ? 0.7 : 1 }}>
+            {testingAI ? '⏳…' : '🔌 Verificar key'}
+          </button>
+          <button onClick={onSave} disabled={saving}
+            style={{ padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: COLOR, color: '#000' }}>
+            {saving ? 'Guardando…' : saved ? '✓ Guardado' : '💾 Guardar todo'}
+          </button>
+        </div>
+        {aiTestResult && (
+          <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: aiTestResult.ok ? `${COLOR}15` : '#ef444415', color: aiTestResult.ok ? COLOR : '#ef4444', border: `1px solid ${aiTestResult.ok ? COLOR : '#ef4444'}44` }}>
+            {aiTestResult.msg}
+          </div>
+        )}
+      </div>
+
+      {/* Base de conocimiento */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>📚 Base de conocimiento</div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+              {filledSections} de {KNOWLEDGE_SECTIONS.length} secciones completadas · Cuanto más info, mejor responde
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          {/* Navegación de secciones */}
+          <div style={{ width: 160, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {KNOWLEDGE_SECTIONS.map(s => {
+              const filled = !!sections[s.key]?.trim()
+              const active = activeSection === s.key
+              return (
+                <button key={s.key} onClick={() => setActiveSection(s.key)}
+                  style={{
+                    padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
+                    background: active ? `${COLOR}18` : 'var(--surface2)',
+                    borderLeft: active ? `3px solid ${COLOR}` : '3px solid transparent',
+                    transition: 'all 0.12s',
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>{s.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: active ? COLOR : 'var(--text-primary)' }}>{s.label}</div>
+                      {filled && <div style={{ fontSize: 10, color: COLOR, fontWeight: 600 }}>✓ Con info</div>}
+                      {!filled && <div style={{ fontSize: 10, color: C.muted }}>Vacío</div>}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Editor de la sección activa */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{currentSec.icon} {currentSec.label}</div>
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{currentSec.desc}</div>
+            </div>
+            <textarea
+              value={sections[activeSection] ?? ''}
+              onChange={e => setSection(activeSection, e.target.value)}
+              rows={18}
+              placeholder={currentSec.placeholder}
+              style={{ ...inputSt, resize: 'vertical', lineHeight: 1.7, fontSize: 13, minHeight: 340 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: C.muted }}>
+                {sections[activeSection]?.length ?? 0} caracteres
+              </span>
+              <button onClick={onSave} disabled={saving}
+                style={{ padding: '7px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: COLOR, color: '#000' }}>
+                {saving ? 'Guardando…' : saved ? '✓ Guardado' : '💾 Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Chat de prueba */}
+      <div style={{ background: 'var(--surface2)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <button
+          onClick={() => setShowTest(v => !v)}
+          style={{ width: '100%', padding: '14px 16px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>🧪 Probar la IA</span>
+            <span style={{ fontSize: 12, color: C.muted, marginLeft: 8 }}>Testea cómo responde antes de activarla con clientes</span>
+          </div>
+          <span style={{ fontSize: 18, color: C.muted }}>{showTest ? '▲' : '▼'}</span>
+        </button>
+
+        {showTest && (
+          <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {!hasApiKey && (
+              <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f9731615', color: '#f97316', fontSize: 12, fontWeight: 600 }}>
+                ⚠️ Guardá primero una API key válida para poder probar
+              </div>
+            )}
+            {testReply && (
+              <div style={{ background: `${COLOR}12`, border: `1px solid ${COLOR}33`, borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: COLOR, marginBottom: 6 }}>RESPUESTA DE LA IA:</div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{testReply}</div>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={testMsg}
+                onChange={e => setTestMsg(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && runTest()}
+                placeholder='Ej: "cuánto sale cambiar la pantalla de un iPhone 14?" o "mi iPhone no enciende"'
+                style={{ ...inputSt, flex: 1 }}
+                disabled={!hasApiKey}
+              />
+              <button onClick={runTest} disabled={testing || !testMsg.trim() || !hasApiKey}
+                style={{
+                  padding: '0 20px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 13,
+                  background: testMsg.trim() && hasApiKey ? COLOR : 'var(--border)',
+                  color: testMsg.trim() && hasApiKey ? '#000' : C.muted,
+                  cursor: testMsg.trim() && hasApiKey ? 'pointer' : 'not-allowed',
+                  whiteSpace: 'nowrap',
+                }}>
+                {testing ? '⏳…' : '▶ Probar'}
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>
+              💡 El chat de prueba usa la info que escribiste arriba aunque no hayas guardado todavía
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Config Panel ─────────────────────────────────────────────────────────────
 function ConfigPanel() {
   const [config, setConfig] = useState<TelegramConfig>({
@@ -54,6 +401,7 @@ function ConfigPanel() {
     anthropicApiKey: '',
     aiEnabled: false,
     aiKnowledge: '',
+    aiSections: { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' },
   })
   const [showApiKey, setShowApiKey] = useState(false)
   const [testingAI, setTestingAI] = useState(false)
@@ -395,158 +743,7 @@ function ConfigPanel() {
       )}
 
       {/* ── IA & CONOCIMIENTO ── */}
-      {tab === 'ia' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640 }}>
-
-          {/* Explicación */}
-          <div style={{ background: `${COLOR}10`, border: `1px solid ${COLOR}33`, borderRadius: 10, padding: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: COLOR, marginBottom: 6 }}>🧠 ¿Cómo funciona?</div>
-            <ul style={{ fontSize: 13, color: C.muted, lineHeight: 1.8, paddingLeft: 18, margin: 0 }}>
-              <li>La IA responde automáticamente usando la información que escribís abajo sobre tu negocio</li>
-              <li>Podés responder vos mismo desde Telegram o este panel — tu respuesta tiene prioridad</li>
-              <li>Las <b style={{ color: 'var(--text-primary)' }}>Auto-respuestas por palabras clave</b> tienen mayor prioridad que la IA</li>
-            </ul>
-          </div>
-
-          {/* Selector de proveedor */}
-          <div>
-            <label style={{ fontSize: 11, color: C.muted, display: 'block', marginBottom: 8, fontWeight: 700, letterSpacing: '0.05em' }}>
-              ELEGÍ EL MOTOR DE IA
-            </label>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {([
-                { id: 'gemini', label: '✨ Google Gemini', desc: 'GRATIS · 1M tokens/día', color: '#4285f4' },
-                { id: 'claude', label: '🧠 Claude (Anthropic)', desc: 'De pago', color: '#818cf8' },
-              ] as const).map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => setConfig(c => ({ ...c, aiProvider: p.id }))}
-                  style={{
-                    flex: 1, padding: '12px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: (config.aiProvider ?? 'gemini') === p.id ? `${p.color}22` : 'var(--surface2)',
-                    outline: (config.aiProvider ?? 'gemini') === p.id ? `2px solid ${p.color}` : '2px solid var(--border)',
-                    textAlign: 'left', transition: 'all 0.15s',
-                  }}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 700, color: (config.aiProvider ?? 'gemini') === p.id ? p.color : 'var(--text-primary)' }}>{p.label}</div>
-                  <div style={{ fontSize: 11, color: (config.aiProvider ?? 'gemini') === p.id ? p.color : C.muted, marginTop: 2, fontWeight: 600 }}>{p.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Gemini API key */}
-          {(config.aiProvider ?? 'gemini') === 'gemini' && (
-            <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: 14, border: '1px solid #4285f433', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#4285f4' }}>✨ Configurar Google Gemini (Gratis)</div>
-              <div style={{ background: 'var(--surface)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { n: '1', text: <>Entrá a <b style={{ color: 'var(--text-primary)' }}>aistudio.google.com</b> con tu cuenta de Google</> },
-                  { n: '2', text: <>Hacé clic en <b style={{ color: 'var(--text-primary)' }}>Get API key</b> → <b style={{ color: 'var(--text-primary)' }}>Create API key</b></> },
-                  { n: '3', text: <>Copiá la clave y pegala acá abajo</> },
-                ].map(s => (
-                  <div key={s.n} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
-                    <span style={{ background: '#4285f422', color: '#4285f4', width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
-                    <span>{s.text}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={config.geminiApiKey ?? ''}
-                  onChange={e => setConfig(c => ({ ...c, geminiApiKey: e.target.value }))}
-                  placeholder="AIzaSy..."
-                  style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
-                />
-                <button onClick={() => setShowApiKey(v => !v)} style={{ padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>
-                  {showApiKey ? '🙈' : '👁'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Claude API key */}
-          {config.aiProvider === 'claude' && (
-            <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: 14, border: '1px solid #818cf433', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8' }}>🧠 Configurar Claude (Anthropic)</div>
-              <p style={{ fontSize: 12, color: C.muted }}>
-                Conseguila en <b style={{ color: 'var(--text-primary)' }}>console.anthropic.com</b> → API Keys → Create Key. Requiere tarjeta de crédito.
-              </p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={config.anthropicApiKey ?? ''}
-                  onChange={e => setConfig(c => ({ ...c, anthropicApiKey: e.target.value }))}
-                  placeholder="sk-ant-api03-..."
-                  style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
-                />
-                <button onClick={() => setShowApiKey(v => !v)} style={{ padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>
-                  {showApiKey ? '🙈' : '👁'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Activar + testear */}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setConfig(c => ({ ...c, aiEnabled: !c.aiEnabled }))}
-              style={{
-                padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: 700,
-                background: config.aiEnabled ? `${COLOR}22` : 'var(--surface2)',
-                color: config.aiEnabled ? COLOR : C.muted,
-                outline: config.aiEnabled ? `1.5px solid ${COLOR}` : '1.5px solid var(--border)',
-              }}
-            >{config.aiEnabled ? '✅ IA activada' : '⭕ IA desactivada'}</button>
-
-            <button
-              onClick={testAI}
-              disabled={testingAI || !((config.aiProvider ?? 'gemini') === 'gemini' ? config.geminiApiKey : config.anthropicApiKey)?.trim()}
-              style={{
-                padding: '8px 18px', borderRadius: 8, border: 'none',
-                cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                background: '#818cf822', color: '#818cf8',
-                opacity: testingAI ? 0.7 : 1,
-              }}
-            >{testingAI ? '⏳ Verificando…' : '🔌 Verificar API key'}</button>
-          </div>
-
-          {aiTestResult && (
-            <div style={{
-              padding: '10px 14px', borderRadius: 8, fontSize: 13,
-              background: aiTestResult.ok ? `${COLOR}15` : '#ef444415',
-              border: `1px solid ${aiTestResult.ok ? COLOR : '#ef4444'}55`,
-              color: aiTestResult.ok ? COLOR : '#ef4444', fontWeight: 600,
-            }}>{aiTestResult.msg}</div>
-          )}
-
-          {/* Base de conocimiento */}
-          <div>
-            <label style={{ fontSize: 11, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 700, letterSpacing: '0.05em' }}>
-              INFORMACIÓN DEL NEGOCIO — "enseñale a la IA"
-            </label>
-            <p style={{ fontSize: 12, color: C.muted, marginBottom: 8, lineHeight: 1.6 }}>
-              Escribí todo lo que querés que la IA sepa: precios, servicios, garantías, horarios, forma de hablar, qué decir ante cada consulta.
-            </p>
-            <textarea
-              value={config.aiKnowledge ?? ''}
-              onChange={e => setConfig(c => ({ ...c, aiKnowledge: e.target.value }))}
-              rows={16}
-              placeholder={`Ejemplos:\n\n• Somos Microsmart, servicio técnico Apple en [tu ciudad]. Lunes a sábado 9 a 18 hs.\n\n• Trato: siempre usar "vos", ser directo y amable. No dar vueltas.\n\n• Pantalla iPhone 15 Pro: $XX.000 con garantía 90 días.\n• Batería iPhone 13: $XX.000 instalada.\n\n• Si no saben el modelo: pedirles que vayan a Ajustes → General → Información.\n\n• Para presupuesto preguntar siempre: modelo del equipo, qué problema tiene y si tiene garantía de compra.\n\n• Tiempo de reparación: pantallas 1 hora, baterías 30 min, reparaciones de placa 2-5 días hábiles.\n\n• Si preguntan si usamos repuestos originales: sí, trabajamos con repuestos de calidad original con garantía.`}
-              style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6, fontSize: 13, minHeight: 300 }}
-            />
-            <p style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>
-              💡 Cuanto más detalle escribas (precios, tiempos, formas de hablar), más útil y precisa va a ser la IA
-            </p>
-          </div>
-
-          <button onClick={save} disabled={saving} style={{ width: 'fit-content', padding: '10px 24px', borderRadius: 8, border: 'none', background: COLOR, color: '#000', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
-            {saving ? 'Guardando…' : saved ? '✓ Guardado' : '💾 Guardar configuración de IA'}
-          </button>
-        </div>
-      )}
+      {tab === 'ia' && <IAKnowledgePanel config={config} setConfig={setConfig} showApiKey={showApiKey} setShowApiKey={setShowApiKey} testingAI={testingAI} aiTestResult={aiTestResult} testAI={testAI} saving={saving} saved={saved} onSave={save} />}
 
       {/* ── MENSAJES ── */}
       {tab === 'mensajes' && (

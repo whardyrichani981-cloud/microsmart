@@ -76,6 +76,14 @@ export interface ChatMessage {
   source?: 'ai' | 'autoresponder'
 }
 
+export interface AIKnowledgeSections {
+  negocio: string       // Info general, horarios, ubicación
+  precios: string       // Precios y servicios
+  tecnico: string       // Conocimiento técnico y diagnósticos
+  faq: string           // Preguntas frecuentes
+  estilo: string        // Cómo hablar, tono, reglas de comunicación
+}
+
 export interface TelegramConfig {
   botToken: string
   chatId: string
@@ -87,7 +95,8 @@ export interface TelegramConfig {
   geminiApiKey: string
   anthropicApiKey: string
   aiEnabled: boolean
-  aiKnowledge: string
+  aiKnowledge: string           // legacy / campo libre adicional
+  aiSections: AIKnowledgeSections
 }
 
 export interface AutoResponderRule {
@@ -108,6 +117,7 @@ const DEFAULT_CONFIG: TelegramConfig = {
   anthropicApiKey: '',
   aiEnabled: false,
   aiKnowledge: '',
+  aiSections: { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' },
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -256,16 +266,29 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
 }
 
 // ─── System prompt compartido ─────────────────────────────────────────────────
-function buildSystemPrompt(knowledge: string): string {
-  return `Sos el asistente virtual de Microsmart, un servicio técnico especializado en productos Apple (iPhone, iPad, Apple Watch, Mac, etc.) ubicado en Argentina.
-Respondés consultas de clientes de manera amable, directa y profesional, siempre en español con modismos argentinos naturales (vos, te, acá, etc.).
+function buildSystemPrompt(config: TelegramConfig): string {
+  const s = config.aiSections ?? { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' }
 
-${knowledge ? `INFORMACIÓN DEL NEGOCIO Y CÓMO RESPONDER:\n${knowledge}\n` : ''}
+  const sections: string[] = []
+  if (s.negocio?.trim())  sections.push(`## INFORMACIÓN DEL NEGOCIO\n${s.negocio.trim()}`)
+  if (s.precios?.trim())  sections.push(`## PRECIOS Y SERVICIOS\n${s.precios.trim()}`)
+  if (s.tecnico?.trim())  sections.push(`## CONOCIMIENTO TÉCNICO\n${s.tecnico.trim()}`)
+  if (s.faq?.trim())      sections.push(`## PREGUNTAS FRECUENTES\n${s.faq.trim()}`)
+  if (s.estilo?.trim())   sections.push(`## ESTILO DE COMUNICACIÓN\n${s.estilo.trim()}`)
+  // Backward compat: campo libre legacy
+  if (config.aiKnowledge?.trim()) sections.push(`## INFO ADICIONAL\n${config.aiKnowledge.trim()}`)
 
+  const knowledge = sections.join('\n\n')
+
+  return `Sos el asistente de atención al cliente de Microsmart, servicio técnico especializado en productos Apple ubicado en Argentina.
+Respondés consultas de clientes de manera amable, directa y profesional, siempre en español con modismos argentinos (vos, te, acá, etc.).
+
+${knowledge ? `${knowledge}\n` : ''}
 REGLAS IMPORTANTES:
-- Si no sabés el precio exacto o un detalle específico, decí que un técnico te va a confirmar a la brevedad, no inventes datos
-- Mantené respuestas cortas y útiles (máximo 3-4 líneas salvo que el cliente pida más detalle)
-- No menciones que sos una IA a menos que te lo pregunten directamente`
+- Si no sabés el precio exacto, decí que lo confirmás a la brevedad, nunca inventes datos
+- Respuestas cortas y útiles (2-4 líneas), salvo que el cliente pida más detalle
+- No menciones que sos una IA a menos que te lo pregunten directamente
+- Usá la información de arriba para responder con precisión`
 }
 
 // ─── Gemini AI (GRATIS) ───────────────────────────────────────────────────────
@@ -273,11 +296,11 @@ export async function callGeminiAI(
   sessionId: string,
   userText: string,
   apiKey: string,
-  knowledge: string,
+  config: TelegramConfig,
 ): Promise<string | null> {
   try {
     const history = (await getMessages(sessionId)).slice(-20)
-    const systemPrompt = buildSystemPrompt(knowledge)
+    const systemPrompt = buildSystemPrompt(config)
 
     // Construir historial en formato Gemini
     const contents: { role: string; parts: { text: string }[] }[] = []
@@ -319,12 +342,12 @@ export async function callClaudeAI(
   sessionId: string,
   userText: string,
   apiKey: string,
-  knowledge: string,
+  config: TelegramConfig,
 ): Promise<string | null> {
   try {
     const client = new Anthropic({ apiKey })
     const history = (await getMessages(sessionId)).filter(m => m.text !== '👋').slice(-20)
-    const systemPrompt = buildSystemPrompt(knowledge)
+    const systemPrompt = buildSystemPrompt(config)
 
     const messages: Anthropic.MessageParam[] = history.map(m => ({
       role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',

@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
         const provider = config.aiProvider ?? 'gemini'
         let aiReply: string | null = null
         if (provider === 'gemini' && config.geminiApiKey) {
-          aiReply = await callGeminiAI(sessionId, text.trim(), config.geminiApiKey, config.aiKnowledge)
+          aiReply = await callGeminiAI(sessionId, text.trim(), config.geminiApiKey, config)
         } else if (provider === 'claude' && config.anthropicApiKey) {
-          aiReply = await callClaudeAI(sessionId, text.trim(), config.anthropicApiKey, config.aiKnowledge)
+          aiReply = await callClaudeAI(sessionId, text.trim(), config.anthropicApiKey, config)
         }
         if (aiReply) {
           const botMsg = await addMessage({ sessionId, role: 'bot', text: aiReply, source: 'ai' })
