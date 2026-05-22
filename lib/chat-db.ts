@@ -343,10 +343,18 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
 function formatPriceResults(items: PriceItem[], tipoCambio?: number): string {
   if (!items.length) return ''
   return items.map(i => {
-    if (i.currency === 'USD') {
-      const ef  = i.precioEfectivo      ?? i.price
-      const tr  = i.precioTransferencia ?? i.price
-        return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia (precio en pesos al tipo de cambio del día)`
+    // Si no tiene currency explícita, detectar por magnitud:
+    // Repuestos Apple en USD son $5–$500; servicios ARS son $1.000–$200.000
+    const currency = i.currency ?? (i.price < 1000 ? 'USD' : 'ARS')
+
+    if (currency === 'USD') {
+      const ef = i.precioEfectivo      ?? i.price
+      const tr = i.precioTransferencia ?? i.price
+      if (ef !== tr) {
+        return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia`
+      }
+      // Precio único (no hay split efectivo/transferencia en la lista)
+      return `- ${i.name}: U$D ${ef}`
     }
     // ARS con ambos precios
     if (i.precioTransferencia && i.precioEfectivo) {
@@ -371,7 +379,13 @@ function buildSystemPrompt(config: TelegramConfig, priceResults?: PriceItem[]): 
   // Precios encontrados en las listas en tiempo real
   if (priceResults?.length) {
     const tc = config.tipoCambio ?? 0
-    sections.push(`## PRECIOS DE LA LISTA (resultados para esta consulta)\n${formatPriceResults(priceResults, tc)}\nEstos son los precios actuales. Usálos para responder. Los precios en USD se cobran en dólares o el equivalente en pesos al tipo de cambio del día.`)
+    sections.push(
+      `## PRECIOS DE LA LISTA (resultados para esta consulta)\n` +
+      `${formatPriceResults(priceResults, tc)}\n` +
+      `IMPORTANTE: Estos son los precios reales de la lista. USÁ EXACTAMENTE estos precios para responder.\n` +
+      `- Precios en U$D: se cobran en dólares o en pesos al tipo de cambio del día\n` +
+      `- Si ves "U$D X" sin split efectivo/transferencia, informá el precio y aclará que el pago en pesos se calcula al tipo de cambio vigente`
+    )
   }
 
   const knowledge = sections.join('\n\n')
@@ -381,12 +395,12 @@ Respondés consultas de clientes de manera amable, directa y profesional, siempr
 
 ${knowledge ? `${knowledge}\n` : ''}
 REGLAS OBLIGATORIAS (seguí estas al pie de la letra):
-1. PRECIOS: cuando la lista tiene el precio, SIEMPRE mostrá LOS DOS así:
-   "Transferencia: $XX.XXX / Efectivo: $XX.XXX"
-   Nunca des solo un precio. Si es en USD, aclaralo: "U$D XX (efectivo) / U$D XX (transferencia)"
-2. PANTALLAS: cuando pregunten por pantalla/lcd/módulo/display, SIEMPRE mencioná las 3 calidades (incell, OLED, original) y sus precios si los tenés
-3. Si no tenés el precio exacto, decí "consultanos directamente para darte el precio exacto de [modelo]"
-4. Respuestas cortas (2-4 líneas máximo)
+1. PRECIOS: cuando la sección "PRECIOS DE LA LISTA" tiene datos, USÁ EXACTAMENTE esos precios. Nunca digas "consultanos" si ya tenés el precio en la lista.
+   - Si el precio tiene split: "Efectivo: $X / Transferencia: $Y"
+   - Si el precio es en USD sin split: "U$D X (en pesos al cambio del día)"
+2. PANTALLAS/MÓDULOS: cuando pregunten por pantalla/lcd/módulo/display, mostrá TODAS las calidades que aparezcan en la lista (Incell, OLED, OLED Premium) con sus precios. Si la lista no tiene todas las calidades, mostrá solo las que están.
+3. Si genuinamente NO hay precio en la lista para lo que preguntan, entonces decí "consultanos directamente para darte el precio exacto"
+4. Respuestas cortas (3-5 líneas máximo para pantallas, 1-2 líneas para preguntas simples)
 5. No digas que sos una IA`
 }
 
