@@ -77,11 +77,11 @@ export interface ChatMessage {
 }
 
 export interface AIKnowledgeSections {
-  negocio: string       // Info general, horarios, ubicación
-  precios: string       // Precios y servicios
-  tecnico: string       // Conocimiento técnico y diagnósticos
-  faq: string           // Preguntas frecuentes
-  estilo: string        // Cómo hablar, tono, reglas de comunicación
+  negocio: string
+  precios: string
+  tecnico: string
+  faq: string
+  estilo: string
 }
 
 export interface TelegramConfig {
@@ -95,8 +95,10 @@ export interface TelegramConfig {
   geminiApiKey: string
   anthropicApiKey: string
   aiEnabled: boolean
-  aiKnowledge: string           // legacy / campo libre adicional
+  aiKnowledge: string
   aiSections: AIKnowledgeSections
+  // Lista de precios conectada
+  gremioListaId: string   // ID del proveedor cuya lista usa la IA para precios
 }
 
 export interface AutoResponderRule {
@@ -118,6 +120,7 @@ const DEFAULT_CONFIG: TelegramConfig = {
   aiEnabled: false,
   aiKnowledge: '',
   aiSections: { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' },
+  gremioListaId: '',
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -265,8 +268,42 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
   } catch { /* ignore network errors */ }
 }
 
+// ─── Búsqueda en lista de precios ────────────────────────────────────────────
+interface PriceItem { name: string; code?: string; price: number; category?: string }
+
+export async function searchPriceList(listId: string, query: string): Promise<PriceItem[]> {
+  if (!listId || !query) return []
+  try {
+    const data = await readObj<PriceItem[]>(`lista-proveedor-${listId}`, [])
+    const items = Array.isArray(data) ? data : []
+    if (!items.length) return []
+
+    // Normalizar query: quitar tildes, minúsculas, dividir en palabras
+    const normalize = (s: string) => s.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    const words = normalize(query).split(/\s+/).filter(w => w.length > 2)
+    if (!words.length) return []
+
+    // Puntuar cada item según cuántas palabras del query contiene
+    const scored = items.map(item => {
+      const haystack = normalize(item.name + ' ' + (item.category ?? ''))
+      const score = words.filter(w => haystack.includes(w)).length
+      return { item, score }
+    }).filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 15)  // máximo 15 resultados
+
+    return scored.map(x => x.item)
+  } catch { return [] }
+}
+
+function formatPriceResults(items: PriceItem[]): string {
+  if (!items.length) return ''
+  return items.map(i => `- ${i.name}: $${i.price}${i.code ? ` (cód. ${i.code})` : ''}`).join('\n')
+}
+
 // ─── System prompt compartido ─────────────────────────────────────────────────
-function buildSystemPrompt(config: TelegramConfig): string {
+function buildSystemPrompt(config: TelegramConfig, priceResults?: PriceItem[]): string {
   const s = config.aiSections ?? { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' }
 
   const sections: string[] = []
@@ -275,8 +312,12 @@ function buildSystemPrompt(config: TelegramConfig): string {
   if (s.tecnico?.trim())  sections.push(`## CONOCIMIENTO TÉCNICO\n${s.tecnico.trim()}`)
   if (s.faq?.trim())      sections.push(`## PREGUNTAS FRECUENTES\n${s.faq.trim()}`)
   if (s.estilo?.trim())   sections.push(`## ESTILO DE COMUNICACIÓN\n${s.estilo.trim()}`)
-  // Backward compat: campo libre legacy
   if (config.aiKnowledge?.trim()) sections.push(`## INFO ADICIONAL\n${config.aiKnowledge.trim()}`)
+
+  // Precios encontrados en la lista en tiempo real
+  if (priceResults?.length) {
+    sections.push(`## PRECIOS DE LA LISTA (resultados para esta consulta)\n${formatPriceResults(priceResults)}\nEstos son los precios actuales del sistema. Usálos para responder.`)
+  }
 
   const knowledge = sections.join('\n\n')
 
@@ -285,10 +326,10 @@ Respondés consultas de clientes de manera amable, directa y profesional, siempr
 
 ${knowledge ? `${knowledge}\n` : ''}
 REGLAS IMPORTANTES:
-- Si no sabés el precio exacto, decí que lo confirmás a la brevedad, nunca inventes datos
-- Respuestas cortas y útiles (2-4 líneas), salvo que el cliente pida más detalle
-- No menciones que sos una IA a menos que te lo pregunten directamente
-- Usá la información de arriba para responder con precisión`
+- Cuando tengas precios de la lista, usálos directamente sin dudar
+- Si no encontrás el precio exacto, decí que lo confirmás a la brevedad
+- Respuestas cortas y útiles (2-4 líneas), salvo que pidan más detalle
+- No menciones que sos una IA a menos que te lo pregunten directamente`
 }
 
 // ─── Gemini AI (GRATIS) ───────────────────────────────────────────────────────
@@ -300,7 +341,11 @@ export async function callGeminiAI(
 ): Promise<string | null> {
   try {
     const history = (await getMessages(sessionId)).slice(-20)
-    const systemPrompt = buildSystemPrompt(config)
+    // Buscar precios relevantes en la lista conectada
+    const priceResults = config.gremioListaId
+      ? await searchPriceList(config.gremioListaId, userText)
+      : []
+    const systemPrompt = buildSystemPrompt(config, priceResults)
 
     // Construir historial en formato Gemini
     const contents: { role: string; parts: { text: string }[] }[] = []
@@ -347,7 +392,10 @@ export async function callClaudeAI(
   try {
     const client = new Anthropic({ apiKey })
     const history = (await getMessages(sessionId)).filter(m => m.text !== '👋').slice(-20)
-    const systemPrompt = buildSystemPrompt(config)
+    const priceResults = config.gremioListaId
+      ? await searchPriceList(config.gremioListaId, userText)
+      : []
+    const systemPrompt = buildSystemPrompt(config, priceResults)
 
     const messages: Anthropic.MessageParam[] = history.map(m => ({
       role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',

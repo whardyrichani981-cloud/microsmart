@@ -402,6 +402,7 @@ function ConfigPanel() {
     aiEnabled: false,
     aiKnowledge: '',
     aiSections: { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' },
+    gremioListaId: '',
   })
   const [showApiKey, setShowApiKey] = useState(false)
   const [testingAI, setTestingAI] = useState(false)
