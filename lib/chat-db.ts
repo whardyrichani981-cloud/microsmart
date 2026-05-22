@@ -97,8 +97,10 @@ export interface TelegramConfig {
   aiEnabled: boolean
   aiKnowledge: string
   aiSections: AIKnowledgeSections
-  // Lista de precios conectada
-  gremioListaId: string   // ID del proveedor cuya lista usa la IA para precios
+  // Listas de precios conectadas
+  gremioListaId: string    // servicios/mano de obra (gremio.csv)
+  clientesListaId: string  // repuestos/módulos (CLIENTES.xlsx)
+  tipoCambio: number       // ARS por USD para convertir precios
 }
 
 export interface AutoResponderRule {
@@ -337,15 +339,24 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
   } catch { return [] }
 }
 
-function formatPriceResults(items: PriceItem[]): string {
+function formatPriceResults(items: PriceItem[], tipoCambio?: number): string {
   if (!items.length) return ''
   return items.map(i => {
-    const cur = i.currency === 'USD' ? 'USD' : 'ARS'
-    const sym = i.currency === 'USD' ? 'U$D' : '$'
-    if (i.precioTransferencia && i.precioEfectivo) {
-      return `- ${i.name}: transferencia ${sym}${i.precioTransferencia.toLocaleString('es-AR')} / efectivo ${sym}${i.precioEfectivo.toLocaleString('es-AR')} (${cur})`
+    if (i.currency === 'USD') {
+      const ef  = i.precioEfectivo      ?? i.price
+      const tr  = i.precioTransferencia ?? i.price
+      if (tipoCambio && tipoCambio > 0) {
+        const arsEf = Math.round(ef  * tipoCambio)
+        const arsTr = Math.round(tr  * tipoCambio * 1.05)
+        return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia (≈ $${arsEf.toLocaleString('es-AR')} / $${arsTr.toLocaleString('es-AR')} ARS)`
+      }
+      return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia`
     }
-    return `- ${i.name}: ${sym}${i.price.toLocaleString('es-AR')} (${cur})`
+    // ARS con ambos precios
+    if (i.precioTransferencia && i.precioEfectivo) {
+      return `- ${i.name}: transferencia $${i.precioTransferencia.toLocaleString('es-AR')} / efectivo $${i.precioEfectivo.toLocaleString('es-AR')} ARS`
+    }
+    return `- ${i.name}: $${i.price.toLocaleString('es-AR')} ARS`
   }).join('\n')
 }
 
@@ -361,9 +372,10 @@ function buildSystemPrompt(config: TelegramConfig, priceResults?: PriceItem[]): 
   if (s.estilo?.trim())   sections.push(`## ESTILO DE COMUNICACIÓN\n${s.estilo.trim()}`)
   if (config.aiKnowledge?.trim()) sections.push(`## INFO ADICIONAL\n${config.aiKnowledge.trim()}`)
 
-  // Precios encontrados en la lista en tiempo real
+  // Precios encontrados en las listas en tiempo real
   if (priceResults?.length) {
-    sections.push(`## PRECIOS DE LA LISTA (resultados para esta consulta)\n${formatPriceResults(priceResults)}\nEstos son los precios actuales del sistema. Usálos para responder.`)
+    const tc = config.tipoCambio ?? 0
+    sections.push(`## PRECIOS DE LA LISTA (resultados para esta consulta)\n${formatPriceResults(priceResults, tc)}\nEstos son los precios actuales. Usálos para responder. Los precios en USD se cobran en dólares o el equivalente en pesos al tipo de cambio del día.`)
   }
 
   const knowledge = sections.join('\n\n')
@@ -391,10 +403,12 @@ export async function callGeminiAI(
 ): Promise<string | null> {
   try {
     const history = (await getMessages(sessionId)).slice(-20)
-    // Buscar precios relevantes en la lista conectada
-    const priceResults = config.gremioListaId
-      ? await searchPriceList(config.gremioListaId, userText)
-      : []
+    // Buscar precios en ambas listas: servicios (gremio) + repuestos (clientes)
+    const [gremioResults, clientesResults] = await Promise.all([
+      config.gremioListaId   ? searchPriceList(config.gremioListaId,   userText) : Promise.resolve([]),
+      config.clientesListaId ? searchPriceList(config.clientesListaId, userText) : Promise.resolve([]),
+    ])
+    const priceResults = [...gremioResults, ...clientesResults].slice(0, 15)
     const systemPrompt = buildSystemPrompt(config, priceResults)
 
     // Construir historial en formato Gemini (roles deben alternar: user → model → user…)
@@ -444,9 +458,11 @@ export async function callClaudeAI(
   try {
     const client = new Anthropic({ apiKey })
     const history = (await getMessages(sessionId)).filter(m => m.text !== '👋').slice(-20)
-    const priceResults = config.gremioListaId
-      ? await searchPriceList(config.gremioListaId, userText)
-      : []
+    const [gremioResults, clientesResults] = await Promise.all([
+      config.gremioListaId   ? searchPriceList(config.gremioListaId,   userText) : Promise.resolve([]),
+      config.clientesListaId ? searchPriceList(config.clientesListaId, userText) : Promise.resolve([]),
+    ])
+    const priceResults = [...gremioResults, ...clientesResults].slice(0, 15)
     const systemPrompt = buildSystemPrompt(config, priceResults)
 
     const messages: Anthropic.MessageParam[] = history.map(m => ({
