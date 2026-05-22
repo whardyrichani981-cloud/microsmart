@@ -50,7 +50,7 @@ interface Props {
 }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos' | 'chat'
+type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos'
 
 const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions; adminOnly?: boolean }[] = [
   { id: 'inicio',         label: 'Inicio',                   icon: '🏠' },
@@ -67,7 +67,6 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'ventas-equipos', label: 'Venta de equipos',          icon: '📱' },
   { id: 'contable',       label: 'Administración contable',  icon: '📒' },
   { id: 'caja',           label: 'Caja de mostrador',        icon: '🖥️', permKey: 'canViewOrdenes' },
-  { id: 'chat',           label: 'Chat & Soporte',            icon: '💬' },
   { id: 'administracion', label: 'Configuración del sistema', icon: '⚙️', adminOnly: true },
 ]
 
@@ -1012,7 +1011,6 @@ export default function PriceComparator({
           )}
           {activeNav === 'ventas-equipos' && <VentasEquiposView key="ventas-equipos" />}
           {activeNav === 'caja' && <CajaView key="caja" currentUser={displayName || currentUser} role={role} />}
-          {activeNav === 'chat' && <ChatSoporteView key="chat" />}
           {activeNav === 'administracion' && <AdminView key="administracion" onModulosChange={handleModulosChange} onModulosSaved={handleModulosSaved} />}
         </main>
       </div>
