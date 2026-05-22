@@ -284,25 +284,37 @@ interface PriceItem {
   currency?: 'ARS' | 'USD'
 }
 
+// Palabras del grupo "pantallas/módulos" — incluye diagnostico/original/soft para
+// que "pantalla iphone 14" encuentre tanto el Incell como el Soft Oled Diagnostico
+const SCREEN_WORDS = ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell', 'soft', 'diagnostico', 'original', 'premium']
+
 // Sinónimos: cada palabra se expande a sus equivalentes
 const SYNONYMS: Record<string, string[]> = {
-  'chasis':    ['carcasa', 'housing', 'chasis'],
-  'chassis':   ['carcasa', 'housing', 'chasis'],
-  'housing':   ['carcasa', 'housing', 'chasis'],
-  'carcasa':   ['carcasa', 'housing', 'chasis'],
-  'pantalla':  ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
-  'modulo':    ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
-  'módulo':    ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
-  'lcd':       ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
-  'display':   ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
-  'bateria':   ['bateria', 'batería', 'battery'],
-  'batería':   ['bateria', 'batería', 'battery'],
-  'camara':    ['camara', 'cámara', 'camera'],
-  'cámara':    ['camara', 'cámara', 'camera'],
-  'conector':  ['conector', 'connector', 'puerto', 'carga'],
-  'carga':     ['conector', 'connector', 'puerto', 'carga'],
-  'tactil':    ['tactil', 'táctil', 'touch'],
-  'touch':     ['tactil', 'táctil', 'touch'],
+  'chasis':      ['carcasa', 'housing', 'chasis'],
+  'chassis':     ['carcasa', 'housing', 'chasis'],
+  'housing':     ['carcasa', 'housing', 'chasis'],
+  'carcasa':     ['carcasa', 'housing', 'chasis'],
+  // Grupo pantallas: cualquier término de pantalla expande al grupo completo
+  'pantalla':    SCREEN_WORDS,
+  'modulo':      SCREEN_WORDS,
+  'módulo':      SCREEN_WORDS,
+  'lcd':         SCREEN_WORDS,
+  'display':     SCREEN_WORDS,
+  'oled':        SCREEN_WORDS,
+  'incell':      SCREEN_WORDS,
+  // "original", "diagnostico", "premium", "soft" → también expanden al grupo
+  'original':    SCREEN_WORDS,
+  'diagnostico': SCREEN_WORDS,
+  'premium':     SCREEN_WORDS,
+  'soft':        SCREEN_WORDS,
+  'bateria':     ['bateria', 'batería', 'battery'],
+  'batería':     ['bateria', 'batería', 'battery'],
+  'camara':      ['camara', 'cámara', 'camera'],
+  'cámara':      ['camara', 'cámara', 'camera'],
+  'conector':    ['conector', 'connector', 'puerto', 'carga'],
+  'carga':       ['conector', 'connector', 'puerto', 'carga'],
+  'tactil':      ['tactil', 'táctil', 'touch'],
+  'touch':       ['tactil', 'táctil', 'touch'],
 }
 
 export async function searchPriceList(listId: string, query: string): Promise<PriceItem[]> {
@@ -330,13 +342,13 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
     }).filter(x => x.score > 0)
       .sort((a, b) => b.score - a.score)
 
-    // Deduplicar por nombre+precio
+    // Deduplicar por nombre+precio (límite 20 por lista para no cortar variantes)
     const seen = new Set<string>()
     const unique: PriceItem[] = []
     for (const { item } of scored) {
       const key = `${item.name}|${item.price}`
       if (!seen.has(key)) { seen.add(key); unique.push(item) }
-      if (unique.length >= 12) break
+      if (unique.length >= 20) break
     }
     return unique
   } catch { return [] }
@@ -420,7 +432,7 @@ export async function callGeminiAI(
       config.gremioListaId   ? searchPriceList(config.gremioListaId,   userText) : Promise.resolve([]),
       config.clientesListaId ? searchPriceList(config.clientesListaId, userText) : Promise.resolve([]),
     ])
-    const priceResults = [...gremioResults, ...clientesResults].slice(0, 15)
+    const priceResults = [...gremioResults, ...clientesResults].slice(0, 20)
     const systemPrompt = buildSystemPrompt(config, priceResults)
 
     // Construir historial en formato Gemini (roles deben alternar: user → model → user…)
@@ -474,7 +486,7 @@ export async function callClaudeAI(
       config.gremioListaId   ? searchPriceList(config.gremioListaId,   userText) : Promise.resolve([]),
       config.clientesListaId ? searchPriceList(config.clientesListaId, userText) : Promise.resolve([]),
     ])
-    const priceResults = [...gremioResults, ...clientesResults].slice(0, 15)
+    const priceResults = [...gremioResults, ...clientesResults].slice(0, 20)
     const systemPrompt = buildSystemPrompt(config, priceResults)
 
     const messages: Anthropic.MessageParam[] = history.map(m => ({
