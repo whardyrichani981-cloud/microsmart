@@ -92,33 +92,6 @@ export default function PanicAnalyzerView() {
         </p>
       </div>
 
-      {/* Mode toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <button
-          onClick={() => setMultiMode(false)}
-          style={{
-            padding: '6px 16px', borderRadius: 999, fontSize: 13, fontWeight: 500,
-            background: !multiMode ? 'var(--accent)' : 'var(--surface2)',
-            color: !multiMode ? '#fff' : 'var(--text-secondary)',
-            border: `1px solid ${!multiMode ? 'var(--accent)' : 'var(--border-light)'}`,
-            cursor: 'pointer',
-          }}
-        >
-          1 archivo
-        </button>
-        <button
-          onClick={() => setMultiMode(true)}
-          style={{
-            padding: '6px 16px', borderRadius: 999, fontSize: 13, fontWeight: 500,
-            background: multiMode ? 'var(--accent)' : 'var(--surface2)',
-            color: multiMode ? '#fff' : 'var(--text-secondary)',
-            border: `1px solid ${multiMode ? 'var(--accent)' : 'var(--border-light)'}`,
-            cursor: 'pointer',
-          }}
-        >
-          Comparar hasta 3
-        </button>
-      </div>
 
       {/* Upload slots */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
