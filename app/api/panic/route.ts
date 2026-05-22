@@ -15,6 +15,69 @@ const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_R
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
   : null
 
+// Inyecta CSS para ocultar navegación/header de panicfull.com y dejar solo el contenido
+function injectCleanStyles(html: string): string {
+  const css = `
+<style>
+  /* Ocultar navegación, header y footer del sitio panicfull.com */
+  nav, header, footer,
+  .navbar, .nav-bar, #navbar, #nav,
+  .header, #header, .site-header,
+  .footer, #footer, .site-footer,
+  .menu, #menu, .menu-container, .main-menu,
+  .top-bar, .top-nav, .navigation,
+  .sidebar, #sidebar,
+  [class*="nav-"], [id*="nav-"],
+  [class*="menu-"], [id*="menu-"] { display: none !important; }
+
+  /* Limpiar estilos del body */
+  body {
+    margin: 0 !important;
+    padding: 12px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-size: 13px !important;
+    background: #fff !important;
+    color: #1a1a1a !important;
+  }
+
+  /* Asegurar que el contenido principal use todo el ancho */
+  main, .main, #main, .content, #content,
+  .container, .wrapper, .page, .result {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Tablas legibles */
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { background: #f3f4f6; font-weight: 600; }
+  th, td { padding: 6px 10px; border: 1px solid #e5e7eb; text-align: left; }
+  tr:nth-child(even) td { background: #f9fafb; }
+
+  /* Links en el resultado */
+  a { color: #2563eb; }
+
+  /* Badges y etiquetas */
+  .badge, .tag, .label { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+
+  /* VERSION PRO badge — ocultar también */
+  [class*="pro"], [class*="Pro"], [class*="version"] {
+    /* mantener si es parte del resultado */
+  }
+</style>`
+
+  // Insertar antes de </head> si existe, o al inicio del <body>
+  if (html.includes('</head>')) {
+    return html.replace('</head>', css + '</head>')
+  }
+  if (html.includes('<body')) {
+    return html.replace(/<body([^>]*)>/, `<body$1>${css}`)
+  }
+  // Sin estructura HTML: envolver en documento limpio
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>${html}</body></html>`
+}
+
 // Lee cookies de sesión: primero Redis, luego env var de respaldo
 async function getPanicfullCookies(): Promise<string> {
   if (redis) {
@@ -201,11 +264,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ── Limpiar HTML: inyectar CSS para ocultar nav/header de panicfull.com ──
+    const cleanedHtml = injectCleanStyles(resultHtml)
+
     // ── Éxito ─────────────────────────────────────────────────────────────
     await incrementRate(ip)
     const newRemaining = Math.max(0, remaining - 1)
 
-    return NextResponse.json({ ok: true, html: resultHtml, remaining: newRemaining, limit: DAILY_LIMIT })
+    return NextResponse.json({ ok: true, html: cleanedHtml, remaining: newRemaining, limit: DAILY_LIMIT })
 
   } catch (e) {
     console.error('[panic proxy]', e)
