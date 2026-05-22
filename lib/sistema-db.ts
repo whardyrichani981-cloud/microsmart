@@ -632,6 +632,37 @@ export async function deleteListaCustom(id: string): Promise<void> {
   await writeSingle('listas-custom', (await getListasCustom()).filter(l => l.id !== id))
 }
 
+// ── Listas de precios (datos) ─────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getListaData(proveedorId: string): Promise<any[]> {
+  const key = `lista-proveedor-${proveedorId}`
+  if (redis) {
+    const data = await redis.get<string>(key)
+    if (!data) return []
+    return typeof data === 'string' ? JSON.parse(data) : data as unknown[]
+  }
+  // fallback: filesystem
+  try {
+    const p = path.join(DATA_DIR, `lista-proveedor-${proveedorId}.json`)
+    if (!fs.existsSync(p)) return []
+    return JSON.parse(fs.readFileSync(p, 'utf-8'))
+  } catch { return [] }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function setListaData(proveedorId: string, items: any[]): Promise<void> {
+  const key = `lista-proveedor-${proveedorId}`
+  if (redis) { await redis.set(key, JSON.stringify(items)); return }
+  fs.writeFileSync(path.join(DATA_DIR, `lista-proveedor-${proveedorId}.json`), JSON.stringify(items, null, 2), 'utf-8')
+}
+
+export async function deleteListaData(proveedorId: string): Promise<void> {
+  const key = `lista-proveedor-${proveedorId}`
+  if (redis) { await redis.del(key); return }
+  const p = path.join(DATA_DIR, `lista-proveedor-${proveedorId}.json`)
+  if (fs.existsSync(p)) fs.unlinkSync(p)
+}
+
 // ── Módulos ───────────────────────────────────────────────────────────────────
 const DEFAULT_MODULOS: Record<string, boolean> = {
   notasdash: true, imei: true,

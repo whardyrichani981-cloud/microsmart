@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
-import fs from 'fs'
-import path from 'path'
-import { getListasMeta, setListaMeta, deleteListaMeta } from '@/lib/sistema-db'
+import { getListasMeta, setListaMeta, deleteListaMeta, getListaData, setListaData, deleteListaData } from '@/lib/sistema-db'
 import { parseGeneric } from '@/lib/parsers'
 
 export const dynamic = 'force-dynamic'
-
-const DATA_DIR = path.join(process.cwd(), 'data')
 
 export async function GET(
   _req: NextRequest,
@@ -18,13 +14,7 @@ export async function GET(
   const all = await getListasMeta()
   const meta = all[id]
   if (!meta) return NextResponse.json(null)
-  // Include parsed items from disk
-  const dataFile = path.join(DATA_DIR, `lista-proveedor-${id}.json`)
-  let items: unknown[] = []
-  try {
-    if (fs.existsSync(dataFile))
-      items = JSON.parse(fs.readFileSync(dataFile, 'utf-8'))
-  } catch { /* ignore */ }
+  const items = await getListaData(id)
   return NextResponse.json({ ...meta, itemsData: items })
 }
 
@@ -107,28 +97,13 @@ export async function POST(
 
     const items = parseGeneric(rows)
 
-    // Debug: log first rows so we can see the actual structure
-    console.log('[lista/upload] filename:', filename)
-    console.log('[lista/upload] total rows:', rows.length)
-    console.log('[lista/upload] row[0]:', JSON.stringify(rows[0]))
-    console.log('[lista/upload] row[1]:', JSON.stringify(rows[1]))
-    console.log('[lista/upload] row[2]:', JSON.stringify(rows[2]))
-    console.log('[lista/upload] row[3]:', JSON.stringify(rows[3]))
-    console.log('[lista/upload] row[4]:', JSON.stringify(rows[4]))
-    console.log('[lista/upload] items parsed:', items.length)
-    if (items.length > 0) {
-      console.log('[lista/upload] first item:', JSON.stringify(items[0]))
-    }
-
-    // Save parsed data
-    const dataFile = path.join(DATA_DIR, `lista-proveedor-${id}.json`)
-    fs.writeFileSync(dataFile, JSON.stringify(items, null, 2), 'utf-8')
+    // Save parsed data to Redis (or filesystem locally)
+    await setListaData(id, items)
 
     // Save metadata
     const meta = { filename, items: items.length, updatedAt: new Date().toISOString() }
     await setListaMeta(id, meta)
 
-    // If 0 items parsed, return debug info so we can see what the file looks like
     if (items.length === 0) {
       const previewRows = rows.slice(0, 8).map(r => r.map(c => String(c ?? '').trim()))
       return NextResponse.json({
@@ -151,7 +126,6 @@ export async function DELETE(
 ) {
   const { id } = await params
   await deleteListaMeta(id)
-  const dataFile = path.join(DATA_DIR, `lista-proveedor-${id}.json`)
-  if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile)
+  await deleteListaData(id)
   return NextResponse.json({ ok: true })
 }
