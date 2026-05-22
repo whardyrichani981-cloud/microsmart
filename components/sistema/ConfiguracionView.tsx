@@ -458,7 +458,6 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
 
   // Nombre del negocio
   const [nombreNegocio, setNombreNegocio] = useState('')
-  const [savedNombre, setSavedNombre] = useState('')   // valor persistido en servidor
   const [nombreSaving, setNombreSaving] = useState(false)
   const [nombreSaved, setNombreSaved] = useState(false)
 
@@ -532,7 +531,6 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nombreNegocio }),
       })
-      setSavedNombre(nombreNegocio)
       setNombreSaved(true)
       setTimeout(() => setNombreSaved(false), 2500)
     } finally {
@@ -1094,7 +1092,7 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
               cursor: nombreSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : savedNombre ? 'Modificar' : 'Guardar'}
+            {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : nombreNegocio ? 'Modificar' : 'Guardar'}
           </button>
         </div>
       </div>
@@ -1416,14 +1414,13 @@ export default function ConfiguracionView({
 
   // ── Nombre del negocio ──────────────────────────────────────────────────────
   const [nombreNegocio, setNombreNegocio] = useState('')
-  const [savedNombre2, setSavedNombre2] = useState('')
   const [nombreSaving, setNombreSaving] = useState(false)
   const [nombreSaved, setNombreSaved] = useState(false)
 
   useEffect(() => {
     fetch('/api/sistema/negocio')
       .then(r => r.json())
-      .then((d: { nombre: string }) => { setNombreNegocio(d.nombre ?? ''); setSavedNombre2(d.nombre ?? '') })
+      .then((d: { nombre: string }) => setNombreNegocio(d.nombre ?? ''))
       .catch(() => {})
   }, [])
 
@@ -1435,7 +1432,6 @@ export default function ConfiguracionView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nombreNegocio }),
       })
-      setSavedNombre2(nombreNegocio)
       setNombreSaved(true)
       setTimeout(() => setNombreSaved(false), 2500)
     } finally { setNombreSaving(false) }
@@ -1621,7 +1617,7 @@ export default function ConfiguracionView({
               cursor: nombreSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : savedNombre2 ? 'Modificar' : 'Guardar'}
+            {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : nombreNegocio ? 'Modificar' : 'Guardar'}
           </button>
         </div>
       </div>
