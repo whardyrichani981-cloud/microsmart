@@ -1731,19 +1731,15 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
     try {
       const fd = new FormData()
       for (const f of Array.from(files)) fd.append('files', f)
+      fd.append('usuario', currentUser ?? 'Sistema')
       const res = await fetch(`/api/sistema/ordenes/${orden.id}/imagenes`, { method: 'POST', body: fd })
-      if (!res.ok) { alert('Error al subir la foto. Intentá de nuevo.'); return }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(`Error al subir: ${err.error ?? res.status}`)
+        return
+      }
       const updated: Orden = await res.json()
-      const newImagenes = updated.imagenes ?? []
-      setImagenes(newImagenes)
-      // Usar newImagenes directamente (evita closure stale de imagenes)
-      const entry = mkEntry('foto', `Se subieron ${files.length} foto(s)`, currentUser)
-      const newHist = [...(orden.historial ?? []), entry]
-      await fetch(`/api/sistema/ordenes/${orden.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...orden, imagenes: newImagenes, historial: newHist }),
-      })
+      setImagenes(updated.imagenes ?? [])
       onRefresh()
     } finally { setUploading(false) }
   }
@@ -4673,7 +4669,13 @@ export default function OrdenesView({ initialSearch = '' }: { initialSearch?: st
     try {
       const fd = new FormData()
       for (const f of Array.from(files)) fd.append('files', f)
+      fd.append('usuario', currentUser ?? 'Sistema')
       const res = await fetch(`/api/sistema/ordenes/${editId}/imagenes`, { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(`Error al subir: ${err.error ?? res.status}`)
+        return
+      }
       const updated: Orden = await res.json()
       setForm(prev => ({ ...prev, imagenes: updated.imagenes ?? [] }))
       await refresh()
