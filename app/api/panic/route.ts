@@ -26,7 +26,19 @@ function prepareResultHtml(html: string): string {
   out = out.replace(/<\/?html[^>]*>/gi, '')
   out = out.replace(/<\/?body[^>]*>/gi, '')
 
-  // 2. Encontrar dónde empieza el contenido real de análisis
+  // 2. Eliminar bloques fijos del sitio que no son parte del análisis
+  // Selector de idioma (siempre aparece igual)
+  out = out.replace(/Elegir el idioma[\s\S]{0,400}Português Idioma/gi, '')
+  // Header "panicfull.com" y toggle de tema
+  out = out.replace(/panicfull\.com/gi, '')
+  // Badge VERSIÓN PRO / VERSION PRO
+  out = out.replace(/VERSI[ÓO]N PRO[!]?/gi, '')
+  // Nombre del usuario logueado (RONALD DIA... etc.)
+  out = out.replace(/RONALD DIA[^\n<]*/gi, '')
+  // Idioma / Lang label
+  out = out.replace(/Idioma\s*\/\s*Lang/gi, '')
+
+  // 4. Encontrar dónde empieza el contenido real de análisis
   //    El nav de panicfull siempre aparece ANTES de los datos del dispositivo
   const CONTENT_MARKERS = [
     'Datos del Dispositivo',
@@ -52,7 +64,7 @@ function prepareResultHtml(html: string): string {
     }
   }
 
-  // 3. Cortar el footer del resultado (info del usuario, feedback, etc.)
+  // 5. Cortar el footer del resultado (info del usuario, feedback, etc.)
   const FOOTER_MARKERS = [
     'Consulta realizada por',
     'Consulta Realizada por',
@@ -78,7 +90,7 @@ function prepareResultHtml(html: string): string {
     }
   }
 
-  // 4. CSS con tema Microsmart (dark/light automático)
+  // 6. CSS con tema Microsmart (dark/light automático)
   const css = `
     * { box-sizing: border-box; }
     body {
