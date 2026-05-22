@@ -354,6 +354,16 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
   } catch { return [] }
 }
 
+// Detectar calidad de pantalla a partir del nombre del ítem en la lista
+function detectScreenQuality(name: string): string | null {
+  const n = name.toLowerCase()
+  if (/soft.?oled.*(diagnostico|diagnostic)/.test(n) || (/diagnostico|diagnostic/.test(n) && /oled|modulo/.test(n))) return 'Original/Premium'
+  if (/soft.?oled/.test(n)) return 'OLED'
+  if (/incell/.test(n)) return 'Incell'
+  if (/\boled\b/.test(n)) return 'OLED'
+  return null
+}
+
 function formatPriceResults(items: PriceItem[], tipoCambio?: number): string {
   if (!items.length) return ''
   return items.map(i => {
@@ -361,20 +371,25 @@ function formatPriceResults(items: PriceItem[], tipoCambio?: number): string {
     // Repuestos Apple en USD son $5–$500; servicios ARS son $1.000–$200.000
     const currency = i.currency ?? (i.price < 1000 ? 'USD' : 'ARS')
 
+    let priceStr: string
     if (currency === 'USD') {
       const ef = i.precioEfectivo      ?? i.price
       const tr = i.precioTransferencia ?? i.price
-      if (ef !== tr) {
-        return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia`
-      }
-      // Precio único (no hay split efectivo/transferencia en la lista)
-      return `- ${i.name}: U$D ${ef}`
+      priceStr = ef !== tr
+        ? `U$D ${ef} efectivo / U$D ${tr} transferencia`
+        : `U$D ${ef}`
+    } else if (i.precioTransferencia && i.precioEfectivo) {
+      priceStr = `$${i.precioTransferencia.toLocaleString('es-AR')} transferencia / $${i.precioEfectivo.toLocaleString('es-AR')} efectivo ARS`
+    } else {
+      priceStr = `$${i.price.toLocaleString('es-AR')} ARS`
     }
-    // ARS con ambos precios
-    if (i.precioTransferencia && i.precioEfectivo) {
-      return `- ${i.name}: transferencia $${i.precioTransferencia.toLocaleString('es-AR')} / efectivo $${i.precioEfectivo.toLocaleString('es-AR')} ARS`
+
+    // Para módulos/pantallas, agregar etiqueta de calidad para que la IA entienda
+    const quality = detectScreenQuality(i.name)
+    if (quality) {
+      return `- [${quality}] ${i.name}: PRECIO = ${priceStr}`
     }
-    return `- ${i.name}: $${i.price.toLocaleString('es-AR')} ARS`
+    return `- ${i.name}: PRECIO = ${priceStr}`
   }).join('\n')
 }
 
@@ -385,37 +400,59 @@ function buildSystemPrompt(config: TelegramConfig, priceResults?: PriceItem[]): 
   const sections: string[] = []
   if (s.negocio?.trim())  sections.push(`## INFORMACIÓN DEL NEGOCIO\n${s.negocio.trim()}`)
   if (s.precios?.trim())  sections.push(`## PRECIOS Y SERVICIOS\n${s.precios.trim()}`)
-  if (s.tecnico?.trim())  sections.push(`## CONOCIMIENTO TÉCNICO\n${s.tecnico.trim()}`)
+  // NOTA: aiSections.tecnico se omite intencionalmente — las instrucciones de
+  // pantallas están hardcodeadas abajo para garantizar consistencia
   if (s.faq?.trim())      sections.push(`## PREGUNTAS FRECUENTES\n${s.faq.trim()}`)
   if (s.estilo?.trim())   sections.push(`## ESTILO DE COMUNICACIÓN\n${s.estilo.trim()}`)
   if (config.aiKnowledge?.trim()) sections.push(`## INFO ADICIONAL\n${config.aiKnowledge.trim()}`)
 
-  // Precios encontrados en las listas en tiempo real
+  // ── Precios en tiempo real ────────────────────────────────────────────────
   if (priceResults?.length) {
     const tc = config.tipoCambio ?? 0
+    const priceText = formatPriceResults(priceResults, tc)
     sections.push(
-      `## PRECIOS DE LA LISTA (resultados para esta consulta)\n` +
-      `${formatPriceResults(priceResults, tc)}\n` +
-      `IMPORTANTE: Estos son los precios reales de la lista. USÁ EXACTAMENTE estos precios para responder.\n` +
-      `- Precios en U$D: se cobran en dólares o en pesos al tipo de cambio del día\n` +
-      `- Si ves "U$D X" sin split efectivo/transferencia, informá el precio y aclará que el pago en pesos se calcula al tipo de cambio vigente`
+      `## ✅ PRECIOS DISPONIBLES PARA ESTA CONSULTA\n` +
+      `Los siguientes precios están confirmados en la lista. USÁLOS DIRECTAMENTE:\n\n` +
+      `${priceText}\n\n` +
+      `Cada línea tiene el formato: [Calidad si aplica] Nombre del ítem: PRECIO = X\n` +
+      `→ "PRECIO = U$D 33" significa que el precio es U$D 33. Informalo así al cliente.\n` +
+      `→ "PRECIO = U$D 81" significa que el precio es U$D 81. Informalo así al cliente.\n` +
+      `→ NO necesitás más datos para dar ese precio. U$D X es el precio completo.`
     )
   }
 
   const knowledge = sections.join('\n\n')
 
+  // Instrucciones hardcodeadas de pantallas (no dependen de Redis)
+  const screenInstructions = `## MÓDULOS Y PANTALLAS — LECTURA DEL LISTADO
+Los ítems de pantalla en la lista se llaman así (con su calidad entre corchetes):
+- [Incell] → calidad económica
+- [OLED] → calidad media/alta
+- [Original/Premium] → la mejor calidad (ítem con "Diagnostico" en el nombre)
+
+CÓMO RESPONDER cuando hay ítems [Calidad] en la sección de precios:
+Ejemplo si la lista muestra:
+  - [Incell] IPHONE Modulo Incell IC 14: PRECIO = U$D 33
+  - [Original/Premium] IPHONE Modulo Soft Oled Diagnostico 14: PRECIO = U$D 81
+
+Respondé EXACTAMENTE así:
+"Para el iPhone 14 tenemos:
+• Incell: U$D 33
+• Original: U$D 81
+(Los precios en pesos se calculan al tipo de cambio del día)"
+
+Si la lista solo tiene [Incell], mostrá solo Incell. NO agregues calidades que no están.`
+
   return `Sos el asistente de atención al cliente de Microsmart, servicio técnico especializado en productos Apple ubicado en Argentina.
 Respondés consultas de clientes de manera amable, directa y profesional, siempre en español con modismos argentinos (vos, te, acá, etc.).
 
-${knowledge ? `${knowledge}\n` : ''}
-REGLAS OBLIGATORIAS (seguí estas al pie de la letra):
-1. PRECIOS: cuando la sección "PRECIOS DE LA LISTA" tiene datos, USÁ EXACTAMENTE esos precios. Nunca digas "consultanos" si ya tenés el precio en la lista.
-   - Si el precio tiene split: "Efectivo: $X / Transferencia: $Y"
-   - Si el precio es en USD sin split: "U$D X (en pesos al cambio del día)"
-2. PANTALLAS/MÓDULOS: mostrá ÚNICAMENTE las calidades que estén en la sección "PRECIOS DE LA LISTA". NO inventes calidades. Si hay Incell y Original → mostrá solo esas dos. Si hay solo Incell → mostrá solo esa. NUNCA digas "consultanos" para una calidad que sí tiene precio en la lista.
-3. Si genuinamente NO hay precio en la lista para lo que preguntan, entonces decí "consultanos directamente para darte el precio exacto"
-4. Respuestas cortas (3-5 líneas máximo para pantallas, 1-2 líneas para preguntas simples)
-5. No digas que sos una IA`
+${knowledge ? `${knowledge}\n\n` : ''}${screenInstructions}
+
+REGLAS:
+1. Si hay precios en la sección "✅ PRECIOS DISPONIBLES", SIEMPRE dálos. Nunca digas "consultanos" si tenés el precio.
+2. Para pantallas: mostrá solo las calidades que aparecen en el listado (no inventes).
+3. Si genuinamente no hay precio → "consultanos directamente para el precio exacto de [modelo]"
+4. Respuestas cortas. No digas que sos una IA.`
 }
 
 // ─── Gemini AI (GRATIS) ───────────────────────────────────────────────────────
