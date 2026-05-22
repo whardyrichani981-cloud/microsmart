@@ -3195,26 +3195,29 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                 <div style={{ textAlign: 'center', padding: '28px 0', color: C.muted, fontSize: 13 }}>Sin fotos todavía</div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
-                  {imagenes.map(filename => (
-                    <div key={filename} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '4/3', background: 'var(--surface2)' }}>
-                      <img
-                        src={`/uploads/ordenes/${orden.id}/${filename}`}
-                        alt={filename}
-                        onClick={() => setLightboxSrc(`/uploads/ordenes/${orden.id}/${filename}`)}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in' }}
-                      />
-                      <button
-                        onClick={() => deleteImage(filename)}
-                        style={{
-                          position: 'absolute', top: 5, right: 5,
-                          width: 24, height: 24, borderRadius: '50%',
-                          background: 'rgba(0,0,0,0.7)', border: 'none',
-                          color: '#f87171', fontSize: 13, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}
-                      >✕</button>
-                    </div>
-                  ))}
+                  {imagenes.map(filename => {
+                    const src = filename.startsWith('http') ? filename : `/uploads/ordenes/${orden.id}/${filename}`
+                    return (
+                      <div key={filename} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '4/3', background: 'var(--surface2)' }}>
+                        <img
+                          src={src}
+                          alt={filename}
+                          onClick={() => setLightboxSrc(src)}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in' }}
+                        />
+                        <button
+                          onClick={() => deleteImage(filename)}
+                          style={{
+                            position: 'absolute', top: 5, right: 5,
+                            width: 24, height: 24, borderRadius: '50%',
+                            background: 'rgba(0,0,0,0.7)', border: 'none',
+                            color: '#f87171', fontSize: 13, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >✕</button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </>
@@ -5975,28 +5978,31 @@ export default function OrdenesView({ initialSearch = '' }: { initialSearch?: st
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
-                      {(form.imagenes ?? []).map(filename => (
-                        <div key={filename} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '4/3', background: 'var(--surface2)' }}>
-                          <img
-                            src={`/uploads/ordenes/${editId}/${filename}`}
-                            alt={filename}
-                            onClick={() => setFormLightbox(`/uploads/ordenes/${editId}/${filename}`)}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in' }}
-                          />
-                          <button
-                            onClick={() => deleteImage(filename)}
-                            title="Eliminar foto"
-                            style={{
-                              position: 'absolute', top: 5, right: 5,
-                              width: 24, height: 24, borderRadius: '50%',
-                              background: 'rgba(0,0,0,0.7)', border: 'none',
-                              color: '#f87171', fontSize: 13, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              lineHeight: 1,
-                            }}
-                          >✕</button>
-                        </div>
-                      ))}
+                      {(form.imagenes ?? []).map(filename => {
+                        const src = filename.startsWith('http') ? filename : `/uploads/ordenes/${editId}/${filename}`
+                        return (
+                          <div key={filename} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '4/3', background: 'var(--surface2)' }}>
+                            <img
+                              src={src}
+                              alt={filename}
+                              onClick={() => setFormLightbox(src)}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in' }}
+                            />
+                            <button
+                              onClick={() => deleteImage(filename)}
+                              title="Eliminar foto"
+                              style={{
+                                position: 'absolute', top: 5, right: 5,
+                                width: 24, height: 24, borderRadius: '50%',
+                                background: 'rgba(0,0,0,0.7)', border: 'none',
+                                color: '#f87171', fontSize: 13, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                lineHeight: 1,
+                              }}
+                            >✕</button>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </>

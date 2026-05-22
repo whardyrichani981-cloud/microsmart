@@ -334,11 +334,17 @@ export default function AccesoriosView() {
     await refresh()
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setF({ imagen: reader.result as string })
-    reader.readAsDataURL(file)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('folder', 'microsmart/accesorios')
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setF({ imagen: data.url })
+    } catch { alert('Error al subir imagen. Intentá de nuevo.') }
   }
 
   // Categorías y proveedores como listas de strings

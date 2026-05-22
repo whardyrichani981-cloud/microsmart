@@ -203,24 +203,15 @@ function printLabel(eq: EquipoUsado, sizeId: LabelSizeId = '58x40') {
   w.document.close()
 }
 
-// ── Comprimir imagen antes de guardar ────────────────────────────────────────
-async function compressImage(file: File, maxPx = 1000): Promise<string> {
-  return new Promise(resolve => {
-    const reader = new FileReader()
-    reader.onload = e => {
-      const img = new Image()
-      img.onload = () => {
-        const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1)
-        const canvas = document.createElement('canvas')
-        canvas.width  = Math.round(img.width  * ratio)
-        canvas.height = Math.round(img.height * ratio)
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', 0.72))
-      }
-      img.src = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
-  })
+// ── Subir imagen a Cloudinary ─────────────────────────────────────────────────
+async function uploadToCloudinary(file: File, folder = 'microsmart/equipos'): Promise<string> {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('folder', folder)
+  const res = await fetch('/api/upload', { method: 'POST', body: fd })
+  if (!res.ok) throw new Error('Error al subir imagen')
+  const data = await res.json()
+  return data.url as string
 }
 
 // funcionesOk y listFaults importados de equipo-data
@@ -793,8 +784,10 @@ function StockEquiposTab({ proveedores, onRefreshProveedores, config }: { provee
 
   const addFotos = async (files: FileList) => {
     if (form.fotos.length + files.length > 8) return alert('Máximo 8 fotos por equipo.')
-    const compressed = await Promise.all(Array.from(files).map(f => compressImage(f)))
-    setForm(p => ({ ...p, fotos: [...p.fotos, ...compressed] }))
+    try {
+      const urls = await Promise.all(Array.from(files).map(f => uploadToCloudinary(f, 'microsmart/equipos')))
+      setForm(p => ({ ...p, fotos: [...p.fotos, ...urls] }))
+    } catch { alert('Error al subir fotos. Intentá de nuevo.') }
   }
 
   const removeFoto = (idx: number) =>
@@ -1792,14 +1785,18 @@ function ComprasClientesTab({ config }: { config: EquiposConfig }) {
 
   const addFotos = async (files: FileList) => {
     if (form.fotos.length + files.length > 8) return alert('Máximo 8 fotos.')
-    const compressed = await Promise.all(Array.from(files).map(f => compressImage(f)))
-    setForm(p => ({ ...p, fotos: [...p.fotos, ...compressed] }))
+    try {
+      const urls = await Promise.all(Array.from(files).map(f => uploadToCloudinary(f, 'microsmart/compras')))
+      setForm(p => ({ ...p, fotos: [...p.fotos, ...urls] }))
+    } catch { alert('Error al subir fotos. Intentá de nuevo.') }
   }
 
   const loadDniFoto = async (file: File, side: 'frente' | 'dorso') => {
-    const compressed = await compressImage(file, 1200)
-    if (side === 'frente') set('fotoDniFrente', compressed)
-    else set('fotoDniDorso', compressed)
+    try {
+      const url = await uploadToCloudinary(file, 'microsmart/dni')
+      if (side === 'frente') set('fotoDniFrente', url)
+      else set('fotoDniDorso', url)
+    } catch { alert('Error al subir foto de DNI. Intentá de nuevo.') }
   }
 
   const openNew  = () => { setForm(buildEmptyCompra()); setModal('new') }
