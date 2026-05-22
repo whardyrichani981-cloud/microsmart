@@ -116,13 +116,24 @@ export default function PanicAnalyzerView() {
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => handleDrop(e, idx)}
                 onClick={() => fileRefs[idx].current?.click()}
-                style={{
-                  border: `2px dashed ${dragging === idx ? 'var(--accent)' : hasContent ? 'var(--accent)' : 'var(--border)'}`,
+                style={hasContent ? {
+                  border: '1px solid var(--accent)',
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  cursor: 'pointer',
+                  background: 'var(--surface2)',
+                  transition: 'all 0.15s',
+                  marginBottom: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                } : {
+                  border: `2px dashed ${dragging === idx ? 'var(--accent)' : 'var(--border)'}`,
                   borderRadius: 12,
-                  padding: '20px 16px',
+                  padding: '18px 16px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  background: dragging === idx ? 'var(--accent-dim)' : hasContent ? 'var(--surface2)' : 'var(--surface)',
+                  background: dragging === idx ? 'var(--accent-dim)' : 'var(--surface)',
                   transition: 'all 0.15s',
                   marginBottom: 8,
                 }}
@@ -135,15 +146,15 @@ export default function PanicAnalyzerView() {
                 />
                 {hasContent ? (
                   <>
-                    <div style={{ fontSize: 22, marginBottom: 4 }}>✅</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    <span style={{ fontSize: 16 }}>✅</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {slot.name || 'Texto pegado'}
-                    </div>
+                    </span>
                     <button
                       onClick={e => { e.stopPropagation(); updateSlot(idx, emptySlot()) }}
                       style={{
-                        marginTop: 8, fontSize: 11, color: 'var(--text-dim)',
-                        background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline',
+                        fontSize: 11, color: 'var(--text-dim)',
+                        background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', flexShrink: 0,
                       }}
                     >
                       Limpiar
@@ -151,7 +162,7 @@ export default function PanicAnalyzerView() {
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize: 26, marginBottom: 6 }}>📁</div>
+                    <div style={{ fontSize: 24, marginBottom: 4 }}>📁</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
                       Arrastrá o hacé clic para seleccionar
                     </div>
