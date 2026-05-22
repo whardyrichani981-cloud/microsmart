@@ -346,12 +346,7 @@ function formatPriceResults(items: PriceItem[], tipoCambio?: number): string {
     if (i.currency === 'USD') {
       const ef  = i.precioEfectivo      ?? i.price
       const tr  = i.precioTransferencia ?? i.price
-      if (tipoCambio && tipoCambio > 0) {
-        const arsEf = Math.round(ef  * tipoCambio)
-        const arsTr = Math.round(tr  * tipoCambio * 1.05)
-        return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia (≈ $${arsEf.toLocaleString('es-AR')} / $${arsTr.toLocaleString('es-AR')} ARS)`
-      }
-      return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia`
+        return `- ${i.name}: U$D ${ef} efectivo / U$D ${tr} transferencia (precio en pesos al tipo de cambio del día)`
     }
     // ARS con ambos precios
     if (i.precioTransferencia && i.precioEfectivo) {

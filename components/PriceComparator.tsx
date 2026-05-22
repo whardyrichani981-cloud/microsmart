@@ -120,6 +120,7 @@ export default function PriceComparator({
   const [navSearch, setNavSearch] = useState<{ nav: 'ordenes' | 'clientes'; term: string } | null>(null)
 
   const [activeCategories, setActiveCategories] = useState<Set<AppleCategory>>(new Set())
+  const [isMobile, setIsMobile] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeNav, setActiveNav] = useState<NavItem>('inicio')
   const [isDark, setIsDark] = useState(false)
@@ -132,6 +133,18 @@ export default function PriceComparator({
   useEffect(() => {
     if (mainRef.current) mainRef.current.scrollTop = 0
   }, [activeNav, contableSubTab])
+
+  // Mobile detection
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (mobile) setSidebarOpen(false)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // Theme: load from localStorage after hydration
   useEffect(() => {
@@ -363,6 +376,7 @@ export default function PriceComparator({
     setNavSearch(null)
     if (id !== 'comparador') setSelectedSupplierIds(new Set())
     if (id === 'contable') setContableSubTab('ventas')
+    if (isMobile) setSidebarOpen(false)  // cerrar sidebar al navegar en mobile
   }
 
   // Exponer handleNav al window para que HomeView (accesos rápidos) pueda navegar
@@ -431,11 +445,26 @@ export default function PriceComparator({
 
   // ─── SIDEBAR ──────────────────────────────────────────────────────────────
   const Sidebar = (
+    <>
+    {/* Backdrop for mobile */}
+    {isMobile && sidebarOpen && (
+      <div onClick={() => setSidebarOpen(false)} style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        zIndex: 98, backdropFilter: 'blur(2px)',
+      }} />
+    )}
     <aside style={{
-      width: SIDEBAR_W, minHeight: '100vh',
+      width: isMobile ? 260 : SIDEBAR_W,
+      minHeight: '100vh',
       background: 'var(--sidebar-bg)',
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
+      ...(isMobile ? {
+        position: 'fixed', top: 0, left: 0, zIndex: 99, height: '100dvh',
+        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.25s ease',
+        boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.2)' : 'none',
+      } : {}),
       borderRight: '1px solid var(--border-light)',
       display: 'flex', flexDirection: 'column',
       transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
@@ -537,8 +566,8 @@ export default function PriceComparator({
                 title={!sidebarOpen ? item.label : undefined}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center',
-                  gap: 9, padding: sidebarOpen ? '8px 10px 8px 10px' : '9px 0',
-                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                  gap: 9, padding: (sidebarOpen || isMobile) ? '8px 10px 8px 10px' : '9px 0',
+                  justifyContent: (sidebarOpen || isMobile) ? 'flex-start' : 'center',
                   background: isActive && selectedSupplierIds.size === 0
                     ? 'var(--accent-dim)' : 'transparent',
                   border: 'none',
@@ -566,7 +595,7 @@ export default function PriceComparator({
                   filter: isActive && selectedSupplierIds.size === 0 ? 'none' : 'grayscale(0.3)',
                   transition: 'filter 0.15s',
                 }}>{item.icon}</span>
-                {sidebarOpen && (
+                {(sidebarOpen || isMobile) && (
                   <span style={{
                     fontSize: 13,
                     fontWeight: isActive && selectedSupplierIds.size === 0 ? 600 : 400,
@@ -671,6 +700,7 @@ export default function PriceComparator({
         </button>
       </div>
     </aside>
+    </>
   )
 
   // ─── TOP BAR ──────────────────────────────────────────────────────────────
@@ -682,9 +712,23 @@ export default function PriceComparator({
       WebkitBackdropFilter: 'var(--nav-blur)',
       borderBottom: '1px solid var(--border-light)',
       display: 'flex', alignItems: 'center',
-      padding: '0 20px', gap: 12, flexShrink: 0,
+      padding: isMobile ? '0 12px' : '0 20px',
+      gap: isMobile ? 8 : 12, flexShrink: 0,
       position: 'sticky', top: 0, zIndex: 50,
     }}>
+      {/* Hamburger — mobile only */}
+      {isMobile && (
+        <button onClick={() => setSidebarOpen(o => !o)} style={{
+          width: 36, height: 36, borderRadius: 8, border: 'none',
+          background: 'var(--surface2)', cursor: 'pointer',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: 4, flexShrink: 0,
+        }}>
+          <span style={{ width: 16, height: 2, background: 'var(--text-primary)', borderRadius: 2, display: 'block' }} />
+          <span style={{ width: 16, height: 2, background: 'var(--text-primary)', borderRadius: 2, display: 'block' }} />
+          <span style={{ width: 16, height: 2, background: 'var(--text-primary)', borderRadius: 2, display: 'block' }} />
+        </button>
+      )}
       {/* Search — pill style */}
       <div style={{ position: 'relative', flex: 1, maxWidth: 420 }}>
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"
@@ -723,10 +767,11 @@ export default function PriceComparator({
         )}
       </div>
 
-      {/* Global search button */}
+      {/* Global search button — hidden on mobile */}
       <button
         onClick={() => setGlobalSearchOpen(true)}
         title="Búsqueda global (Ctrl+K)"
+        style={{ display: isMobile ? 'none' : undefined } as React.CSSProperties}
         style={{
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '6px 12px', borderRadius: 999, fontSize: 12,
@@ -745,8 +790,8 @@ export default function PriceComparator({
         }}>Ctrl K</kbd>
       </button>
 
-      {/* Date */}
-      <div style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+      {/* Date — hidden on mobile */}
+      <div style={{ fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap', letterSpacing: '-0.01em', display: isMobile ? 'none' : undefined }}>
         {today}
       </div>
 
@@ -769,8 +814,8 @@ export default function PriceComparator({
         {refreshing ? 'Actualizando...' : 'Actualizar'}
       </button>
 
-      {/* Notes btn */}
-      <button onClick={() => setActiveNav('notasdash')} style={{
+      {/* Notes btn — hidden on mobile */}
+      <button onClick={() => setActiveNav('notasdash')} style={{ display: isMobile ? 'none' : undefined,
         position: 'relative', display: 'flex', alignItems: 'center', gap: 5,
         padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500,
         background: activeNav === 'notasdash' ? 'var(--accent-dim)' : 'var(--surface2)',
@@ -951,10 +996,10 @@ export default function PriceComparator({
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       {Sidebar}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: isMobile ? '100%' : undefined }}>
         {TopBar}
 
-        <main ref={mainRef} style={{ flex: 1, padding: 20, overflow: 'auto' }}>
+        <main ref={mainRef} style={{ flex: 1, padding: isMobile ? 12 : 20, overflow: 'auto' }}>
           {activeNav === 'inicio' && (
             <HomeView key="inicio" displayName={displayName || currentUser} currentUser={currentUser} />
           )}
