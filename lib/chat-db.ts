@@ -1,20 +1,56 @@
+// Server-only — never import from client components
 import fs from 'fs'
 import path from 'path'
+import { Redis } from '@upstash/redis'
 import Anthropic from '@anthropic-ai/sdk'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 
-function readJson<T>(filename: string, defaultValue: T): T {
-  const filePath = path.join(DATA_DIR, filename)
+const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+  : null
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+async function readArr<T>(key: string): Promise<T[]> {
+  if (redis) {
+    const data = await redis.get<string>(key)
+    if (!data) return []
+    return typeof data === 'string' ? JSON.parse(data) : (data as T[])
+  }
   try {
-    if (!fs.existsSync(filePath)) return defaultValue
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as T
-  } catch { return defaultValue }
+    const filePath = path.join(DATA_DIR, `${key}.json`)
+    if (!fs.existsSync(filePath)) return []
+    let raw = fs.readFileSync(filePath, 'utf-8')
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1)
+    return JSON.parse(raw) as T[]
+  } catch { return [] }
 }
 
-function writeJson<T>(filename: string, data: T): void {
+async function writeArr<T>(key: string, data: T[]): Promise<void> {
+  if (redis) { await redis.set(key, JSON.stringify(data)); return }
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
-  fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2))
+  fs.writeFileSync(path.join(DATA_DIR, `${key}.json`), JSON.stringify(data, null, 2))
+}
+
+async function readObj<T>(key: string, fallback: T): Promise<T> {
+  if (redis) {
+    const data = await redis.get<string>(key)
+    if (!data) return fallback
+    return typeof data === 'string' ? JSON.parse(data) : (data as T)
+  }
+  try {
+    const filePath = path.join(DATA_DIR, `${key}.json`)
+    if (!fs.existsSync(filePath)) return fallback
+    let raw = fs.readFileSync(filePath, 'utf-8')
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1)
+    return JSON.parse(raw) as T
+  } catch { return fallback }
+}
+
+async function writeObj<T>(key: string, data: T): Promise<void> {
+  if (redis) { await redis.set(key, JSON.stringify(data)); return }
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
+  fs.writeFileSync(path.join(DATA_DIR, `${key}.json`), JSON.stringify(data, null, 2))
 }
 
 function uid(): string {
@@ -59,18 +95,29 @@ export interface AutoResponderRule {
   active: boolean
 }
 
-// ─── Sessions ─────────────────────────────────────────────────────────────────
-export function getSessions(): ChatSession[] {
-  return readJson<ChatSession[]>('chat-sessions.json', [])
+const DEFAULT_CONFIG: TelegramConfig = {
+  botToken: '',
+  chatId: '',
+  welcomeMessage: '¡Hola! 👋 ¿En qué podemos ayudarte?',
+  offlineMessage: 'Gracias por tu mensaje. Te respondemos a la brevedad.',
+  autoResponder: [],
+  anthropicApiKey: '',
+  aiEnabled: false,
+  aiKnowledge: '',
 }
 
-export function getOrCreateSession(id: string, visitorName?: string): ChatSession {
-  const sessions = getSessions()
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+export async function getSessions(): Promise<ChatSession[]> {
+  return readArr<ChatSession>('chat-sessions')
+}
+
+export async function getOrCreateSession(id: string, visitorName?: string): Promise<ChatSession> {
+  const sessions = await getSessions()
   const existing = sessions.find(s => s.id === id)
   if (existing) {
     if (visitorName && visitorName !== existing.visitorName) {
       existing.visitorName = visitorName
-      writeJson('chat-sessions.json', sessions)
+      await writeArr('chat-sessions', sessions)
     }
     return existing
   }
@@ -82,57 +129,51 @@ export function getOrCreateSession(id: string, visitorName?: string): ChatSessio
     open: true,
   }
   sessions.push(session)
-  writeJson('chat-sessions.json', sessions)
+  await writeArr('chat-sessions', sessions)
   return session
 }
 
-export function updateSession(id: string, updates: Partial<ChatSession>) {
-  const sessions = getSessions()
+export async function updateSession(id: string, updates: Partial<ChatSession>): Promise<void> {
+  const sessions = await getSessions()
   const idx = sessions.findIndex(s => s.id === id)
   if (idx !== -1) {
     sessions[idx] = { ...sessions[idx], ...updates }
-    writeJson('chat-sessions.json', sessions)
+    await writeArr('chat-sessions', sessions)
   }
 }
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
-export function getMessages(sessionId?: string): ChatMessage[] {
-  const all = readJson<ChatMessage[]>('chat-messages.json', [])
+export async function getMessages(sessionId?: string): Promise<ChatMessage[]> {
+  const all = await readArr<ChatMessage>('chat-messages')
   if (!sessionId) return all
   return all.filter(m => m.sessionId === sessionId)
 }
 
-export function addMessage(msg: Omit<ChatMessage, 'id' | 'createdAt'>): ChatMessage {
-  const messages = readJson<ChatMessage[]>('chat-messages.json', [])
+export async function addMessage(msg: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<ChatMessage> {
+  const messages = await readArr<ChatMessage>('chat-messages')
   const newMsg: ChatMessage = { ...msg, id: uid(), createdAt: new Date().toISOString() }
   messages.push(newMsg)
-  writeJson('chat-messages.json', messages)
-  updateSession(msg.sessionId, { lastMessageAt: new Date().toISOString() })
+  await writeArr('chat-messages', messages)
+  await updateSession(msg.sessionId, { lastMessageAt: new Date().toISOString() })
   return newMsg
 }
 
-export function updateMessageTelegramId(msgId: string, telegramMsgId: number) {
-  const messages = readJson<ChatMessage[]>('chat-messages.json', [])
+export async function updateMessageTelegramId(msgId: string, telegramMsgId: number): Promise<void> {
+  const messages = await readArr<ChatMessage>('chat-messages')
   const idx = messages.findIndex(m => m.id === msgId)
-  if (idx !== -1) { messages[idx].telegramMsgId = telegramMsgId; writeJson('chat-messages.json', messages) }
+  if (idx !== -1) {
+    messages[idx].telegramMsgId = telegramMsgId
+    await writeArr('chat-messages', messages)
+  }
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-export function getTelegramConfig(): TelegramConfig {
-  return readJson<TelegramConfig>('chat-config.json', {
-    botToken: '',
-    chatId: '',
-    welcomeMessage: '¡Hola! 👋 ¿En qué podemos ayudarte?',
-    offlineMessage: 'Gracias por tu mensaje. Te respondemos a la brevedad.',
-    autoResponder: [],
-    anthropicApiKey: '',
-    aiEnabled: false,
-    aiKnowledge: '',
-  })
+export async function getTelegramConfig(): Promise<TelegramConfig> {
+  return readObj<TelegramConfig>('chat-config', DEFAULT_CONFIG)
 }
 
-export function saveTelegramConfig(config: TelegramConfig) {
-  writeJson('chat-config.json', config)
+export async function saveTelegramConfig(config: TelegramConfig): Promise<void> {
+  await writeObj('chat-config', config)
 }
 
 // ─── Telegram API ─────────────────────────────────────────────────────────────
@@ -156,7 +197,7 @@ interface TgUpdate {
   message?: { message_id: number; text?: string; reply_to_message?: { message_id: number } }
 }
 
-// Cooldown: no hacer polling más de 1 vez por segundo
+// Cooldown en memoria para no hacer polling más de 1 vez por segundo
 let lastPollTime = 0
 
 export async function pollTelegramUpdates(token: string): Promise<void> {
@@ -164,7 +205,7 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
   if (now - lastPollTime < 1000) return
   lastPollTime = now
 
-  const offsetData = readJson<{ offset: number }>('chat-telegram-offset.json', { offset: 0 })
+  const offsetData = await readObj<{ offset: number }>('chat-telegram-offset', { offset: 0 })
   try {
     const res = await fetch(
       `https://api.telegram.org/bot${token}/getUpdates?offset=${offsetData.offset}&timeout=0&limit=100`,
@@ -174,12 +215,12 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
     if (!data.ok || !data.result?.length) return
 
     const updates = data.result
-    const allMessages = readJson<ChatMessage[]>('chat-messages.json', [])
+    const allMessages = await readArr<ChatMessage>('chat-messages')
 
     for (const update of updates) {
       if (!update.message?.text) continue
       const text = update.message.text
-      if (text.startsWith('/')) continue  // Ignore bot commands
+      if (text.startsWith('/')) continue
 
       const replyToId = update.message.reply_to_message?.message_id
       let sessionId: string | null = null
@@ -190,25 +231,23 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
       }
 
       if (!sessionId) {
-        // Send to most recent open session
-        const sessions = getSessions()
+        const sessions = (await getSessions())
           .filter(s => s.open)
           .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime())
         if (sessions.length > 0) sessionId = sessions[0].id
       }
 
       if (sessionId) {
-        // Avoid duplicates: check if this telegram message was already processed
         const alreadyStored = allMessages.some(
           m => m.telegramMsgId === update.message!.message_id && m.role === 'owner'
         )
         if (!alreadyStored) {
-          addMessage({ sessionId, role: 'owner', text, telegramMsgId: update.message.message_id })
+          await addMessage({ sessionId, role: 'owner', text, telegramMsgId: update.message.message_id })
         }
       }
     }
 
-    writeJson('chat-telegram-offset.json', { offset: updates[updates.length - 1].update_id + 1 })
+    await writeObj('chat-telegram-offset', { offset: updates[updates.length - 1].update_id + 1 })
   } catch { /* ignore network errors */ }
 }
 
@@ -222,8 +261,7 @@ export async function callClaudeAI(
   try {
     const client = new Anthropic({ apiKey })
 
-    // Build conversation history (last 20 messages for context)
-    const history = getMessages(sessionId)
+    const history = (await getMessages(sessionId))
       .filter(m => m.text !== '👋')
       .slice(-20)
 
@@ -243,7 +281,6 @@ REGLAS IMPORTANTES:
       content: m.text,
     }))
 
-    // Ensure last message is from user (the current one)
     if (!messages.length || messages[messages.length - 1].role !== 'user') {
       messages.push({ role: 'user', content: userText })
     }
@@ -265,8 +302,8 @@ REGLAS IMPORTANTES:
 }
 
 // ─── Auto-responder ───────────────────────────────────────────────────────────
-export function checkAutoResponder(text: string): string | null {
-  const config = getTelegramConfig()
+export async function checkAutoResponder(text: string): Promise<string | null> {
+  const config = await getTelegramConfig()
   const lower = text.toLowerCase()
   for (const rule of config.autoResponder) {
     if (!rule.active) continue

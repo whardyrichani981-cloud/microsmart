@@ -4,11 +4,10 @@ import { getSessions, updateSession, getMessages } from '@/lib/chat-db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const sessions = getSessions().sort(
+  const sessions = (await getSessions()).sort(
     (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
   )
-  // Attach unread count (messages from user with no owner reply after them)
-  const allMessages = getMessages()
+  const allMessages = await getMessages()
   const enriched = sessions.map(s => {
     const msgs = allMessages.filter(m => m.sessionId === s.id)
     const lastOwner = msgs.filter(m => m.role === 'owner' || m.role === 'bot').at(-1)
@@ -24,7 +23,7 @@ export async function PUT(req: NextRequest) {
   try {
     const { id, ...updates } = await req.json()
     if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-    updateSession(id, updates)
+    await updateSession(id, updates)
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

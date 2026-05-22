@@ -5,20 +5,20 @@ import Anthropic from '@anthropic-ai/sdk'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json(getTelegramConfig())
+  return NextResponse.json(await getTelegramConfig())
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    saveTelegramConfig(body)
+    await saveTelegramConfig(body)
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }
 
-// PUT /api/chat/config — test Telegram OR Claude AI connection
+// PUT — test Telegram OR Claude AI connection
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json() as { botToken?: string; chatId?: string; testAI?: boolean; anthropicApiKey?: string }
