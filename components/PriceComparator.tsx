@@ -468,7 +468,7 @@ export default function PriceComparator({
         transition: 'transform 0.25s ease',
         boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.2)' : 'none',
       } : {}),
-      borderRight: '1px solid var(--border-light)',
+      borderRight: '0.5px solid var(--border-light)',
       display: 'flex', flexDirection: 'column',
       transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
       flexShrink: 0, position: 'sticky', top: 0, alignSelf: 'flex-start',
@@ -484,25 +484,35 @@ export default function PriceComparator({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap' }}>
             <div style={{
               width: 32, height: 32, borderRadius: 10,
-              background: 'linear-gradient(135deg, #0066CC 0%, #0A84FF 100%)',
+              background: 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, boxShadow: '0 2px 8px rgba(0,102,204,0.35)',
+              flexShrink: 0, boxShadow: '0 2px 8px var(--accent-glow)',
+              color: '#fff', flexDirection: 'column',
             }}>
-              <span style={{ fontSize: 17, lineHeight: 1 }}>🍎</span>
+              {/* Microsmart logo mark: screen + cursor dot */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="3.5" width="20" height="14" rx="3.5" stroke="white" strokeWidth="1.6"/>
+                <path d="M6 14V8.5l3 2.5 3-2.5V14M14 14V8.5l3 2.5 3-2.5V14" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="20.5" r="1.1" fill="white"/>
+              </svg>
             </div>
             <div style={{ lineHeight: 1.1 }}>
-              <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '0.06em', color: 'var(--text-primary)', textTransform: 'uppercase' }}>Microsmart</div>
-              <div style={{ fontWeight: 400, fontSize: 10, letterSpacing: '0.02em', color: 'var(--text-dim)' }}>Especialistas Apple</div>
+              <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>Microsmart</div>
+              <div style={{ fontWeight: 400, fontSize: 10, letterSpacing: '0.01em', color: 'var(--text-dim)' }}>Especialistas Apple</div>
             </div>
           </div>
         ) : (
           <div style={{
             width: 32, height: 32, borderRadius: 10,
-            background: 'linear-gradient(135deg, #0066CC 0%, #0A84FF 100%)',
+            background: 'var(--accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,102,204,0.35)',
+            boxShadow: '0 2px 8px var(--accent-glow)',
           }}>
-            <span style={{ fontSize: 17, lineHeight: 1 }}>🍎</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="3.5" width="20" height="14" rx="3.5" stroke="white" strokeWidth="1.6"/>
+              <path d="M6 14V8.5l3 2.5 3-2.5V14M14 14V8.5l3 2.5 3-2.5V14" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="12" cy="20.5" r="1.1" fill="white"/>
+            </svg>
           </div>
         )}
         {sidebarOpen && (
@@ -713,7 +723,7 @@ export default function PriceComparator({
       background: 'var(--nav-bg)',
       backdropFilter: 'var(--nav-blur)',
       WebkitBackdropFilter: 'var(--nav-blur)',
-      borderBottom: '1px solid var(--border-light)',
+      borderBottom: '0.5px solid var(--border-light)',
       display: 'flex', alignItems: 'center',
       padding: isMobile ? '0 12px' : '0 20px',
       gap: isMobile ? 8 : 12, flexShrink: 0,
