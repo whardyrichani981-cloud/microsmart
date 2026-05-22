@@ -19,6 +19,8 @@ import HomeView from './HomeView'
 import IMEIView from './IMEIView'
 import PanicAnalyzerView from './sistema/PanicAnalyzerView'
 import HerramientasTecnicasView from './sistema/HerramientasTecnicasView'
+import BoardViewer from './esquematicos/BoardViewer'
+import { iphone12Board } from '@/lib/boards/iphone12'
 import TurnosView from './sistema/TurnosView'
 import StockMainView from './sistema/StockMainView'
 import GastosMainView from './sistema/GastosMainView'
@@ -52,7 +54,7 @@ interface Props {
 }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'panic' | 'herramientas' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos'
+type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'panic' | 'herramientas' | 'esquematicos' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos'
 
 
 const NAV_ICONS: Record<string, React.ReactNode> = {
@@ -62,6 +64,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
   notasdash:     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>,
   imei:          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>,
   herramientas:  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M14 4a5 5 0 015 6l5 5-3 3-5-5a5 5 0 01-6-5l2 2 2-2-2-2 2-2z"/></svg>,
+  esquematicos:  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="2" y="6" width="8" height="5" rx="1"/><rect x="14" y="6" width="8" height="5" rx="1"/><rect x="8" y="14" width="8" height="5" rx="1"/><path d="M6 11v3M18 11v3M12 14V11"/></svg>,
   ordenes:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M14 4a5 5 0 015 6l5 5-3 3-5-5a5 5 0 01-6-5l2 2 2-2-2-2 2-2z"/></svg>,
   presupuestos:  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h4"/></svg>,
   servicios:     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>,
@@ -80,15 +83,16 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'proveedores',    label: 'Proveedores',              icon: '', permKey: 'canViewProveedores' },
   { id: 'notasdash',      label: 'Tareas y Pedidos',         icon: '', permKey: 'canViewNotas' },
   { id: 'imei',           label: 'Verificar IMEI',           icon: '', permKey: 'canViewIMEI' },
-  { id: 'herramientas',   label: 'Herramientas Técnicas',    icon: '', permKey: 'canViewIMEI' },
+  { id: 'herramientas',   label: 'Herramientas Técnicas',    icon: '', permKey: 'canViewHerramientas' },
+  { id: 'esquematicos',   label: 'Esquemáticos de placa',    icon: '', permKey: 'canViewHerramientas' },
   { id: 'ordenes',        label: 'Órdenes de trabajo',       icon: '', permKey: 'canViewOrdenes' },
   { id: 'presupuestos',   label: 'Presupuestos',             icon: '', permKey: 'canViewOrdenes' },
   { id: 'servicios',      label: 'Servicios',                icon: '', permKey: 'canViewServicios' },
   { id: 'clientes',       label: 'Clientes',                 icon: '', permKey: 'canViewClientes' },
   { id: 'agenda',         label: 'Turnos',                   icon: '', permKey: 'canViewAgenda' },
   { id: 'stock',          label: 'Stock',                    icon: '', permKey: 'canViewStock' },
-  { id: 'ventas-equipos', label: 'Venta de equipos',          icon: '' },
-  { id: 'contable',       label: 'Administración contable',  icon: '' },
+  { id: 'ventas-equipos', label: 'Venta de equipos',          icon: '', permKey: 'canViewVentasEquipos' },
+  { id: 'contable',       label: 'Administración contable',  icon: '', permKey: 'canViewContable' },
   { id: 'caja',           label: 'Caja de mostrador',        icon: '', permKey: 'canViewOrdenes' },
   { id: 'administracion', label: 'Configuración del sistema', icon: '', adminOnly: true },
 ]
@@ -1017,6 +1021,15 @@ export default function PriceComparator({
           )}
           {activeNav === 'imei' && <IMEIView key="imei" />}
           {activeNav === 'herramientas' && <HerramientasTecnicasView key="herramientas" />}
+          {activeNav === 'esquematicos' && (
+            <div key="esquematicos" style={{
+              margin: isMobile ? -12 : -20,
+              height: 'calc(100vh - 60px)',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              <BoardViewer board={iphone12Board} currentUser={currentUser} />
+            </div>
+          )}
           {activeNav === 'ordenes' && <OrdenesView key={`ordenes-${navSearch?.nav === 'ordenes' ? navSearch.term : ''}`} initialSearch={navSearch?.nav === 'ordenes' ? navSearch.term : ''} />}
           {activeNav === 'presupuestos' && <PresupuestosView key="presupuestos" />}
           {activeNav === 'servicios' && <ServiciosView key="servicios" />}
