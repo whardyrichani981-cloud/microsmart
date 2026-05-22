@@ -20,24 +20,26 @@ function formatTime(iso: string) {
 }
 
 export default function ChatWidget() {
-  const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
-  const [unread, setUnread] = useState(0)
+  const [open, setOpen]               = useState(false)
+  const [messages, setMessages]       = useState<ChatMessage[]>([])
+  const [input, setInput]             = useState('')
+  const [sending, setSending]         = useState(false)
+  const [unread, setUnread]           = useState(0)
   const [visitorName, setVisitorName] = useState('')
-  const [nameSet, setNameSet] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [sessionId, setSessionId] = useState('')
-  const [welcomeSent, setWelcomeSent] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [visitorPhone, setVisitorPhone] = useState('')
+  const [nameSet, setNameSet]         = useState(false)
+  const [nameInput, setNameInput]     = useState('')
+  const [phoneInput, setPhoneInput]   = useState('')
+  const [sessionId, setSessionId]     = useState('')
+  const bottomRef  = useRef<HTMLDivElement>(null)
+  const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const id = getSessionId()
     setSessionId(id)
-    const savedName = localStorage.getItem('ms_chat_name')
-    if (savedName) { setVisitorName(savedName); setNameSet(true) }
+    const savedName  = localStorage.getItem('ms_chat_name')
+    const savedPhone = localStorage.getItem('ms_chat_phone') ?? ''
+    if (savedName) { setVisitorName(savedName); setVisitorPhone(savedPhone); setNameSet(true) }
   }, [])
 
   const scrollBottom = useCallback(() => {
@@ -75,21 +77,13 @@ export default function ChatWidget() {
 
   useEffect(() => { scrollBottom() }, [messages, scrollBottom])
 
-  // Send welcome message once
-  useEffect(() => {
-    if (!nameSet || !sessionId || welcomeSent || messages.length > 0) return
-    setWelcomeSent(true)
-    fetch('/api/chat/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, visitorName, text: '👋', role: 'user' }),
-    }).then(() => fetchMessages(sessionId))
-  }, [nameSet, sessionId, welcomeSent, visitorName, messages.length, fetchMessages])
-
   const handleSetName = () => {
-    const name = nameInput.trim() || 'Visitante'
+    const name  = nameInput.trim() || 'Visitante'
+    const phone = phoneInput.trim()
     setVisitorName(name)
+    setVisitorPhone(phone)
     localStorage.setItem('ms_chat_name', name)
+    if (phone) localStorage.setItem('ms_chat_phone', phone)
     setNameSet(true)
   }
 
@@ -106,17 +100,21 @@ export default function ChatWidget() {
     setMessages(prev => [...prev, optimistic])
     scrollBottom()
     try {
+      // Incluir teléfono en el nombre para que llegue a Telegram
+      const displayName = visitorPhone
+        ? `${visitorName} (${visitorPhone})`
+        : visitorName
       await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, visitorName, text }),
+        body: JSON.stringify({ sessionId, visitorName: displayName, text }),
       })
       await fetchMessages(sessionId)
     } finally { setSending(false) }
   }
 
   const accent = '#4ade80'
-  const dark = '#0f1117'
+  const dark   = '#0f1117'
 
   return (
     <>
@@ -174,30 +172,50 @@ export default function ChatWidget() {
               background: `${accent}22`, border: `2px solid ${accent}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
             }}>🔧</div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Microsmart</div>
               <div style={{ fontSize: 11, color: accent }}>● En línea</div>
             </div>
+            {nameSet && (
+              <div style={{ fontSize: 11, color: '#7c85a2', textAlign: 'right' }}>
+                <div style={{ color: '#e2e8f0', fontWeight: 600 }}>{visitorName}</div>
+                {visitorPhone && <div>{visitorPhone}</div>}
+              </div>
+            )}
           </div>
 
-          {/* Ask for name */}
+          {/* Ask for name + phone */}
           {!nameSet ? (
             <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
               <div style={{ fontSize: 14, color: '#e2e8f0', textAlign: 'center', lineHeight: 1.5 }}>
-                👋 ¡Hola! Para chatear, ¿cómo te llamás?
+                👋 ¡Hola! Para chatear, completá tus datos:
               </div>
-              <input
-                autoFocus
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSetName()}
-                placeholder="Tu nombre"
-                style={{
-                  padding: '10px 14px', borderRadius: 10, fontSize: 14,
-                  background: '#252840', border: '1px solid #2e3150',
-                  color: '#e2e8f0', outline: 'none',
-                }}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  autoFocus
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSetName()}
+                  placeholder="Tu nombre *"
+                  style={{
+                    padding: '10px 14px', borderRadius: 10, fontSize: 14,
+                    background: '#252840', border: '1px solid #2e3150',
+                    color: '#e2e8f0', outline: 'none',
+                  }}
+                />
+                <input
+                  value={phoneInput}
+                  onChange={e => setPhoneInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSetName()}
+                  placeholder="Tu teléfono (opcional)"
+                  type="tel"
+                  style={{
+                    padding: '10px 14px', borderRadius: 10, fontSize: 14,
+                    background: '#252840', border: '1px solid #2e3150',
+                    color: '#e2e8f0', outline: 'none',
+                  }}
+                />
+              </div>
               <button
                 onClick={handleSetName}
                 style={{
@@ -215,11 +233,25 @@ export default function ChatWidget() {
                 display: 'flex', flexDirection: 'column', gap: 8,
                 minHeight: 0,
               }}>
-                {messages.length === 0 && (
-                  <div style={{ textAlign: 'center', color: '#7c85a2', fontSize: 13, paddingTop: 20 }}>
-                    Escribí tu consulta, te respondemos enseguida 😊
+                {/* Saludo local — no se envía a Telegram */}
+                <div style={{
+                  display: 'flex', justifyContent: 'flex-start',
+                }}>
+                  <div style={{
+                    maxWidth: '80%',
+                    background: '#1e2235',
+                    color: '#e2e8f0',
+                    borderRadius: '16px 16px 16px 4px',
+                    padding: '9px 13px',
+                    fontSize: 13, lineHeight: 1.5,
+                  }}>
+                    <div style={{ fontSize: 10, color: accent, fontWeight: 700, marginBottom: 3 }}>
+                      Microsmart
+                    </div>
+                    ¡Hola {visitorName.split(' ')[0]}! ¿En qué te podemos ayudar? 😊
                   </div>
-                )}
+                </div>
+
                 {messages.map(msg => (
                   <div key={msg.id} style={{
                     display: 'flex',
@@ -242,7 +274,7 @@ export default function ChatWidget() {
                           Microsmart
                         </div>
                       )}
-                      {msg.text !== '👋' && msg.text}
+                      {msg.text}
                       <div style={{ fontSize: 10, opacity: 0.6, marginTop: 3, textAlign: 'right' }}>
                         {formatTime(msg.createdAt)}
                       </div>

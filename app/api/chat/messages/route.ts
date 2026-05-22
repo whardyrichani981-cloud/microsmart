@@ -44,10 +44,9 @@ export async function POST(req: NextRequest) {
       // Forward to Telegram
       if (config.botToken && config.chatId) {
         const tgText =
-          `💬 <b>${session.visitorName}</b>\n` +
-          `${text.trim()}\n\n` +
-          `<i>🔑 Sesión: ${sessionId.slice(0, 8)}…</i>\n` +
-          `<i>Respondé a este mensaje para que llegue al chat</i>`
+          `👤 <b>${session.visitorName}</b>\n` +
+          `💬 ${text.trim()}\n\n` +
+          `<i>🔑 ${sessionId.slice(0, 8)}… · Respondé este mensaje para contestar</i>`
         const tgMsgId = await sendToTelegram(config.botToken, config.chatId, tgText)
         if (tgMsgId) updateMessageTelegramId(msg.id, tgMsgId)
       }
