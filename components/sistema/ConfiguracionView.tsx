@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { C, inputSt, useApi, fmtARS, Modal, Field, FormGrid, Badge, SearchableSelect } from './shared'
 import type { Empleado, ReglaComision, TipoReglaComision, ReglaComisionGremio } from '@/lib/sistema-types'
+import BackupView from './BackupView'
 
 const COLOR = '#0066CC'
 
@@ -442,7 +443,7 @@ export function ComisionesConfigPanel({ onBack, backLabel = '← Volver a Config
 
 // ─── Panel: Pestañas de Órdenes de Trabajo ────────────────────────────────────
 export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configuración' }: { onBack: () => void; backLabel?: string }) {
-  const [activeTab, setActiveTab] = useState<'estados' | 'terminos' | 'garantia' | 'whatsapp'>('estados')
+  const [activeTab, setActiveTab] = useState<'estados' | 'terminos' | 'garantia' | 'whatsapp' | 'backup'>('estados')
 
   const [estados, setEstados] = useState<string[]>([])
   const [nuevo, setNuevo] = useState('')
@@ -809,6 +810,7 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
           { id: 'terminos',  label: '📋 Garantía de recepción' },
           { id: 'garantia',  label: '🧾 Garantía de comprobante' },
           { id: 'whatsapp',  label: '💬 Mensajes WhatsApp' },
+          { id: 'backup',    label: '💾 Backup' },
         ] as const).map(tab => (
           <button
             key={tab.id}
@@ -1385,6 +1387,11 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
       )}
 
       </> /* end activeTab === 'estados' */}
+
+      {/* ════════════════ TAB: BACKUP ════════════════ */}
+      {activeTab === 'backup' && (
+        <BackupView />
+      )}
     </div>
   )
 }
@@ -1614,8 +1621,6 @@ export default function ConfiguracionView({
         </div>
       </div>
 
-      {/* ── Sección Backup ────────────────────────────────────────────────── */}
-      <BackupSection />
     </div>
   )
 }
