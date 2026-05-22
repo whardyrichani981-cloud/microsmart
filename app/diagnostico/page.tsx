@@ -168,7 +168,7 @@ export default function DiagnosticoPage() {
                 <div style={{ marginTop: 20, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
                   ¿Necesitás más análisis?{' '}
                   <a
-                    href="https://wa.me/+549XXXXXXXXXX"
+                    href="https://wa.me/5491165798149"
                     style={{ color: '#0099FF', textDecoration: 'none' }}
                   >
                     Contactanos
