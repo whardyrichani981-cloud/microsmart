@@ -34,6 +34,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const existing = orden.imagenes ?? []
     const imagenes = [...existing, ...newUrls]
 
+    console.log('[imagenes] orden.id:', id, '| existing:', existing.length, '| new:', newUrls.length, '| total:', imagenes.length)
+    console.log('[imagenes] newUrls:', JSON.stringify(newUrls))
+
     // Agregar historial en la misma escritura
     const histEntry = {
       id: Date.now().toString(),
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const historial = [...(orden.historial ?? []), histEntry]
 
     const updated = await updateOrden(id, { imagenes, historial })
+    console.log('[imagenes] updated.imagenes:', JSON.stringify(updated?.imagenes))
     return NextResponse.json(updated)
   } catch (e) {
     console.error('[imagenes/POST]', e)
