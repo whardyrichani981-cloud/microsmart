@@ -395,13 +395,15 @@ export async function callGeminiAI(
       : []
     const systemPrompt = buildSystemPrompt(config, priceResults)
 
-    // Construir historial en formato Gemini
+    // Construir historial en formato Gemini (roles deben alternar: user → model → user…)
     const contents: { role: string; parts: { text: string }[] }[] = []
     for (const m of history) {
       const role = m.role === 'user' ? 'user' : 'model'
+      // Omitir mensajes consecutivos del mismo rol (Gemini los rechaza)
+      if (contents.length > 0 && contents[contents.length - 1].role === role) continue
       contents.push({ role, parts: [{ text: m.text }] })
     }
-    // Asegurarse que el último mensaje es del usuario
+    // El último turno DEBE ser del usuario
     if (!contents.length || contents[contents.length - 1].role !== 'user') {
       contents.push({ role: 'user', parts: [{ text: userText }] })
     }
