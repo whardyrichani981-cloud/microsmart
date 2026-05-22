@@ -1753,7 +1753,7 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
     const imagenesActualizadas = imagenes.filter(f => f !== filename)
     setImagenes(imagenesActualizadas)
     // Guardar historial con el array de imágenes ya filtrado (sin depender del state async)
-    const entry = mkEntry('foto', `Se eliminó la foto "${filename}"`, currentUser)
+    const entry = mkEntry('foto', 'Se eliminó una foto', currentUser)
     const newHist = [...(orden.historial ?? []), entry]
     await fetch(`/api/sistema/ordenes/${orden.id}`, {
       method: 'PUT',
@@ -3391,8 +3391,10 @@ function OrdenDetailPanel({ orden, onBack, onEdit, onRefresh, currentUser, estad
                         </div>
                         {/* Contenido */}
                         <div style={{ flex: 1, paddingTop: 4 }}>
-                          <div style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{entry.descripcion}</div>
-                          <div style={{ fontSize: 11, color: C.muted, marginTop: 3, display: 'flex', gap: 12 }}>
+                          {entry.tipo !== 'foto' && (
+                            <div style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{entry.descripcion}</div>
+                          )}
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: entry.tipo === 'foto' ? 0 : 3, display: 'flex', gap: 12 }}>
                             <span>📅 {fmtDateTime(entry.fecha)}</span>
                             <span>👤 {entry.usuario}</span>
                           </div>
