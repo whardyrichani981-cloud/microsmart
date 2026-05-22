@@ -2,6 +2,7 @@
 import fs from 'fs'
 import path from 'path'
 import type { UserRole } from './roles'
+import { getRole } from './roles'   // roles.ts es la única fuente de verdad para roles
 
 export interface UserRecord {
   username: string
@@ -32,8 +33,9 @@ export function getUserByUsername(username: string): UserRecord | null {
   return getUsers().find(u => u.username === username) ?? null
 }
 
+// Siempre usa roles.ts como fuente de verdad para el rol (nunca el archivo DB)
 export function getRoleFromDB(username: string): UserRole {
-  return getUserByUsername(username)?.role ?? 'employee'
+  return getRole(username)
 }
 
 export interface UpdateEmployeeInput {

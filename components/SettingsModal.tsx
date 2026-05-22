@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { UserRole, Permissions } from '@/lib/roles'
-import { PERM_LABELS, EMPLOYEE_USERNAMES, DEFAULT_EMPLOYEE_PERMISSIONS } from '@/lib/roles'
+import { PERM_LABELS, DEFAULT_EMPLOYEE_PERMISSIONS } from '@/lib/roles'
 
 interface Props {
   currentUser: string
@@ -49,13 +49,9 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 // ── Employee permissions editor ───────────────────────────────────────────────
-const EMPLOYEE_DISPLAY: Record<string, string> = {
-  microsaddi:  'Saddi Richani',
-  microsharon: 'Sharon Quiroz',
-}
-
 function PermissionsPanel() {
   const [perms, setPerms] = useState<Record<string, Permissions>>({})
+  const [displayNames, setDisplayNames] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -65,6 +61,7 @@ function PermissionsPanel() {
       .then(r => r.json())
       .then(data => {
         setPerms(data.resolved ?? {})
+        setDisplayNames(data.displayNames ?? {})
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -94,7 +91,7 @@ function PermissionsPanel() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {EMPLOYEE_USERNAMES.map(username => {
+      {Object.keys(perms).map(username => {
         const p = perms[username] ?? DEFAULT_EMPLOYEE_PERMISSIONS
         return (
           <div key={username} style={{
@@ -108,7 +105,7 @@ function PermissionsPanel() {
             }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#E5E5E3' }}>
-                  {EMPLOYEE_DISPLAY[username] ?? username}
+                  {displayNames[username] ?? username}
                 </div>
                 <div style={{ fontSize: 11, color: '#676767', marginTop: 2 }}>
                   @{username} · Empleado

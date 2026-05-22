@@ -4480,9 +4480,14 @@ export default function OrdenesView({ initialSearch = '' }: { initialSearch?: st
   const [entregaListMetodoPago, setEntregaListMetodoPago] = useState<MetodoPago>('Efectivo')
   const [imeiCheck, setImeiCheck] = useState<{ status: 'idle' | 'loading' | 'ok' | 'bad' | 'error'; msg: string }>({ status: 'idle', msg: '' })
   const [detailId, setDetailId] = useState<string | null>(null)
+  // currentUser: se inicializa desde localStorage si ya fue elegido manualmente,
+  // pero si no hay preferencia guardada lo carga desde la sesión (/api/auth/me)
   const [currentUser, setCurrentUser] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('microsmart_user') ?? 'Ronald'
-    return 'Ronald'
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('microsmart_user')
+      if (saved && TECNICOS.includes(saved as typeof TECNICOS[number])) return saved
+    }
+    return 'Ronald'   // fallback temporal; useEffect lo corrige desde la sesión
   })
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [waListOrden, setWaListOrden] = useState<{ orden: Orden; mensaje: string } | null>(null)
@@ -4536,6 +4541,17 @@ export default function OrdenesView({ initialSearch = '' }: { initialSearch?: st
 
   // ─── Cargar estados de orden configurables y logo ────────────────────────────
   useEffect(() => {
+    // Si no hay preferencia manual guardada, usar el técnico de la sesión actual
+    if (!localStorage.getItem('microsmart_user')) {
+      fetch('/api/auth/me')
+        .then(r => r.json())
+        .then((d: { empleado?: string }) => {
+          if (d.empleado && TECNICOS.includes(d.empleado as typeof TECNICOS[number])) {
+            setCurrentUser(d.empleado)
+          }
+        })
+        .catch(() => {})
+    }
     fetch('/api/sistema/estados-orden')
       .then(r => r.json())
       .then((d: string[]) => { if (Array.isArray(d) && d.length) setEstadosOrdenConfig(d) })
