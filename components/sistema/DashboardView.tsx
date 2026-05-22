@@ -1,6 +1,6 @@
 ﻿'use client'
 import { useState, useEffect } from 'react'
-import { useApi, fmtARS, C, KPICard, Badge } from './shared'
+import { useApi, fmtARS, C } from './shared'
 import type { DashboardData, StockItem } from '@/lib/sistema-types'
 
 interface StockGroup {
@@ -41,7 +41,7 @@ export default function DashboardView() {
     })
   }, [])
 
-  if (loading) return <div style={{ padding: 40, color: C.muted, textAlign: 'center' }}>Cargando dashboard…</div>
+  if (loading) return <div style={{ padding: 40, color: 'var(--ms-text-3, var(--text-secondary))', textAlign: 'center' }}>Cargando dashboard…</div>
   if (!data) return null
 
   const d = data
@@ -51,33 +51,37 @@ export default function DashboardView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fb923c18', border: '1px solid #fb923c33', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📊</div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>Dashboard Financiero</div>
-            <div style={{ fontSize: 12, color: C.muted }}>Resumen del período · Calculado automáticamente</div>
+        <div>
+          <div className="ms-eyebrow" style={{ marginBottom: 4 }}>Reportes</div>
+          <div className="ms-h3" style={{ color: 'var(--ms-text, var(--text-primary))' }}>Dashboard Financiero</div>
+          <div style={{ fontSize: 12, color: 'var(--ms-text-3, var(--text-secondary))', marginTop: 2 }}>
+            Resumen del período · Calculado automáticamente
           </div>
         </div>
-        <button onClick={refresh} style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 12 }}>
+        <button
+          onClick={refresh}
+          className="ms-btn is-ghost is-sm"
+          style={{ fontSize: 12 }}
+        >
           ↻ Actualizar
         </button>
       </div>
 
       {/* Top KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <KPICard label="Facturación" value={fmtARS(d.totalIngresosBrutos)} color="#4ade80" icon="💰" sub={`B2C: ${fmtARS(d.ventasB2C)} · B2B: ${fmtARS(d.ventasB2B)} · Caja: ${fmtARS(d.ventasCaja ?? 0)}`} />
-        <KPICard label="Ganancia Real" value={fmtARS(d.gananciaReal)} color={d.gananciaReal >= 0 ? '#4ade80' : '#f87171'} icon="📈" sub={`Margen: ${margen}%`} />
-        <KPICard label="Total Gastos" value={fmtARS(d.totalGastos)} color="#f87171" icon="🧾" sub={`Local: ${fmtARS(d.gastosLocal)} · Fijos: ${fmtARS(d.gastosFijos)}`} />
-        <KPICard label="Comisiones" value={fmtARS(d.totalComisionesEmpleados)} color="#0066CC" icon="👥" sub={`${d.pendientesPago} pendientes de pago`} />
+        <MSKPICard label="Facturación" value={fmtARS(d.totalIngresosBrutos)} variant="success" sub={`B2C: ${fmtARS(d.ventasB2C)} · B2B: ${fmtARS(d.ventasB2B)} · Caja: ${fmtARS(d.ventasCaja ?? 0)}`} />
+        <MSKPICard label="Ganancia Real" value={fmtARS(d.gananciaReal)} variant={d.gananciaReal >= 0 ? 'success' : 'danger'} sub={`Margen: ${margen}%`} />
+        <MSKPICard label="Total Gastos" value={fmtARS(d.totalGastos)} variant="danger" sub={`Local: ${fmtARS(d.gastosLocal)} · Fijos: ${fmtARS(d.gastosFijos)}`} />
+        <MSKPICard label="Comisiones" value={fmtARS(d.totalComisionesEmpleados)} variant="accent" sub={`${d.pendientesPago} pendientes de pago`} />
       </div>
 
       {/* Secondary KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <KPICard label="Turnos Pendientes" value={String(d.cantidadTurnos)} color="#60a5fa" icon="📅" />
-        <KPICard label="Ventas B2C" value={String(d.cantidadVentasB2C)} color="#4ade80" icon="📋" sub={fmtARS(d.ventasB2C)} />
-        <KPICard label="Ventas B2B" value={String(d.cantidadVentasB2B)} color="#34d399" icon="🏢" sub={fmtARS(d.ventasB2B)} />
-        <KPICard label="Comisión MP" value={fmtARS(d.comisionesMP)} color="#a78bfa" icon="💳" sub={`IIBB: ${fmtARS(d.iibbTotal)}`} />
-        <KPICard label="Ventas Caja" value={String(d.cantidadVentasCaja ?? 0)} color="#fb923c" icon="🖥️" sub={fmtARS(d.ventasCaja ?? 0)} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+        <MSKPICard label="Turnos Pendientes" value={String(d.cantidadTurnos)} variant="accent" />
+        <MSKPICard label="Ventas B2C" value={String(d.cantidadVentasB2C)} variant="success" sub={fmtARS(d.ventasB2C)} />
+        <MSKPICard label="Ventas B2B" value={String(d.cantidadVentasB2B)} variant="success" sub={fmtARS(d.ventasB2B)} />
+        <MSKPICard label="Comisión MP" value={fmtARS(d.comisionesMP)} variant="warn" sub={`IIBB: ${fmtARS(d.iibbTotal)}`} />
+        <MSKPICard label="Ventas Caja" value={String(d.cantidadVentasCaja ?? 0)} variant="accent" sub={fmtARS(d.ventasCaja ?? 0)} />
       </div>
 
       {/* ── Panel de Alertas de Stock ── */}
@@ -85,23 +89,29 @@ export default function DashboardView() {
         const agotados = stockGroups.filter(g => g.totalStock === 0)
         const bajos    = stockGroups.filter(g => g.totalStock > 0)
         return (
-          <div style={{ background: 'var(--surface)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 12, overflow: 'hidden' }}>
+          <div className="ms-card" style={{ overflow: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', background: 'rgba(239,68,68,0.06)', borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>⚠️</div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '14px 20px',
+              background: 'var(--ms-danger-soft, rgba(239,68,68,0.06))',
+              borderBottom: '0.5px solid var(--ms-border)',
+            }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Alertas de Stock</div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>Productos que requieren reposición</div>
+                <div className="ms-eyebrow" style={{ marginBottom: 2 }}>Inventario</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ms-text, var(--text-primary))' }}>Alertas de Stock</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 {agotados.length > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 800, background: '#ef4444', color: '#fff', padding: '3px 10px', borderRadius: 20 }}>
-                    🔴 {agotados.length} sin stock
+                  <span className="ms-pill is-danger">
+                    <span className="dot" />
+                    {agotados.length} sin stock
                   </span>
                 )}
                 {bajos.length > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 800, background: '#f97316', color: '#fff', padding: '3px 10px', borderRadius: 20 }}>
-                    🟠 {bajos.length} stock bajo
+                  <span className="ms-pill is-warn">
+                    <span className="dot" />
+                    {bajos.length} stock bajo
                   </span>
                 )}
               </div>
@@ -109,22 +119,20 @@ export default function DashboardView() {
 
             {/* Tabla */}
             <div style={{ padding: '0 20px 16px' }}>
-              {/* Sub-sección: Sin stock */}
               {agotados.length > 0 && (
                 <>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 0 6px' }}>
-                    🔴 Sin stock — urgente
+                  <div className="ms-eyebrow" style={{ color: 'var(--ms-danger)', padding: '12px 0 6px' }}>
+                    Sin stock — urgente
                   </div>
                   {agotados.map(g => (
                     <StockAlertRow key={g.key} g={g} />
                   ))}
                 </>
               )}
-              {/* Sub-sección: Stock bajo */}
               {bajos.length > 0 && (
                 <>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 0 6px' }}>
-                    🟠 Stock bajo — reponer pronto
+                  <div className="ms-eyebrow" style={{ color: 'var(--ms-warn)', padding: '12px 0 6px' }}>
+                    Stock bajo — reponer pronto
                   </div>
                   {bajos.map(g => (
                     <StockAlertRow key={g.key} g={g} />
@@ -139,8 +147,8 @@ export default function DashboardView() {
       {/* Waterfall breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Ingresos vs Costos */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Desglose de Resultado</div>
+        <div className="ms-card" style={{ padding: '16px 20px' }}>
+          <div className="ms-eyebrow" style={{ marginBottom: 14 }}>Desglose de Resultado</div>
           <WaterfallRow label="Ingresos Brutos" value={d.totalIngresosBrutos} color={C.green} sign="+" />
           <WaterfallRow label="Costo Repuestos B2C" value={d.costoRepuestosB2C} color={C.red} sign="-" />
           <WaterfallRow label="Costo Repuestos B2B" value={d.costoRepuestosB2B} color={C.red} sign="-" />
@@ -148,26 +156,59 @@ export default function DashboardView() {
           <WaterfallRow label="IIBB (4%)" value={d.iibbTotal} color={C.red} sign="-" />
           <WaterfallRow label="Comisiones Empleados" value={d.totalComisionesEmpleados} color={C.yellow} sign="-" />
           <WaterfallRow label="Gastos Operativos" value={d.totalGastos} color={C.red} sign="-" />
-          <div style={{ height: 1, background: 'var(--border)', margin: '10px 0' }} />
+          <hr className="ms-hr" style={{ margin: '10px 0' }} />
           <WaterfallRow label="Ganancia Real" value={d.gananciaReal} color={d.gananciaReal >= 0 ? C.green : C.red} sign="=" bold />
         </div>
 
         {/* Gastos breakdown + Comisiones por empleado */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Gastos por Categoría</div>
+          <div className="ms-card" style={{ padding: '16px 20px' }}>
+            <div className="ms-eyebrow" style={{ marginBottom: 14 }}>Gastos por Categoría</div>
             <WaterfallRow label="Gastos del Local" value={d.gastosLocal} color={C.red} />
             <WaterfallRow label="Gastos de Oficina" value={d.gastosOficina} color={C.red} />
             <WaterfallRow label="Gastos Fijos" value={d.gastosFijos} color={C.red} />
           </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comisiones por Empleado</div>
+          <div className="ms-card" style={{ padding: '16px 20px' }}>
+            <div className="ms-eyebrow" style={{ marginBottom: 14 }}>Comisiones por Empleado</div>
             {['Ronald', 'Sharon', 'Saddi'].map(emp => (
               <WaterfallRow key={emp} label={emp} value={d.comisionesPorEmpleado[emp] ?? 0} color={C.yellow} />
             ))}
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── MSKPICard: KPI card con nuevo sistema de diseño ──────────────────────────
+type KPIVariant = 'success' | 'danger' | 'warn' | 'accent' | 'default'
+
+function MSKPICard({ label, value, sub, variant = 'default' }: {
+  label: string
+  value: string
+  sub?: string
+  variant?: KPIVariant
+}) {
+  const pillClass = variant === 'default' ? 'ms-pill' : `ms-pill is-${variant}`
+  return (
+    <div className="ms-card" style={{ padding: '16px 18px' }}>
+      <div className="ms-eyebrow" style={{ marginBottom: 8 }}>{label}</div>
+      <div className="ms-h3 ms-mono" style={{
+        color: variant === 'danger' ? 'var(--ms-danger)'
+          : variant === 'success' ? 'var(--ms-success)'
+          : variant === 'warn' ? 'var(--ms-warn)'
+          : variant === 'accent' ? 'var(--ms-accent)'
+          : 'var(--ms-text)',
+        fontSize: 18,
+        marginBottom: sub ? 8 : 0,
+      }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 11, color: 'var(--ms-text-3)', marginTop: 4, lineHeight: 1.4 }}>
+          {sub}
+        </div>
+      )}
     </div>
   )
 }
@@ -181,33 +222,32 @@ function StockAlertRow({ g }: { g: StockGroup }) {
     <div style={{
       display: 'grid', gridTemplateColumns: '1fr auto auto',
       alignItems: 'center', gap: 12,
-      padding: '8px 0', borderBottom: '1px solid var(--row-border)',
+      padding: '8px 0', borderBottom: '0.5px solid var(--ms-border, var(--row-border))',
     }}>
       {/* Nombre */}
       <div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{g.repuesto}</span>
-        {g.modelo && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>{g.modelo}</span>}
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ms-text, var(--text-primary))' }}>{g.repuesto}</span>
+        {g.modelo && <span style={{ fontSize: 11, color: 'var(--ms-text-2, var(--text-secondary))', marginLeft: 6 }}>{g.modelo}</span>}
         {/* Barra de progreso */}
-        <div style={{ marginTop: 4, height: 3, borderRadius: 99, background: 'var(--border)', width: 140, overflow: 'hidden' }}>
+        <div style={{ marginTop: 4, height: 3, borderRadius: 99, background: 'var(--ms-border, var(--border))', width: 140, overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 99, background: barColor, width: `${pct}%`, transition: 'width 0.3s' }} />
         </div>
       </div>
       {/* Stock actual */}
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>Actual</div>
-        <span style={{
-          fontSize: 13, fontWeight: 800, fontFamily: 'monospace',
-          color: agotado ? '#ef4444' : '#f97316',
-          background: agotado ? 'rgba(239,68,68,0.1)' : 'rgba(249,115,22,0.1)',
-          padding: '2px 8px', borderRadius: 6,
+        <div className="ms-eyebrow" style={{ marginBottom: 2, fontSize: 9 }}>Actual</div>
+        <span className="ms-mono ms-pill" style={{
+          background: agotado ? 'var(--ms-danger-soft)' : 'var(--ms-warn-soft)',
+          color: agotado ? 'var(--ms-danger)' : 'var(--ms-warn)',
+          fontWeight: 800, fontSize: 12,
         }}>
           {g.totalStock}
         </span>
       </div>
       {/* Mínimo */}
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>Mínimo</div>
-        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
+        <div className="ms-eyebrow" style={{ marginBottom: 2, fontSize: 9 }}>Mínimo</div>
+        <span className="ms-mono" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ms-text-2)' }}>
           {g.stockMinimo}
         </span>
       </div>
@@ -217,12 +257,12 @@ function StockAlertRow({ g }: { g: StockGroup }) {
 
 function WaterfallRow({ label, value, color, sign, bold }: { label: string; value: number; color: string; sign?: string; bold?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--row-border)' }}>
-      <span style={{ fontSize: 12, color: bold ? C.text : C.muted, fontWeight: bold ? 700 : 400 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '0.5px solid var(--ms-border, var(--row-border))' }}>
+      <span style={{ fontSize: 12, color: bold ? 'var(--ms-text, var(--text-primary))' : 'var(--ms-text-2, var(--text-secondary))', fontWeight: bold ? 700 : 400 }}>
         {sign && <span style={{ color, marginRight: 6, fontFamily: 'monospace' }}>{sign}</span>}
         {label}
       </span>
-      <span style={{ fontSize: 13, fontWeight: bold ? 800 : 600, color, fontFamily: 'monospace' }}>{fmtARS(value)}</span>
+      <span className="ms-mono" style={{ fontSize: 13, fontWeight: bold ? 800 : 600, color }}>{fmtARS(value)}</span>
     </div>
   )
 }

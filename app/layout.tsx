@@ -1,8 +1,22 @@
 import type { Metadata, Viewport } from 'next'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import ChatWidget from '@/components/ChatWidget'
 import CapProvider from '@/components/CapProvider'
 import PWAInstaller from '@/components/PWAInstaller'
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  weight: ['400', '500'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Microsmart – Sistema de gestión',
@@ -34,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body>
+      <body className={`${inter.variable} ${mono.variable}`}>
         {children}
         <ChatWidget />
         <CapProvider />

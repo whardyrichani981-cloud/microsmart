@@ -221,3 +221,201 @@ input[type="password"], input[type="date"], input[type="search"] {
   border-radius: 99px;
 }
 .dropdown-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICROSMART DESIGN SYSTEM — tokens y clases atómicas
+   Portado de styles.css · Scoped a .ms-app para coexistir con el sistema
+   legacy sin colisiones.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ms-app {
+  /* Paleta por defecto — Cool minimal */
+  --ms-bg: #FAFAFA;
+  --ms-surface: #FFFFFF;
+  --ms-surface-2: #F4F4F5;
+  --ms-text: #18181B;
+  --ms-text-2: #52525B;
+  --ms-text-3: #A1A1AA;
+  --ms-border: #E4E4E7;
+  --ms-border-2: #F4F4F5;
+  --ms-accent: #5E6AD2;
+  --ms-accent-soft: #EEF0FB;
+  --ms-success: #16A34A;
+  --ms-success-soft: #E7F6EC;
+  --ms-warn: #C2A45F;
+  --ms-warn-soft: #F8F2E1;
+  --ms-danger: #D04A4A;
+  --ms-danger-soft: #FBECEC;
+
+  font-family: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: var(--ms-text);
+  background: var(--ms-bg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+  letter-spacing: -0.011em;
+}
+
+/* Dark mode — se activa cuando html tiene la clase .dark */
+html.dark .ms-app {
+  --ms-bg: #0A0A0B;
+  --ms-surface: #141416;
+  --ms-surface-2: #1C1C20;
+  --ms-text: #F5F5F7;
+  --ms-text-2: #A1A1A6;
+  --ms-text-3: #6E6E73;
+  --ms-border: #26262A;
+  --ms-border-2: #1C1C20;
+  --ms-accent: #7C8CF5;
+  --ms-accent-soft: rgba(124, 140, 245, 0.16);
+  --ms-success: #34C759;
+  --ms-success-soft: rgba(52, 199, 89, 0.16);
+  --ms-warn: #D8B36A;
+  --ms-warn-soft: rgba(216, 179, 106, 0.14);
+  --ms-danger: #FF6B6B;
+  --ms-danger-soft: rgba(255, 107, 107, 0.14);
+  color-scheme: dark;
+}
+
+/* ─── Atoms ─────────────────────────────────────────────────────────────────── */
+.ms-app * { box-sizing: border-box; }
+.ms-app button { font-family: inherit; }
+
+/* Card */
+.ms-card {
+  background: var(--ms-surface);
+  border: 0.5px solid var(--ms-border);
+  border-radius: 16px;
+}
+
+/* Pill / badge */
+.ms-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.01em;
+  background: var(--ms-surface-2);
+  color: var(--ms-text-2);
+}
+.ms-pill.is-success { background: var(--ms-success-soft); color: var(--ms-success); }
+.ms-pill.is-warn    { background: var(--ms-warn-soft);    color: var(--ms-warn); }
+.ms-pill.is-danger  { background: var(--ms-danger-soft);  color: var(--ms-danger); }
+.ms-pill.is-accent  { background: var(--ms-accent-soft);  color: var(--ms-accent); }
+.ms-pill .dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+
+/* Button */
+.ms-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 46px; padding: 0 18px;
+  border-radius: 14px; border: 0;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+  background: var(--ms-text); color: var(--ms-bg);
+  cursor: pointer;
+}
+.ms-btn.is-accent { background: var(--ms-accent); color: #fff; }
+.ms-btn.is-ghost  { background: transparent; color: var(--ms-text); border: 0.5px solid var(--ms-border); }
+.ms-btn.is-block  { width: 100%; }
+.ms-btn.is-sm     { height: 36px; font-size: 13px; padding: 0 12px; border-radius: 10px; }
+
+/* Input */
+.ms-input {
+  width: 100%; height: 48px; padding: 0 14px;
+  background: var(--ms-surface); border: 0.5px solid var(--ms-border);
+  border-radius: 12px; font-size: 16px; color: var(--ms-text);
+  font-family: inherit; outline: none;
+}
+.ms-input:focus { border-color: var(--ms-accent); box-shadow: 0 0 0 3px var(--ms-accent-soft); }
+
+/* Label */
+.ms-label {
+  font-size: 12px; font-weight: 500; color: var(--ms-text-2);
+  letter-spacing: 0.01em; margin-bottom: 6px;
+}
+
+/* Typography */
+.ms-h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.04; }
+.ms-h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; }
+.ms-h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.ms-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ms-text-3);
+}
+.ms-mono { font-family: var(--font-mono, 'JetBrains Mono'), ui-monospace, monospace; }
+
+/* Placeholder image — subtle stripes */
+.ms-ph {
+  background:
+    repeating-linear-gradient(135deg,
+      var(--ms-surface-2) 0px, var(--ms-surface-2) 8px,
+      var(--ms-border-2) 8px, var(--ms-border-2) 16px);
+  border: 0.5px solid var(--ms-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ms-text-3);
+  font-family: var(--font-mono, 'JetBrains Mono'), monospace; font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+/* Hairline divider */
+.ms-hr { height: 0.5px; background: var(--ms-border); border: 0; }
+
+/* Tabbar (mobile) */
+.ms-tabbar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 8px 12px 28px;
+  background: var(--ms-surface);
+  border-top: 0.5px solid var(--ms-border);
+  display: flex; justify-content: space-around; align-items: stretch;
+  z-index: 5;
+}
+.ms-tabbar button {
+  flex: 1; appearance: none; background: transparent; border: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 0; cursor: pointer;
+  color: var(--ms-text-3); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.ms-tabbar button.is-active { color: var(--ms-text); }
+.ms-tabbar button.is-active svg { color: var(--ms-accent); }
+
+/* Screen scroll region */
+.ms-screen {
+  height: 100%;
+  background: var(--ms-bg);
+  overflow: auto;
+  position: relative;
+}
+.ms-screen::-webkit-scrollbar { display: none; }
+
+/* Phone status bar offset */
+.ms-stbar-pad { height: 60px; }
+
+/* Topbar */
+.ms-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px 14px;
+}
+
+/* Avatar */
+.ms-avatar {
+  width: 32px; height: 32px; border-radius: 999px;
+  background: var(--ms-surface-2); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--ms-text-2);
+  border: 0.5px solid var(--ms-border);
+}
+
+/* Segmented control */
+.ms-seg {
+  display: inline-flex; padding: 2px;
+  background: var(--ms-surface-2); border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+}
+.ms-seg button {
+  appearance: none; border: 0; background: transparent;
+  padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  color: var(--ms-text-2);
+}
+.ms-seg button.is-active {
+  background: var(--ms-surface);
+  color: var(--ms-text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
