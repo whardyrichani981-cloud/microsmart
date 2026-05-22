@@ -52,7 +52,33 @@ function prepareResultHtml(html: string): string {
     }
   }
 
-  // 3. CSS con tema Microsmart (dark/light automático)
+  // 3. Cortar el footer del resultado (info del usuario, feedback, etc.)
+  const FOOTER_MARKERS = [
+    'Consulta realizada por',
+    'Consulta Realizada por',
+    'Historial de Consultas',
+    'Ver archivo Panic-Full',
+    'Nuevo Análisis',
+    'Evalúa esta interpretación',
+    'Feedback',
+    'Sugerir Corrección',
+    '¡Gracias por la reseña',
+  ]
+
+  for (const marker of FOOTER_MARKERS) {
+    const footerIdx = out.indexOf(marker)
+    if (footerIdx > 0) {
+      // Buscar el tag de apertura más cercano antes del marker y cortar ahí
+      const before = out.substring(0, footerIdx)
+      const lastOpen = before.lastIndexOf('<')
+      if (lastOpen >= 0) {
+        out = out.substring(0, lastOpen)
+        break
+      }
+    }
+  }
+
+  // 4. CSS con tema Microsmart (dark/light automático)
   const css = `
     * { box-sizing: border-box; }
     body {
