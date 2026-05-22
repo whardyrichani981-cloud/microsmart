@@ -269,7 +269,16 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
 }
 
 // ─── Búsqueda en lista de precios ────────────────────────────────────────────
-interface PriceItem { name: string; code?: string; price: number; category?: string }
+interface PriceItem {
+  name: string
+  code?: string
+  price: number
+  category?: string
+  // Campos extendidos para lista gremio
+  precioTransferencia?: number
+  precioEfectivo?: number
+  currency?: 'ARS' | 'USD'
+}
 
 // Sinónimos: cada palabra se expande a sus equivalentes
 const SYNONYMS: Record<string, string[]> = {
@@ -330,7 +339,14 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
 
 function formatPriceResults(items: PriceItem[]): string {
   if (!items.length) return ''
-  return items.map(i => `- ${i.name}: $${i.price}${i.code ? ` (cód. ${i.code})` : ''}`).join('\n')
+  return items.map(i => {
+    const cur = i.currency === 'USD' ? 'USD' : 'ARS'
+    const sym = i.currency === 'USD' ? 'U$D' : '$'
+    if (i.precioTransferencia && i.precioEfectivo) {
+      return `- ${i.name}: transferencia ${sym}${i.precioTransferencia.toLocaleString('es-AR')} / efectivo ${sym}${i.precioEfectivo.toLocaleString('es-AR')} (${cur})`
+    }
+    return `- ${i.name}: ${sym}${i.price.toLocaleString('es-AR')} (${cur})`
+  }).join('\n')
 }
 
 // ─── System prompt compartido ─────────────────────────────────────────────────
@@ -357,7 +373,8 @@ Respondés consultas de clientes de manera amable, directa y profesional, siempr
 
 ${knowledge ? `${knowledge}\n` : ''}
 REGLAS IMPORTANTES:
-- Cuando tengas precios de la lista, usálos directamente sin dudar
+- Cuando tengas precios de la lista, SIEMPRE mostrá ambos precios: transferencia y efectivo
+- Si el precio es en USD, indicalo claramente como "dólares" y también el equivalente en pesos si podés estimarlo
 - Si no encontrás el precio exacto, decí que lo confirmás a la brevedad
 - Respuestas cortas y útiles (2-4 líneas), salvo que pidan más detalle
 - No menciones que sos una IA a menos que te lo pregunten directamente`
