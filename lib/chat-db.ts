@@ -314,7 +314,8 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
 
     // Expandir palabras con sinónimos
-    const rawWords = normalize(query).split(/\s+/).filter(w => w.length > 2)
+    // Incluir palabras de ≥2 chars para capturar modelos como "13", "14", "xs", "se"
+    const rawWords = normalize(query).split(/\s+/).filter(w => w.length >= 2)
     const expandedWords = rawWords.flatMap(w => SYNONYMS[w] ?? [w])
     const words = [...new Set(expandedWords)]
     if (!words.length) return []
