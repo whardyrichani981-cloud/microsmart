@@ -49,6 +49,8 @@ function ConfigPanel() {
     welcomeMessage: '¡Hola! 👋 ¿En qué podemos ayudarte?',
     offlineMessage: 'Gracias por tu mensaje. Te respondemos a la brevedad.',
     autoResponder: [],
+    aiProvider: 'gemini',
+    geminiApiKey: '',
     anthropicApiKey: '',
     aiEnabled: false,
     aiKnowledge: '',
@@ -108,18 +110,22 @@ function ConfigPanel() {
 
   const testAI = async () => {
     setTestingAI(true); setAiTestResult(null)
+    const provider = config.aiProvider ?? 'gemini'
+    const apiKey = provider === 'gemini' ? config.geminiApiKey : config.anthropicApiKey
+    if (!apiKey?.trim()) { setTestingAI(false); return }
     try {
       const res = await fetch('/api/chat/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testAI: true, anthropicApiKey: config.anthropicApiKey }),
+        body: JSON.stringify({ testAI: true, aiProvider: provider, geminiApiKey: config.geminiApiKey, anthropicApiKey: config.anthropicApiKey }),
       })
       const data = await res.json() as { ok?: boolean; error?: string }
+      const name = provider === 'gemini' ? 'Gemini' : 'Claude'
       if (data.ok) {
-        setAiTestResult({ ok: true, msg: '✅ API key válida. Claude está listo para responder.' })
+        setAiTestResult({ ok: true, msg: `✅ API key válida. ${name} está listo para responder.` })
         save()
       } else {
-        setAiTestResult({ ok: false, msg: `❌ ${data.error ?? 'API key inválida o sin créditos.'}` })
+        setAiTestResult({ ok: false, msg: `❌ ${data.error ?? 'API key inválida.'}` })
       }
     } finally { setTestingAI(false) }
   }
@@ -392,40 +398,97 @@ function ConfigPanel() {
       {tab === 'ia' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640 }}>
 
-          {/* Header explicativo */}
+          {/* Explicación */}
           <div style={{ background: `${COLOR}10`, border: `1px solid ${COLOR}33`, borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: COLOR, marginBottom: 6 }}>🧠 ¿Cómo funciona?</div>
             <ul style={{ fontSize: 13, color: C.muted, lineHeight: 1.8, paddingLeft: 18, margin: 0 }}>
-              <li>Cuando un cliente escribe, <b style={{ color: 'var(--text-primary)' }}>Claude responde automáticamente</b> usando la información que vos escribís abajo</li>
-              <li>Podés seguir respondiendo vos mismo desde este panel o desde Telegram — tus respuestas tienen prioridad</li>
-              <li>Las <b style={{ color: 'var(--text-primary)' }}>Auto-respuestas por palabras clave</b> tienen prioridad sobre la IA</li>
+              <li>La IA responde automáticamente usando la información que escribís abajo sobre tu negocio</li>
+              <li>Podés responder vos mismo desde Telegram o este panel — tu respuesta tiene prioridad</li>
+              <li>Las <b style={{ color: 'var(--text-primary)' }}>Auto-respuestas por palabras clave</b> tienen mayor prioridad que la IA</li>
             </ul>
           </div>
 
-          {/* API Key */}
+          {/* Selector de proveedor */}
           <div>
-            <label style={{ fontSize: 11, color: C.muted, display: 'block', marginBottom: 6, fontWeight: 700, letterSpacing: '0.05em' }}>
-              API KEY DE ANTHROPIC (CLAUDE)
+            <label style={{ fontSize: 11, color: C.muted, display: 'block', marginBottom: 8, fontWeight: 700, letterSpacing: '0.05em' }}>
+              ELEGÍ EL MOTOR DE IA
             </label>
-            <p style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>
-              Conseguila en <b style={{ color: 'var(--text-primary)' }}>console.anthropic.com</b> → API Keys → Create Key
-            </p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type={showApiKey ? 'text' : 'password'}
-                value={config.anthropicApiKey ?? ''}
-                onChange={e => setConfig(c => ({ ...c, anthropicApiKey: e.target.value }))}
-                placeholder="sk-ant-api03-..."
-                style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
-              />
-              <button
-                onClick={() => setShowApiKey(v => !v)}
-                style={{ padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 13, flexShrink: 0 }}
-              >{showApiKey ? '🙈' : '👁'}</button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {([
+                { id: 'gemini', label: '✨ Google Gemini', desc: 'GRATIS · 1M tokens/día', color: '#4285f4' },
+                { id: 'claude', label: '🧠 Claude (Anthropic)', desc: 'De pago', color: '#818cf8' },
+              ] as const).map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setConfig(c => ({ ...c, aiProvider: p.id }))}
+                  style={{
+                    flex: 1, padding: '12px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                    background: (config.aiProvider ?? 'gemini') === p.id ? `${p.color}22` : 'var(--surface2)',
+                    outline: (config.aiProvider ?? 'gemini') === p.id ? `2px solid ${p.color}` : '2px solid var(--border)',
+                    textAlign: 'left', transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 700, color: (config.aiProvider ?? 'gemini') === p.id ? p.color : 'var(--text-primary)' }}>{p.label}</div>
+                  <div style={{ fontSize: 11, color: (config.aiProvider ?? 'gemini') === p.id ? p.color : C.muted, marginTop: 2, fontWeight: 600 }}>{p.desc}</div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Enable toggle + test */}
+          {/* Gemini API key */}
+          {(config.aiProvider ?? 'gemini') === 'gemini' && (
+            <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: 14, border: '1px solid #4285f433', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#4285f4' }}>✨ Configurar Google Gemini (Gratis)</div>
+              <div style={{ background: 'var(--surface)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { n: '1', text: <>Entrá a <b style={{ color: 'var(--text-primary)' }}>aistudio.google.com</b> con tu cuenta de Google</> },
+                  { n: '2', text: <>Hacé clic en <b style={{ color: 'var(--text-primary)' }}>Get API key</b> → <b style={{ color: 'var(--text-primary)' }}>Create API key</b></> },
+                  { n: '3', text: <>Copiá la clave y pegala acá abajo</> },
+                ].map(s => (
+                  <div key={s.n} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
+                    <span style={{ background: '#4285f422', color: '#4285f4', width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
+                    <span>{s.text}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={config.geminiApiKey ?? ''}
+                  onChange={e => setConfig(c => ({ ...c, geminiApiKey: e.target.value }))}
+                  placeholder="AIzaSy..."
+                  style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
+                />
+                <button onClick={() => setShowApiKey(v => !v)} style={{ padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>
+                  {showApiKey ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Claude API key */}
+          {config.aiProvider === 'claude' && (
+            <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: 14, border: '1px solid #818cf433', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8' }}>🧠 Configurar Claude (Anthropic)</div>
+              <p style={{ fontSize: 12, color: C.muted }}>
+                Conseguila en <b style={{ color: 'var(--text-primary)' }}>console.anthropic.com</b> → API Keys → Create Key. Requiere tarjeta de crédito.
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={config.anthropicApiKey ?? ''}
+                  onChange={e => setConfig(c => ({ ...c, anthropicApiKey: e.target.value }))}
+                  placeholder="sk-ant-api03-..."
+                  style={{ ...inputSt, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
+                />
+                <button onClick={() => setShowApiKey(v => !v)} style={{ padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: C.muted, cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>
+                  {showApiKey ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Activar + testear */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => setConfig(c => ({ ...c, aiEnabled: !c.aiEnabled }))}
@@ -440,12 +503,11 @@ function ConfigPanel() {
 
             <button
               onClick={testAI}
-              disabled={testingAI || !config.anthropicApiKey?.trim()}
+              disabled={testingAI || !((config.aiProvider ?? 'gemini') === 'gemini' ? config.geminiApiKey : config.anthropicApiKey)?.trim()}
               style={{
-                padding: '8px 18px', borderRadius: 8, border: 'none', cursor: config.anthropicApiKey?.trim() ? 'pointer' : 'not-allowed',
-                fontSize: 13, fontWeight: 700,
-                background: config.anthropicApiKey?.trim() ? '#818cf822' : 'var(--surface2)',
-                color: config.anthropicApiKey?.trim() ? '#818cf8' : C.muted,
+                padding: '8px 18px', borderRadius: 8, border: 'none',
+                cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                background: '#818cf822', color: '#818cf8',
                 opacity: testingAI ? 0.7 : 1,
               }}
             >{testingAI ? '⏳ Verificando…' : '🔌 Verificar API key'}</button>
@@ -460,23 +522,23 @@ function ConfigPanel() {
             }}>{aiTestResult.msg}</div>
           )}
 
-          {/* Knowledge base */}
+          {/* Base de conocimiento */}
           <div>
             <label style={{ fontSize: 11, color: C.muted, display: 'block', marginBottom: 5, fontWeight: 700, letterSpacing: '0.05em' }}>
-              INFORMACIÓN DEL NEGOCIO — "hablar como yo"
+              INFORMACIÓN DEL NEGOCIO — "enseñale a la IA"
             </label>
             <p style={{ fontSize: 12, color: C.muted, marginBottom: 8, lineHeight: 1.6 }}>
-              Escribí todo lo que querés que Claude sepa sobre tu negocio: precios, servicios, tu forma de hablar, qué decir cuando no saben el modelo, etc.
+              Escribí todo lo que querés que la IA sepa: precios, servicios, garantías, horarios, forma de hablar, qué decir ante cada consulta.
             </p>
             <textarea
               value={config.aiKnowledge ?? ''}
               onChange={e => setConfig(c => ({ ...c, aiKnowledge: e.target.value }))}
-              rows={14}
-              placeholder={`Ejemplos de lo que podés escribir:\n\n• Somos Microsmart, servicio técnico de Apple en [tu ciudad]. Trabajamos de lunes a sábado de 9 a 18.\n\n• Siempre saludar con calidez, usar "vos" y ser directo. No dar vueltas.\n\n• Si preguntan precio de pantalla de iPhone 15: $XX.000 con garantía de 90 días.\n\n• Si no saben el modelo del equipo, pedirles que vayan a Ajustes → General → Información.\n\n• Para presupuesto de cualquier reparación, preguntar: modelo del equipo, qué problema tiene, si tiene garantía de compra.`}
-              style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6, fontSize: 13, minHeight: 260 }}
+              rows={16}
+              placeholder={`Ejemplos:\n\n• Somos Microsmart, servicio técnico Apple en [tu ciudad]. Lunes a sábado 9 a 18 hs.\n\n• Trato: siempre usar "vos", ser directo y amable. No dar vueltas.\n\n• Pantalla iPhone 15 Pro: $XX.000 con garantía 90 días.\n• Batería iPhone 13: $XX.000 instalada.\n\n• Si no saben el modelo: pedirles que vayan a Ajustes → General → Información.\n\n• Para presupuesto preguntar siempre: modelo del equipo, qué problema tiene y si tiene garantía de compra.\n\n• Tiempo de reparación: pantallas 1 hora, baterías 30 min, reparaciones de placa 2-5 días hábiles.\n\n• Si preguntan si usamos repuestos originales: sí, trabajamos con repuestos de calidad original con garantía.`}
+              style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6, fontSize: 13, minHeight: 300 }}
             />
             <p style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>
-              💡 Cuanto más detalle escribas (precios, garantías, horarios, forma de hablar), más preciso y útil va a ser Claude
+              💡 Cuanto más detalle escribas (precios, tiempos, formas de hablar), más útil y precisa va a ser la IA
             </p>
           </div>
 
@@ -743,7 +805,7 @@ export default function ChatSoporteView() {
                           <div style={{ fontSize: 10, color: COLOR, fontWeight: 700, marginBottom: 3 }}>Microsmart</div>
                         )}
                         {msg.role === 'bot' && msg.source === 'ai' && (
-                          <div style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, marginBottom: 3 }}>🧠 Claude IA</div>
+                          <div style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, marginBottom: 3 }}>🧠 IA</div>
                         )}
                         {msg.role === 'bot' && msg.source !== 'ai' && (
                           <div style={{ fontSize: 10, color: '#f97316', fontWeight: 700, marginBottom: 3 }}>⚡ Auto-respuesta</div>

@@ -83,6 +83,8 @@ export interface TelegramConfig {
   offlineMessage: string
   autoResponder: AutoResponderRule[]
   // AI
+  aiProvider: 'gemini' | 'claude'
+  geminiApiKey: string
   anthropicApiKey: string
   aiEnabled: boolean
   aiKnowledge: string
@@ -101,6 +103,8 @@ const DEFAULT_CONFIG: TelegramConfig = {
   welcomeMessage: '¡Hola! 👋 ¿En qué podemos ayudarte?',
   offlineMessage: 'Gracias por tu mensaje. Te respondemos a la brevedad.',
   autoResponder: [],
+  aiProvider: 'gemini',
+  geminiApiKey: '',
   anthropicApiKey: '',
   aiEnabled: false,
   aiKnowledge: '',
@@ -251,6 +255,65 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
   } catch { /* ignore network errors */ }
 }
 
+// ─── System prompt compartido ─────────────────────────────────────────────────
+function buildSystemPrompt(knowledge: string): string {
+  return `Sos el asistente virtual de Microsmart, un servicio técnico especializado en productos Apple (iPhone, iPad, Apple Watch, Mac, etc.) ubicado en Argentina.
+Respondés consultas de clientes de manera amable, directa y profesional, siempre en español con modismos argentinos naturales (vos, te, acá, etc.).
+
+${knowledge ? `INFORMACIÓN DEL NEGOCIO Y CÓMO RESPONDER:\n${knowledge}\n` : ''}
+
+REGLAS IMPORTANTES:
+- Si no sabés el precio exacto o un detalle específico, decí que un técnico te va a confirmar a la brevedad, no inventes datos
+- Mantené respuestas cortas y útiles (máximo 3-4 líneas salvo que el cliente pida más detalle)
+- No menciones que sos una IA a menos que te lo pregunten directamente`
+}
+
+// ─── Gemini AI (GRATIS) ───────────────────────────────────────────────────────
+export async function callGeminiAI(
+  sessionId: string,
+  userText: string,
+  apiKey: string,
+  knowledge: string,
+): Promise<string | null> {
+  try {
+    const history = (await getMessages(sessionId)).slice(-20)
+    const systemPrompt = buildSystemPrompt(knowledge)
+
+    // Construir historial en formato Gemini
+    const contents: { role: string; parts: { text: string }[] }[] = []
+    for (const m of history) {
+      const role = m.role === 'user' ? 'user' : 'model'
+      contents.push({ role, parts: [{ text: m.text }] })
+    }
+    // Asegurarse que el último mensaje es del usuario
+    if (!contents.length || contents[contents.length - 1].role !== 'user') {
+      contents.push({ role: 'user', parts: [{ text: userText }] })
+    }
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+        }),
+      }
+    )
+    const data = await res.json() as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[]
+      error?: { message: string }
+    }
+    if (data.error) { console.error('Gemini error:', data.error.message); return null }
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? null
+  } catch (e) {
+    console.error('Gemini AI error:', e)
+    return null
+  }
+}
+
 // ─── Claude AI ────────────────────────────────────────────────────────────────
 export async function callClaudeAI(
   sessionId: string,
@@ -260,27 +323,13 @@ export async function callClaudeAI(
 ): Promise<string | null> {
   try {
     const client = new Anthropic({ apiKey })
-
-    const history = (await getMessages(sessionId))
-      .filter(m => m.text !== '👋')
-      .slice(-20)
-
-    const systemPrompt = `Sos el asistente virtual de Microsmart, un servicio técnico especializado en productos Apple (iPhone, iPad, Apple Watch, Mac, etc.) ubicado en Argentina.
-Respondés consultas de clientes de manera amable, directa y profesional, siempre en español con modismos argentinos naturales (vos, te, acá, etc.).
-
-${knowledge ? `INFORMACIÓN DEL NEGOCIO Y CÓMO RESPONDER:\n${knowledge}\n` : ''}
-
-REGLAS IMPORTANTES:
-- Si no sabés el precio exacto o un detalle específico, decí que un técnico te va a confirmar a la brevedad, no inventes datos
-- Mantené respuestas cortas y útiles (máximo 3-4 líneas salvo que el cliente pida más detalle)
-- Si el cliente manda saludos o emojis vacíos como 👋, respondé con un saludo amigable preguntando en qué podés ayudar
-- No menciones que sos una IA a menos que te lo pregunten directamente`
+    const history = (await getMessages(sessionId)).filter(m => m.text !== '👋').slice(-20)
+    const systemPrompt = buildSystemPrompt(knowledge)
 
     const messages: Anthropic.MessageParam[] = history.map(m => ({
       role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
       content: m.text,
     }))
-
     if (!messages.length || messages[messages.length - 1].role !== 'user') {
       messages.push({ role: 'user', content: userText })
     }

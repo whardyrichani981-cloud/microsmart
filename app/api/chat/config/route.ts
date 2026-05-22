@@ -18,13 +18,38 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT — test Telegram OR Claude AI connection
+// PUT — test Telegram OR AI connection
 export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json() as { botToken?: string; chatId?: string; testAI?: boolean; anthropicApiKey?: string }
+    const body = await req.json() as {
+      botToken?: string; chatId?: string
+      testAI?: boolean; aiProvider?: string
+      geminiApiKey?: string; anthropicApiKey?: string
+    }
 
-    // Test Claude AI API key
-    if (body.testAI && body.anthropicApiKey) {
+    // Test Gemini API key
+    if (body.testAI && body.aiProvider === 'gemini' && body.geminiApiKey) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${body.geminiApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Hola' }] }], generationConfig: { maxOutputTokens: 10 } }),
+          }
+        )
+        const data = await res.json() as { candidates?: unknown[]; error?: { message: string } }
+        if (data.error) return NextResponse.json({ error: data.error.message }, { status: 400 })
+        if (data.candidates?.length) return NextResponse.json({ ok: true })
+        return NextResponse.json({ error: 'Respuesta inválida de Gemini.' }, { status: 400 })
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return NextResponse.json({ error: msg }, { status: 400 })
+      }
+    }
+
+    // Test Claude API key
+    if (body.testAI && body.aiProvider === 'claude' && body.anthropicApiKey) {
       try {
         const client = new Anthropic({ apiKey: body.anthropicApiKey })
         const response = await client.messages.create({

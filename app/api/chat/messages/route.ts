@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   getOrCreateSession, addMessage, getMessages,
   getTelegramConfig, sendToTelegram, updateMessageTelegramId,
-  pollTelegramUpdates, checkAutoResponder, callClaudeAI,
+  pollTelegramUpdates, checkAutoResponder, callClaudeAI, callGeminiAI,
 } from '@/lib/chat-db'
 
 export const dynamic = 'force-dynamic'
@@ -57,9 +57,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ msg, autoReply: botMsg })
       }
 
-      // Claude AI si está habilitado
-      if (config.aiEnabled && config.anthropicApiKey) {
-        const aiReply = await callClaudeAI(sessionId, text.trim(), config.anthropicApiKey, config.aiKnowledge)
+      // IA si está habilitada (Gemini gratis o Claude)
+      if (config.aiEnabled) {
+        const provider = config.aiProvider ?? 'gemini'
+        let aiReply: string | null = null
+        if (provider === 'gemini' && config.geminiApiKey) {
+          aiReply = await callGeminiAI(sessionId, text.trim(), config.geminiApiKey, config.aiKnowledge)
+        } else if (provider === 'claude' && config.anthropicApiKey) {
+          aiReply = await callClaudeAI(sessionId, text.trim(), config.anthropicApiKey, config.aiKnowledge)
+        }
         if (aiReply) {
           const botMsg = await addMessage({ sessionId, role: 'bot', text: aiReply, source: 'ai' })
           return NextResponse.json({ msg, autoReply: botMsg })
