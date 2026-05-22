@@ -37,6 +37,8 @@ function prepareResultHtml(html: string): string {
   out = out.replace(/RONALD DIA[^\n<]*/gi, '')
   // Idioma / Lang label
   out = out.replace(/Idioma\s*\/\s*Lang/gi, '')
+  // Restos de "www." que quedan al quitar "PanicFull.com"
+  out = out.replace(/\bwww\.\s*/gi, '')
 
   // 4. Encontrar dónde empieza el contenido real de análisis
   //    El nav de panicfull siempre aparece ANTES de los datos del dispositivo
@@ -66,6 +68,7 @@ function prepareResultHtml(html: string): string {
 
   // 5. Cortar el footer del resultado (info del usuario, feedback, etc.)
   const FOOTER_MARKERS = [
+    'Datos Adicionales',
     'Consulta realizada por',
     'Consulta Realizada por',
     'Historial de Consultas',
