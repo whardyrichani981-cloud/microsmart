@@ -13,12 +13,13 @@ export async function POST(req: NextRequest) {
 
     const bytes  = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+    const mime   = file.type || 'image/jpeg'
+    const dataUri = `data:${mime};base64,${buffer.toString('base64')}`
 
-    const result = await new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder, resource_type: 'image', transformation: [{ quality: 'auto', fetch_format: 'auto' }] },
-        (error, res) => { if (error || !res) reject(error); else resolve(res) }
-      ).end(buffer)
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder,
+      resource_type: 'image',
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
     })
 
     return NextResponse.json({ url: result.secure_url, publicId: result.public_id })
