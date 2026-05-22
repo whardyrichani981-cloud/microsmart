@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
   const envMatch = envUser && envPass && user === envUser && pass === envPass
 
   console.log('[login] user:', user, '| found:', !!found, '| envUser:', envUser, '| envPass set:', !!envPass, '| passLen:', String(pass).length, '| envPassLen:', String(envPass ?? '').length, '| envMatch:', !!envMatch)
+  console.log('[login2] pass:', String(pass), '| envPass:', String(envPass ?? ''))
 
   if (!envMatch && (!found || pass !== found.password)) {
     return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
