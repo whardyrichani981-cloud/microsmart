@@ -771,9 +771,8 @@ export default function PriceComparator({
       <button
         onClick={() => setGlobalSearchOpen(true)}
         title="Búsqueda global (Ctrl+K)"
-        style={{ display: isMobile ? 'none' : undefined } as React.CSSProperties}
         style={{
-          display: 'flex', alignItems: 'center', gap: 7,
+          display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 7,
           padding: '6px 12px', borderRadius: 999, fontSize: 12,
           background: 'var(--surface2)', border: '1px solid var(--border-light)',
           color: 'var(--text-dim)', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -815,8 +814,8 @@ export default function PriceComparator({
       </button>
 
       {/* Notes btn — hidden on mobile */}
-      <button onClick={() => setActiveNav('notasdash')} style={{ display: isMobile ? 'none' : undefined,
-        position: 'relative', display: 'flex', alignItems: 'center', gap: 5,
+      <button onClick={() => setActiveNav('notasdash')} style={{
+        display: isMobile ? 'none' : 'flex', position: 'relative', alignItems: 'center', gap: 5,
         padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500,
         background: activeNav === 'notasdash' ? 'var(--accent-dim)' : 'var(--surface2)',
         border: `1px solid ${activeNav === 'notasdash' ? 'var(--accent)' : 'var(--border-light)'}`,

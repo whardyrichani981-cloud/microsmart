@@ -123,6 +123,8 @@ const DEFAULT_CONFIG: TelegramConfig = {
   aiKnowledge: '',
   aiSections: { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' },
   gremioListaId: '',
+  clientesListaId: '',
+  tipoCambio: 0,
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────

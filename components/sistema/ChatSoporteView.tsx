@@ -403,6 +403,8 @@ function ConfigPanel() {
     aiKnowledge: '',
     aiSections: { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' },
     gremioListaId: '',
+    clientesListaId: '',
+    tipoCambio: 0,
   })
   const [showApiKey, setShowApiKey] = useState(false)
   const [testingAI, setTestingAI] = useState(false)
