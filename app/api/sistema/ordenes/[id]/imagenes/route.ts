@@ -19,18 +19,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const files = formData.getAll('files') as File[]
     const usuario = formData.get('usuario') as string | null
 
+    console.log('[imagenes] files count:', files.length)
     const newUrls: string[] = []
     for (const file of files) {
       const bytes  = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
-      const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: `microsmart/ordenes/${id}`, resource_type: 'image',
-            transformation: [{ quality: 'auto', fetch_format: 'auto' }] },
-          (error, res) => { if (error || !res) reject(error ?? new Error('Upload failed')); else resolve(res) }
-        ).end(buffer)
-      })
-      newUrls.push(result.secure_url)
+      console.log('[imagenes] uploading file:', file.name, 'size:', buffer.length)
+      try {
+        const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            { folder: `microsmart/ordenes/${id}`, resource_type: 'image' },
+            (error, res) => {
+              console.log('[imagenes] cloudinary callback error:', error, 'res url:', res?.secure_url)
+              if (error || !res) reject(error ?? new Error('Upload failed'))
+              else resolve(res)
+            }
+          ).end(buffer)
+        })
+        console.log('[imagenes] uploaded OK:', result.secure_url)
+        newUrls.push(result.secure_url)
+      } catch (uploadErr) {
+        console.error('[imagenes] upload error:', String(uploadErr))
+        return NextResponse.json({ error: `Cloudinary error: ${String(uploadErr)}` }, { status: 500 })
+      }
     }
 
     const existing = orden.imagenes ?? []
