@@ -7,11 +7,35 @@ function genSessionId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+const SESSION_TTL_MS = 60 * 60 * 1000 // 1 hora
+
 function getSessionId(): string {
   if (typeof window === 'undefined') return ''
   let id = localStorage.getItem('ms_chat_session')
   if (!id) { id = genSessionId(); localStorage.setItem('ms_chat_session', id) }
   return id
+}
+
+function isSessionExpired(): boolean {
+  if (typeof window === 'undefined') return false
+  const last = localStorage.getItem('ms_chat_last_activity')
+  if (!last) return false
+  return Date.now() - parseInt(last, 10) > SESSION_TTL_MS
+}
+
+function touchActivity() {
+  if (typeof window !== 'undefined')
+    localStorage.setItem('ms_chat_last_activity', String(Date.now()))
+}
+
+function clearSession() {
+  if (typeof window === 'undefined') return
+  const newId = genSessionId()
+  localStorage.setItem('ms_chat_session', newId)
+  localStorage.removeItem('ms_chat_last_activity')
+  localStorage.removeItem('ms_chat_name')
+  localStorage.removeItem('ms_chat_phone')
+  return newId
 }
 
 function formatTime(iso: string) {
@@ -35,6 +59,16 @@ export default function ChatWidget() {
   const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    // Si pasó más de 1 hora desde el último mensaje, limpiar sesión
+    if (isSessionExpired()) {
+      clearSession()
+      setMessages([])
+      setVisitorName('')
+      setVisitorPhone('')
+      setNameSet(false)
+      setSessionId(getSessionId())
+      return
+    }
     const id = getSessionId()
     setSessionId(id)
     const savedName  = localStorage.getItem('ms_chat_name')
@@ -58,6 +92,8 @@ export default function ChatWidget() {
           !prev.some(p => p.id === m.id)
         ).length
         if (newOwner > 0 && !open) setUnread(u => u + newOwner)
+        // Actualizar timestamp de actividad si hay mensajes
+        if (data.length > 0) touchActivity()
         return data
       })
     } catch { /* ignore */ }
@@ -100,6 +136,7 @@ export default function ChatWidget() {
     setMessages(prev => [...prev, optimistic])
     scrollBottom()
     try {
+      touchActivity()
       // Incluir teléfono en el nombre para que llegue a Telegram
       const displayName = visitorPhone
         ? `${visitorName} (${visitorPhone})`
