@@ -1,9 +1,7 @@
-import { Redis } from '@upstash/redis'
+import { NextResponse } from 'next/server'
+import { getTelegramConfig, saveTelegramConfig } from '@/lib/chat-db'
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-})
+export const dynamic = 'force-dynamic'
 
 const tecnico = `PANTALLAS / MÓDULOS / LCD (son lo mismo, distintas calidades):
 
@@ -29,19 +27,17 @@ Ejemplo cuando hay las 3 calidades:
 - Incell: U$D 33
 - OLED: U$D 67
 - Original: U$D 81
-(todos en pesos al tipo de cambio del día)"
-`
+(todos en pesos al tipo de cambio del día)"`
 
-async function main() {
-  const configRaw = await redis.get('chat-config')
-  const config = typeof configRaw === 'string' ? JSON.parse(configRaw) : configRaw
-  if (!config.aiSections) config.aiSections = {}
-
-  config.aiSections.tecnico = tecnico
-
-  await redis.set('chat-config', JSON.stringify(config))
-  console.log('✅ aiSections.tecnico actualizado')
-  console.log(tecnico)
+// GET — actualiza aiSections.tecnico en Redis con las instrucciones correctas
+export async function GET() {
+  try {
+    const config = await getTelegramConfig()
+    if (!config.aiSections) config.aiSections = { negocio: '', precios: '', tecnico: '', faq: '', estilo: '' }
+    config.aiSections.tecnico = tecnico
+    await saveTelegramConfig(config)
+    return NextResponse.json({ ok: true, tecnico })
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: String(e) }, { status: 500 })
+  }
 }
-
-main().catch(console.error)
