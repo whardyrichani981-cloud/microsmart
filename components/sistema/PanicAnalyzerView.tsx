@@ -17,6 +17,7 @@ export default function PanicAnalyzerView() {
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
+  const [showSessionConfig, setShowSessionConfig] = useState(false)
 
   const fileRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)]
 
@@ -262,9 +263,24 @@ export default function PanicAnalyzerView() {
         </div>
       )}
 
-      {/* Configuración de sesión panicfull.com */}
+      {/* Configuración de sesión panicfull.com — oculta por defecto */}
       <div style={{ marginBottom: 28 }}>
-        <PanicfullSessionConfig />
+        <button
+          onClick={() => setShowSessionConfig(v => !v)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 12, color: 'var(--text-dim)',
+            display: 'flex', alignItems: 'center', gap: 5, padding: 0,
+          }}
+        >
+          <span style={{ fontSize: 10 }}>{showSessionConfig ? '▼' : '▶'}</span>
+          🔐 Configurar sesión panicfull.com
+        </button>
+        {showSessionConfig && (
+          <div style={{ marginTop: 12 }}>
+            <PanicfullSessionConfig />
+          </div>
+        )}
       </div>
 
       {/* Result */}

@@ -15,98 +15,87 @@ const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_R
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
   : null
 
-// Limpia el HTML de panicfull.com e inyecta estilos + JS para ocultar nav
+// Limpia el HTML de panicfull.com: corta el nav y aplica tema Microsmart
 function prepareResultHtml(html: string): string {
-  // Solo quitar scripts, links y head — mantener el resto intacto
+  // 1. Quitar head, scripts, links, styles propios del sitio
   let out = html
   out = out.replace(/<head[\s\S]*?<\/head>/gi, '')
   out = out.replace(/<script[\s\S]*?<\/script>/gi, '')
+  out = out.replace(/<style[\s\S]*?<\/style>/gi, '')
   out = out.replace(/<link[^>]*>/gi, '')
   out = out.replace(/<\/?html[^>]*>/gi, '')
   out = out.replace(/<\/?body[^>]*>/gi, '')
 
-  // CSS para tema Microsmart + ocultar nav conocida de panicfull
-  const css = `<style>
+  // 2. Encontrar dónde empieza el contenido real de análisis
+  //    El nav de panicfull siempre aparece ANTES de los datos del dispositivo
+  const CONTENT_MARKERS = [
+    'Datos del Dispositivo',
+    'Device Data',
+    'Dados do Dispositivo',
+    'Error de Descripción',
+    'Componentes Involucrados',
+    'Sugerencia de Reparación',
+    'Incident Identifier',
+  ]
+
+  for (const marker of CONTENT_MARKERS) {
+    const markerIdx = out.indexOf(marker)
+    if (markerIdx > 80) {
+      // Buscar la apertura de tag más cercana antes del marker
+      // para no cortar en medio de un elemento
+      const before = out.substring(0, markerIdx)
+      const lastOpen = before.lastIndexOf('<')
+      if (lastOpen >= 0) {
+        out = out.substring(lastOpen)
+        break
+      }
+    }
+  }
+
+  // 3. CSS con tema Microsmart (dark/light automático)
+  const css = `
     * { box-sizing: border-box; }
     body {
-      margin: 0; padding: 16px;
+      margin: 0; padding: 20px 22px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 13px; line-height: 1.6;
+      font-size: 13px; line-height: 1.65;
     }
     @media (prefers-color-scheme: dark) {
-      body { background: #1C1C1E; color: #F5F5F7; }
+      body { background: #1C1C1E; color: #E5E5EA; }
       a { color: #0A84FF; }
-      table { border-color: #3A3A3C; }
-      th { background: #2C2C2E; color: #F5F5F7; }
-      td { border-color: #2C2C2E; color: #E5E5EA; }
+      th { background: #2C2C2E; color: #F5F5F7; border-color: #3A3A3C; }
+      td { border-color: #3A3A3C; color: #D1D1D6; }
       tr:nth-child(even) td { background: #2C2C2E; }
-      h1,h2,h3,b,strong { color: #F5F5F7; }
+      b, strong { color: #F5F5F7; }
       hr { border-color: #3A3A3C; }
       input[type=checkbox] { accent-color: #0A84FF; }
     }
     @media (prefers-color-scheme: light) {
       body { background: #FFFFFF; color: #1D1D1F; }
       a { color: #0066CC; }
-      table { border-color: #D1D1D6; }
-      th { background: #F5F5F7; color: #1D1D1F; }
+      th { background: #F5F5F7; color: #1D1D1F; border-color: #D1D1D6; }
       td { border-color: #E8E8ED; color: #3A3A3C; }
-      tr:nth-child(even) td { background: #F5F5F7; }
-      h1,h2,h3,b,strong { color: #1D1D1F; }
-      hr { border-color: #D1D1D6; }
+      tr:nth-child(even) td { background: #F9F9F9; }
+      b, strong { color: #1D1D1F; }
+      hr { border-color: #E8E8ED; }
       input[type=checkbox] { accent-color: #0066CC; }
     }
-    h1,h2,h3 {
-      font-size: 14px; font-weight: 700; margin: 16px 0 8px;
-      padding-bottom: 6px; border-bottom: 1px solid currentColor;
-      opacity: 1;
+    h1, h2, h3 {
+      font-size: 14px; font-weight: 700;
+      margin: 20px 0 8px; padding-bottom: 6px;
+      border-bottom: 1px solid rgba(128,128,128,0.25);
     }
     h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
-    table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-    th,td { padding: 7px 10px; border: 1px solid; text-align: left; }
-    p { margin: 6px 0; }
-    hr { border: none; border-top: 1px solid; margin: 12px 0; }
-    img { max-width: 100%; display: none; } /* ocultar logos e íconos del sitio */
-    /* Ocultar elementos marcados por JS como nav */
-    .ms-hide { display: none !important; }
-  </style>`
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+    th, td { padding: 7px 11px; border: 1px solid; text-align: left; }
+    p { margin: 5px 0; }
+    ul, ol { padding-left: 18px; margin: 6px 0; }
+    li { margin: 3px 0; }
+    hr { border: none; border-top: 1px solid; margin: 14px 0; }
+    img { display: none; }
+  `
 
-  // JS que detecta y oculta el nav de panicfull por texto conocido
-  const js = `<script>
-    (function() {
-      var NAV_KEYWORDS = ['Inicial','Sus Datos','Análisis Panic Full','Análisis iBoot Panic',
-        'Software Errores','NAND información','Compatibilidad CI','Tabla I2C',
-        'Power On','iBoot Stylo','Política de Privacidad','Términos de Uso',
-        'Contacto','Sobre Site','Elegir el idioma','Choose the language',
-        'Escolher o idioma','PanicFull.com','VERSIÓN PRO','VERSION PRO'];
-      function hasNavText(el) {
-        var t = el.innerText || '';
-        return NAV_KEYWORDS.some(function(k){ return t.includes(k); });
-      }
-      function isSmallContent(el) {
-        // Un div que solo tiene links de menú, no contenido de análisis
-        var anchors = el.querySelectorAll('a');
-        var text = (el.innerText||'').trim();
-        return anchors.length > 3 && text.length < 600;
-      }
-      document.addEventListener('DOMContentLoaded', function() {
-        var allEls = document.querySelectorAll('div,ul,section,aside,header,nav,footer');
-        allEls.forEach(function(el) {
-          if (hasNavText(el) && isSmallContent(el)) {
-            el.classList.add('ms-hide');
-          }
-        });
-        // También ocultar líneas horizontales huérfanas al inicio
-        var firstHr = document.querySelector('hr');
-        if (firstHr) {
-          var prev = firstHr.previousElementSibling;
-          if (!prev || prev.classList.contains('ms-hide')) firstHr.classList.add('ms-hide');
-        }
-      });
-    })();
-  </script>`
-
-  // Envolver todo en documento HTML limpio con nuestros estilos
-  return `<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>${js}${out}</body></html>`
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${out}</body></html>`
 }
 
 // Lee cookies de sesión: primero Redis, luego env var de respaldo
