@@ -771,45 +771,9 @@ export default function PriceComparator({
           <span style={{ width: 16, height: 2, background: 'var(--text-primary)', borderRadius: 2, display: 'block' }} />
         </button>
       )}
-      {/* Search — pill style */}
-      <div style={{ position: 'relative', flex: 1, maxWidth: 420 }}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"
-          viewBox="0 0 24 24" style={{
-            position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--text-dim)', pointerEvents: 'none',
-          }}>
-          <path d="M21.707 20.293l-5.387-5.387A8 8 0 1 0 15 16.31l5.387 5.397a1 1 0 0 0 1.414-1.414zM10 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" />
-        </svg>
-        <input
-          value={search}
-          onChange={e => { setSearch(e.target.value); if (activeNav !== 'comparador') setActiveNav('comparador') }}
-          placeholder="Buscar producto, código, modelo..."
-          style={{
-            width: '100%', padding: '8px 36px 8px 36px',
-            background: 'var(--surface2)', border: '1px solid var(--border-light)',
-            borderRadius: 999, color: 'var(--text-primary)', fontSize: 13, outline: 'none',
-            transition: 'border-color 0.15s, box-shadow 0.15s',
-          }}
-          onFocus={e => {
-            e.currentTarget.style.borderColor = 'var(--accent)'
-            e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-dim)'
-          }}
-          onBlur={e => {
-            e.currentTarget.style.borderColor = 'var(--border-light)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}
-        />
-        {search && (
-          <button onClick={() => setSearch('')} style={{
-            position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-            background: 'var(--surface3)', border: 'none', color: 'var(--text-secondary)',
-            cursor: 'pointer', fontSize: 12, width: 18, height: 18, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-          }}>×</button>
-        )}
-      </div>
+      <div style={{ flex: 1 }} />
 
-      {/* Global search button — hidden on mobile */}
+{/* Global search button — hidden on mobile */}
       <button
         onClick={() => setGlobalSearchOpen(true)}
         title="Búsqueda global (Ctrl+K)"
