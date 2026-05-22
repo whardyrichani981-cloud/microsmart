@@ -15,67 +15,37 @@ const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_R
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
   : null
 
-// Inyecta CSS para ocultar navegación/header de panicfull.com y dejar solo el contenido
-function injectCleanStyles(html: string): string {
-  const css = `
-<style>
-  /* Ocultar navegación, header y footer del sitio panicfull.com */
-  nav, header, footer,
-  .navbar, .nav-bar, #navbar, #nav,
-  .header, #header, .site-header,
-  .footer, #footer, .site-footer,
-  .menu, #menu, .menu-container, .main-menu,
-  .top-bar, .top-nav, .navigation,
-  .sidebar, #sidebar,
-  [class*="nav-"], [id*="nav-"],
-  [class*="menu-"], [id*="menu-"] { display: none !important; }
+// Extrae solo el contenido útil del HTML de panicfull.com, sin nav/head/scripts
+function extractContent(html: string): string {
+  let out = html
 
-  /* Limpiar estilos del body */
-  body {
-    margin: 0 !important;
-    padding: 12px !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    font-size: 13px !important;
-    background: #fff !important;
-    color: #1a1a1a !important;
-  }
+  // Quitar todo el bloque <head>...</head>
+  out = out.replace(/<head[\s\S]*?<\/head>/gi, '')
 
-  /* Asegurar que el contenido principal use todo el ancho */
-  main, .main, #main, .content, #content,
-  .container, .wrapper, .page, .result {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
+  // Quitar nav, header, footer y sus contenidos
+  out = out.replace(/<nav[\s\S]*?<\/nav>/gi, '')
+  out = out.replace(/<header[\s\S]*?<\/header>/gi, '')
+  out = out.replace(/<footer[\s\S]*?<\/footer>/gi, '')
 
-  /* Tablas legibles */
-  table { border-collapse: collapse; width: 100%; font-size: 12px; }
-  th { background: #f3f4f6; font-weight: 600; }
-  th, td { padding: 6px 10px; border: 1px solid #e5e7eb; text-align: left; }
-  tr:nth-child(even) td { background: #f9fafb; }
+  // Quitar scripts y estilos externos
+  out = out.replace(/<script[\s\S]*?<\/script>/gi, '')
+  out = out.replace(/<style[\s\S]*?<\/style>/gi, '')
+  out = out.replace(/<link[^>]*>/gi, '')
 
-  /* Links en el resultado */
-  a { color: #2563eb; }
+  // Quitar etiquetas html/body pero mantener contenido
+  out = out.replace(/<\/?html[^>]*>/gi, '')
+  out = out.replace(/<\/?body[^>]*>/gi, '')
+  out = out.replace(/<\/?main[^>]*>/gi, '')
 
-  /* Badges y etiquetas */
-  .badge, .tag, .label { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+  // Quitar atributos de estilo inline que puedan romper el tema
+  out = out.replace(/\s*style="[^"]*"/gi, '')
+  out = out.replace(/\s*class="[^"]*"/gi, '')
+  out = out.replace(/\s*id="[^"]*"/gi, '')
 
-  /* VERSION PRO badge — ocultar también */
-  [class*="pro"], [class*="Pro"], [class*="version"] {
-    /* mantener si es parte del resultado */
-  }
-</style>`
+  // Quitar imágenes rotas del sitio (logos, íconos)
+  out = out.replace(/<img[^>]*>/gi, '')
 
-  // Insertar antes de </head> si existe, o al inicio del <body>
-  if (html.includes('</head>')) {
-    return html.replace('</head>', css + '</head>')
-  }
-  if (html.includes('<body')) {
-    return html.replace(/<body([^>]*)>/, `<body$1>${css}`)
-  }
-  // Sin estructura HTML: envolver en documento limpio
-  return `<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>${html}</body></html>`
+  return out.trim()
 }
 
 // Lee cookies de sesión: primero Redis, luego env var de respaldo
@@ -253,8 +223,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Limpiar HTML: inyectar CSS para ocultar nav/header de panicfull.com ──
-    const cleanedHtml = injectCleanStyles(resultHtml)
+    // ── Limpiar HTML: extraer solo contenido, sin nav/head/scripts ──────────
+    const cleanedHtml = extractContent(resultHtml)
 
     // ── Éxito ─────────────────────────────────────────────────────────────
     await incrementRate(ip)

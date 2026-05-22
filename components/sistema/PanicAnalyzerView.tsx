@@ -278,17 +278,70 @@ export default function PanicAnalyzerView() {
           }}>
             📊 Resultado del análisis — panicfull.com
           </div>
-          <iframe
-            srcDoc={result}
-            sandbox="allow-same-origin"
+          <div
+            className="panic-result"
+            dangerouslySetInnerHTML={{ __html: result }}
             style={{
-              width: '100%', minHeight: 500, border: 'none',
-              background: '#fff',
+              padding: '20px 24px',
+              background: 'var(--surface)',
+              color: 'var(--text-primary)',
             }}
-            title="Resultado Panic Full"
           />
         </div>
       )}
+
+      <style>{`
+        .panic-result { font-size: 13px; line-height: 1.6; }
+        .panic-result h1, .panic-result h2, .panic-result h3 {
+          font-size: 14px; font-weight: 700;
+          color: var(--text-primary);
+          margin: 18px 0 8px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--border-light);
+        }
+        .panic-result h1:first-child, .panic-result h2:first-child, .panic-result h3:first-child {
+          margin-top: 0;
+        }
+        .panic-result p { margin: 6px 0; color: var(--text-secondary); }
+        .panic-result b, .panic-result strong { color: var(--text-primary); font-weight: 600; }
+        .panic-result a { color: var(--accent); text-decoration: none; }
+        .panic-result a:hover { text-decoration: underline; }
+        .panic-result table {
+          width: 100%; border-collapse: collapse;
+          margin: 10px 0; font-size: 12px;
+        }
+        .panic-result th {
+          background: var(--surface2); color: var(--text-primary);
+          font-weight: 600; text-align: left;
+          padding: 8px 12px; border: 1px solid var(--border);
+        }
+        .panic-result td {
+          padding: 7px 12px; border: 1px solid var(--border-light);
+          color: var(--text-secondary);
+        }
+        .panic-result tr:nth-child(even) td { background: var(--surface2); }
+        .panic-result ul, .panic-result ol {
+          padding-left: 20px; margin: 8px 0;
+          color: var(--text-secondary);
+        }
+        .panic-result li { margin: 4px 0; }
+        .panic-result input[type="checkbox"] { accent-color: var(--accent); }
+        .panic-result hr {
+          border: none; border-top: 1px solid var(--border-light);
+          margin: 14px 0;
+        }
+        /* Barras de porcentaje de componentes */
+        .panic-result progress, .panic-result meter {
+          width: 100%; height: 6px;
+          accent-color: var(--accent);
+        }
+        /* Texto de porcentaje */
+        .panic-result [style*="width"] {
+          background: var(--accent-dim) !important;
+          border-radius: 4px;
+        }
+        .panic-result div { color: var(--text-secondary); }
+      `}</style>
     </div>
   )
 }
