@@ -21,8 +21,9 @@ interface ModuloMeta {
 }
 
 const MODULOS: ModuloMeta[] = [
-  { id: 'notasdash',  icon: '📋', label: 'Tareas y Pedidos',     desc: 'Panel de notas, pedidos y tareas del equipo',       group: 'herramientas' },
-  { id: 'imei',       icon: '🔍', label: 'Verificar IMEI',       desc: 'Consulta de estado de equipos por IMEI',            group: 'herramientas' },
+  { id: 'notasdash',     icon: '📋', label: 'Tareas y Pedidos',        desc: 'Panel de notas, pedidos y tareas del equipo',                   group: 'herramientas' },
+  { id: 'imei',          icon: '🔍', label: 'Verificar IMEI',          desc: 'Consulta de estado de equipos por IMEI',                        group: 'herramientas' },
+  { id: 'herramientas',  icon: '🛠️', label: 'Herramientas Técnicas',   desc: 'Panicfull, Servicios IMEI (team-saul.com) y herramientas Apple', group: 'herramientas' },
   { id: 'ordenes',    icon: '🗂',  label: 'Órdenes de trabajo',  desc: 'Gestión de reparaciones y seguimiento de equipos',  group: 'gestion' },
   { id: 'servicios',  icon: '🛠',  label: 'Servicios',           desc: 'Catálogo de servicios y mano de obra',              group: 'gestion' },
   { id: 'clientes',   icon: '👥', label: 'Clientes',             desc: 'Base de datos de clientes B2C y B2B',               group: 'gestion' },

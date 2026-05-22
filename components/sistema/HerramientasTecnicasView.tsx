@@ -1,11 +1,13 @@
 'use client'
 import { useState } from 'react'
 import PanicAnalyzerView from './PanicAnalyzerView'
+import IMEIServicesView from './IMEIServicesView'
 
-type Tool = 'panicfull'
+type Tool = 'panicfull' | 'imei'
 
 const TOOLS: { id: Tool; label: string; icon: string; desc: string }[] = [
   { id: 'panicfull', label: 'Panicfull', icon: '📋', desc: 'Análisis de logs de pánico iPhone' },
+  { id: 'imei', label: 'Servicios IMEI', icon: '📱', desc: 'Unlock, FMI OFF, MDM vía team-saul.com' },
 ]
 
 export default function HerramientasTecnicasView() {
@@ -57,6 +59,7 @@ export default function HerramientasTecnicasView() {
       {/* Contenido de la herramienta activa */}
       <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         {activeTool === 'panicfull' && <PanicAnalyzerView />}
+        {activeTool === 'imei' && <IMEIServicesView />}
       </div>
     </div>
   )
