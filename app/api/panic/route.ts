@@ -9,13 +9,20 @@ const PANIC_POST = 'https://panicfull.com/processa_panic.php'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 const DAILY_LIMIT = 3
 
-// Session cookie from panicfull.com Pro account
-// Set PANICFULL_COOKIES in Vercel env vars with the value from browser (PHPSESSID=xxx; ...)
-const PANICFULL_COOKIES = process.env.PANICFULL_COOKIES || ''
+const REDIS_SESSION_KEY = 'panicfull-session-cookies'
 
 const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
   : null
+
+// Lee cookies de sesión: primero Redis, luego env var de respaldo
+async function getPanicfullCookies(): Promise<string> {
+  if (redis) {
+    const saved = await redis.get<string>(REDIS_SESSION_KEY)
+    if (saved) return saved
+  }
+  return process.env.PANICFULL_COOKIES || ''
+}
 
 function getClientIP(req: NextRequest): string {
   return (
@@ -86,6 +93,9 @@ export async function POST(req: NextRequest) {
     if (!log1) {
       return NextResponse.json({ error: 'No se proporcionó ningún archivo o texto.' }, { status: 400 })
     }
+
+    // ── Leer cookies de sesión (Redis → env var) ──────────────────────────────
+    const PANICFULL_COOKIES = await getPanicfullCookies()
 
     // ── Obtener token tk desde panicfull.com ─────────────────────────────────
     const getHeaders: Record<string, string> = {

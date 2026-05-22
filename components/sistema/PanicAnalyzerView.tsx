@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
+import PanicfullSessionConfig from './PanicfullSessionConfig'
 
 interface LogSlot {
   file: File | null
@@ -260,6 +261,11 @@ export default function PanicAnalyzerView() {
           ⚠️ {error}
         </div>
       )}
+
+      {/* Configuración de sesión panicfull.com */}
+      <div style={{ marginBottom: 28 }}>
+        <PanicfullSessionConfig />
+      </div>
 
       {/* Result */}
       {result && (
