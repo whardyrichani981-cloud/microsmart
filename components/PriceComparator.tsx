@@ -63,7 +63,7 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'clientes',       label: 'Clientes',                 icon: '👥', permKey: 'canViewClientes' },
   { id: 'agenda',         label: 'Turnos',                   icon: '📅', permKey: 'canViewAgenda' },
   { id: 'stock',          label: 'Stock',                    icon: '📦', permKey: 'canViewStock' },
-  { id: 'ventas-equipos', label: 'Ventas Equipos',           icon: '📱' },
+  { id: 'ventas-equipos', label: 'Venta de equipos',          icon: '📱' },
   { id: 'contable',       label: 'Administración contable',  icon: '📒' },
   { id: 'caja',           label: 'Caja de mostrador',        icon: '🖥️', permKey: 'canViewOrdenes' },
   { id: 'administracion', label: 'Configuración del sistema', icon: '⚙️', adminOnly: true },
