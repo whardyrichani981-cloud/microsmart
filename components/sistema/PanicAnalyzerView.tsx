@@ -128,14 +128,16 @@ export default function PanicAnalyzerView() {
                   alignItems: 'center',
                   gap: 10,
                 } : {
-                  border: `2px dashed ${dragging === idx ? 'var(--accent)' : 'var(--border)'}`,
-                  borderRadius: 12,
-                  padding: '18px 16px',
-                  textAlign: 'center',
+                  border: `1.5px dashed ${dragging === idx ? 'var(--accent)' : 'var(--border)'}`,
+                  borderRadius: 10,
+                  padding: '10px 14px',
                   cursor: 'pointer',
                   background: dragging === idx ? 'var(--accent-dim)' : 'var(--surface)',
                   transition: 'all 0.15s',
                   marginBottom: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
                 }}
               >
                 <input
@@ -162,13 +164,13 @@ export default function PanicAnalyzerView() {
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize: 24, marginBottom: 4 }}>📁</div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    <span style={{ fontSize: 18 }}>📁</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
                       Arrastrá o hacé clic para seleccionar
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>
-                      Archivo Panic-Full (.txt, .panic, .ips)
-                    </div>
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                      .txt · .panic · .ips
+                    </span>
                   </>
                 )}
               </div>
