@@ -9,6 +9,10 @@ const PANIC_POST = 'https://panicfull.com/processa_panic.php'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 const DAILY_LIMIT = 3
 
+// Session cookie from panicfull.com Pro account
+// Set PANICFULL_COOKIES in Vercel env vars with the value from browser (PHPSESSID=xxx; ...)
+const PANICFULL_COOKIES = process.env.PANICFULL_COOKIES || ''
+
 const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
   : null
@@ -22,7 +26,7 @@ function getClientIP(req: NextRequest): string {
 }
 
 function todayKey(): string {
-  return new Date().toISOString().split('T')[0] // YYYY-MM-DD en UTC
+  return new Date().toISOString().split('T')[0]
 }
 
 async function getRateInfo(ip: string): Promise<{ used: number; remaining: number; limit: number }> {
@@ -36,7 +40,7 @@ async function incrementRate(ip: string): Promise<void> {
   if (!redis) return
   const key = `panic-rate:${ip}:${todayKey()}`
   const newVal = await redis.incr(key)
-  if (newVal === 1) await redis.expire(key, 86400) // expira a las 24h
+  if (newVal === 1) await redis.expire(key, 86400)
 }
 
 // GET /api/panic — consultar usos restantes del día
@@ -83,15 +87,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No se proporcionó ningún archivo o texto.' }, { status: 400 })
     }
 
-    // ── GET panicfull.com → token tk + cookies ────────────────────────────
-    const getRes = await fetch(PANIC_HOME, {
-      headers: {
-        'User-Agent': UA,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-        'Cache-Control': 'no-cache',
-      },
-    })
+    // ── Obtener token tk desde panicfull.com ─────────────────────────────────
+    const getHeaders: Record<string, string> = {
+      'User-Agent': UA,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+      'Cache-Control': 'no-cache',
+    }
+
+    // Si tenemos cookies de sesión Pro, las incluimos en todas las peticiones
+    if (PANICFULL_COOKIES) {
+      getHeaders['Cookie'] = PANICFULL_COOKIES
+    }
+
+    const getRes = await fetch(PANIC_HOME, { headers: getHeaders })
 
     if (!getRes.ok) {
       return NextResponse.json(
@@ -102,9 +111,13 @@ export async function POST(req: NextRequest) {
 
     const pageHtml = await getRes.text()
 
+    // Verificar si la sesión está activa (página Pro muestra "RONALD" o no muestra botón de login)
+    const sessionActive = PANICFULL_COOKIES && !pageHtml.includes('user_login') && !pageHtml.includes('Login')
+
     const tkMatch =
       pageHtml.match(/name=["']tk["']\s+value=["']([^"']+)["']/) ??
       pageHtml.match(/value=["']([^"']+)["']\s+name=["']tk["']/)
+
     if (!tkMatch?.[1]) {
       return NextResponse.json(
         { error: 'No se pudo obtener el token de sesión de panicfull.com' },
@@ -113,11 +126,26 @@ export async function POST(req: NextRequest) {
     }
     const tk = tkMatch[1]
 
-    const rawCookies: string[] = []
+    // Combinar cookies de sesión + cookies nuevas de la respuesta GET
+    const newCookies: string[] = []
     getRes.headers.forEach((val, key) => {
-      if (key.toLowerCase() === 'set-cookie') rawCookies.push(val.split(';')[0])
+      if (key.toLowerCase() === 'set-cookie') newCookies.push(val.split(';')[0])
     })
-    const cookieHeader = rawCookies.join('; ')
+
+    // Priorizar cookies de sesión guardadas; agregar las nuevas que no sobreescriban
+    let cookieHeader = PANICFULL_COOKIES
+    if (newCookies.length > 0) {
+      // Agregar solo cookies nuevas que no existan ya en las de sesión
+      const existingNames = new Set(
+        (PANICFULL_COOKIES || '').split(';').map(c => c.trim().split('=')[0])
+      )
+      const extra = newCookies.filter(c => !existingNames.has(c.split('=')[0]))
+      if (extra.length > 0) {
+        cookieHeader = cookieHeader
+          ? `${cookieHeader}; ${extra.join('; ')}`
+          : extra.join('; ')
+      }
+    }
 
     // ── POST a processa_panic.php ─────────────────────────────────────────
     const body = new URLSearchParams()
@@ -130,21 +158,31 @@ export async function POST(req: NextRequest) {
       body.append('t4_send', log1)
     }
 
+    const postHeaders: Record<string, string> = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': UA,
+      'Referer': PANIC_HOME,
+      'Origin': 'https://panicfull.com',
+      'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+      'Accept-Language': 'es-ES,es;q=0.9',
+    }
+    if (cookieHeader) postHeaders['Cookie'] = cookieHeader
+
     const postRes = await fetch(PANIC_POST, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': UA,
-        'Referer': PANIC_HOME,
-        'Origin': 'https://panicfull.com',
-        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
-        'Accept-Language': 'es-ES,es;q=0.9',
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
+      headers: postHeaders,
       body: body.toString(),
     })
 
     const resultHtml = await postRes.text()
+
+    // Detectar si la respuesta es la página de inicio (sesión no activa)
+    if (resultHtml.includes('<nav') && resultHtml.includes('IMEI') && resultHtml.length > 5000) {
+      const msg = sessionActive
+        ? 'La sesión de panicfull.com expiró. Actualizá la variable PANICFULL_COOKIES en Vercel.'
+        : 'panicfull.com requiere una cuenta Pro activa. Configurá PANICFULL_COOKIES en Vercel.'
+      return NextResponse.json({ error: msg }, { status: 502 })
+    }
 
     if (!resultHtml || resultHtml.length < 50) {
       return NextResponse.json(
@@ -153,7 +191,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Éxito: descontar uso ──────────────────────────────────────────────
+    // ── Éxito ─────────────────────────────────────────────────────────────
     await incrementRate(ip)
     const newRemaining = Math.max(0, remaining - 1)
 
