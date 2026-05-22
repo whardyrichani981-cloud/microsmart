@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic'
 
 // POST — subir una o más imágenes a Cloudinary y guardar en la orden
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  console.log('[imagenes] CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ?? 'NO CONFIGURADO')
+  console.log('[imagenes] CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? 'OK' : 'NO CONFIGURADO')
   const { id } = await params
 
   try {
