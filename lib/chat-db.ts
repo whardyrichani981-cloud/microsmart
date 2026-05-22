@@ -271,6 +271,27 @@ export async function pollTelegramUpdates(token: string): Promise<void> {
 // ─── Búsqueda en lista de precios ────────────────────────────────────────────
 interface PriceItem { name: string; code?: string; price: number; category?: string }
 
+// Sinónimos: cada palabra se expande a sus equivalentes
+const SYNONYMS: Record<string, string[]> = {
+  'chasis':    ['carcasa', 'housing', 'chasis'],
+  'chassis':   ['carcasa', 'housing', 'chasis'],
+  'housing':   ['carcasa', 'housing', 'chasis'],
+  'carcasa':   ['carcasa', 'housing', 'chasis'],
+  'pantalla':  ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
+  'modulo':    ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
+  'módulo':    ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
+  'lcd':       ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
+  'display':   ['pantalla', 'modulo', 'módulo', 'lcd', 'display', 'oled', 'incell'],
+  'bateria':   ['bateria', 'batería', 'battery'],
+  'batería':   ['bateria', 'batería', 'battery'],
+  'camara':    ['camara', 'cámara', 'camera'],
+  'cámara':    ['camara', 'cámara', 'camera'],
+  'conector':  ['conector', 'connector', 'puerto', 'carga'],
+  'carga':     ['conector', 'connector', 'puerto', 'carga'],
+  'tactil':    ['tactil', 'táctil', 'touch'],
+  'touch':     ['tactil', 'táctil', 'touch'],
+}
+
 export async function searchPriceList(listId: string, query: string): Promise<PriceItem[]> {
   if (!listId || !query) return []
   try {
@@ -278,22 +299,32 @@ export async function searchPriceList(listId: string, query: string): Promise<Pr
     const items = Array.isArray(data) ? data : []
     if (!items.length) return []
 
-    // Normalizar query: quitar tildes, minúsculas, dividir en palabras
     const normalize = (s: string) => s.toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    const words = normalize(query).split(/\s+/).filter(w => w.length > 2)
+
+    // Expandir palabras con sinónimos
+    const rawWords = normalize(query).split(/\s+/).filter(w => w.length > 2)
+    const expandedWords = rawWords.flatMap(w => SYNONYMS[w] ?? [w])
+    const words = [...new Set(expandedWords)]
     if (!words.length) return []
 
-    // Puntuar cada item según cuántas palabras del query contiene
+    // Puntuar items
     const scored = items.map(item => {
       const haystack = normalize(item.name + ' ' + (item.category ?? ''))
       const score = words.filter(w => haystack.includes(w)).length
       return { item, score }
     }).filter(x => x.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 15)  // máximo 15 resultados
 
-    return scored.map(x => x.item)
+    // Deduplicar por nombre+precio
+    const seen = new Set<string>()
+    const unique: PriceItem[] = []
+    for (const { item } of scored) {
+      const key = `${item.name}|${item.price}`
+      if (!seen.has(key)) { seen.add(key); unique.push(item) }
+      if (unique.length >= 12) break
+    }
+    return unique
   } catch { return [] }
 }
 
