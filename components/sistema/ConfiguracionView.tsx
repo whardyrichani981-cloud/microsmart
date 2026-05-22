@@ -460,6 +460,7 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
   const [nombreNegocio, setNombreNegocio] = useState('')
   const [nombreSaving, setNombreSaving] = useState(false)
   const [nombreSaved, setNombreSaved] = useState(false)
+  const [nombreError, setNombreError] = useState('')
 
   // Logo
   const [logoBase64, setLogoBase64] = useState('')
@@ -524,15 +525,21 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
 
   // ── Nombre del negocio ────────────────────────────────────────────────────
   const handleSaveNombre = async () => {
+    if (!nombreNegocio.trim()) return
     setNombreSaving(true)
+    setNombreError('')
     try {
-      await fetch('/api/sistema/negocio', {
+      const res = await fetch('/api/sistema/negocio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombreNegocio }),
+        body: JSON.stringify({ nombre: nombreNegocio.trim() }),
       })
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      setNombreNegocio(nombreNegocio.trim())
       setNombreSaved(true)
       setTimeout(() => setNombreSaved(false), 2500)
+    } catch (e) {
+      setNombreError(String(e))
     } finally {
       setNombreSaving(false)
     }
@@ -1095,6 +1102,7 @@ export function OrdenesEstadosPanel({ onBack, backLabel = '← Volver a Configur
             {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : nombreNegocio ? 'Modificar' : 'Guardar'}
           </button>
         </div>
+        {nombreError && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>⚠ {nombreError}</div>}
       </div>
 
       {/* ── Logo ── */}
@@ -1416,6 +1424,7 @@ export default function ConfiguracionView({
   const [nombreNegocio, setNombreNegocio] = useState('')
   const [nombreSaving, setNombreSaving] = useState(false)
   const [nombreSaved, setNombreSaved] = useState(false)
+  const [nombreError, setNombreError] = useState('')
 
   useEffect(() => {
     fetch('/api/sistema/negocio')
@@ -1425,15 +1434,21 @@ export default function ConfiguracionView({
   }, [])
 
   const handleSaveNombre = async () => {
+    if (!nombreNegocio.trim()) return
     setNombreSaving(true)
+    setNombreError('')
     try {
-      await fetch('/api/sistema/negocio', {
+      const res = await fetch('/api/sistema/negocio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombreNegocio }),
+        body: JSON.stringify({ nombre: nombreNegocio.trim() }),
       })
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      setNombreNegocio(nombreNegocio.trim())
       setNombreSaved(true)
       setTimeout(() => setNombreSaved(false), 2500)
+    } catch (e) {
+      setNombreError(String(e))
     } finally { setNombreSaving(false) }
   }
 
@@ -1620,6 +1635,7 @@ export default function ConfiguracionView({
             {nombreSaved ? '✓ Guardado' : nombreSaving ? 'Guardando…' : nombreNegocio ? 'Modificar' : 'Guardar'}
           </button>
         </div>
+        {nombreError && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>⚠ {nombreError}</div>}
       </div>
 
     </div>
