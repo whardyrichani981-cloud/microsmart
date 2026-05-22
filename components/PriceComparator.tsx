@@ -18,6 +18,7 @@ import AdminView from './AdminView'
 import HomeView from './HomeView'
 import IMEIView from './IMEIView'
 import PanicAnalyzerView from './sistema/PanicAnalyzerView'
+import HerramientasTecnicasView from './sistema/HerramientasTecnicasView'
 import TurnosView from './sistema/TurnosView'
 import StockMainView from './sistema/StockMainView'
 import GastosMainView from './sistema/GastosMainView'
@@ -51,7 +52,7 @@ interface Props {
 }
 export type SortState = { col: string; dir: 1 | -1 }
 
-type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'panic' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos'
+type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'panic' | 'herramientas' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos'
 
 const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions; adminOnly?: boolean }[] = [
   { id: 'inicio',         label: 'Inicio',                   icon: '🏠' },
@@ -59,7 +60,7 @@ const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permi
   { id: 'proveedores',    label: 'Proveedores',              icon: '🏢', permKey: 'canViewProveedores' },
   { id: 'notasdash',      label: 'Tareas y Pedidos',         icon: '📋', permKey: 'canViewNotas' },
   { id: 'imei',           label: 'Verificar IMEI',           icon: '🔍', permKey: 'canViewIMEI' },
-  { id: 'panic',          label: 'Análisis Panic Full',      icon: '📋', permKey: 'canViewIMEI' },
+  { id: 'herramientas',   label: 'Herramientas Técnicas',    icon: '🛠️', permKey: 'canViewIMEI' },
   { id: 'ordenes',        label: 'Órdenes de trabajo',       icon: '🔧', permKey: 'canViewOrdenes' },
   { id: 'presupuestos',   label: 'Presupuestos',             icon: '📋', permKey: 'canViewOrdenes' },
   { id: 'servicios',      label: 'Servicios',                icon: '🛠', permKey: 'canViewServicios' },
@@ -1012,7 +1013,7 @@ export default function PriceComparator({
             <NotasBoard key="notasdash" onNotesChange={setPendingNotes} currentUserName={displayName || undefined} isSuperAdmin={isSuperAdmin} role={role} />
           )}
           {activeNav === 'imei' && <IMEIView key="imei" />}
-          {activeNav === 'panic' && <PanicAnalyzerView key="panic" />}
+          {activeNav === 'herramientas' && <HerramientasTecnicasView key="herramientas" />}
           {activeNav === 'ordenes' && <OrdenesView key={`ordenes-${navSearch?.nav === 'ordenes' ? navSearch.term : ''}`} initialSearch={navSearch?.nav === 'ordenes' ? navSearch.term : ''} />}
           {activeNav === 'presupuestos' && <PresupuestosView key="presupuestos" />}
           {activeNav === 'servicios' && <ServiciosView key="servicios" />}
