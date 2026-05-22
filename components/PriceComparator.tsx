@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Supplier, MergedRow } from '@/lib/types'
 import { COLORS } from '@/lib/colors'
@@ -54,23 +54,43 @@ export type SortState = { col: string; dir: 1 | -1 }
 
 type NavItem = 'inicio' | 'comparador' | 'proveedores' | 'notas' | 'notasdash' | 'cf' | 'gremio' | 'imei' | 'panic' | 'herramientas' | 'administracion' | 'agenda' | 'stock' | 'gastos' | 'reportes' | 'ventas' | 'comisiones' | 'clientes' | 'ordenes' | 'servicios' | 'contable' | 'ventas-equipos' | 'caja' | 'presupuestos'
 
+
+const NAV_ICONS: Record<string, React.ReactNode> = {
+  inicio:        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg>,
+  comparador:    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>,
+  proveedores:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>,
+  notasdash:     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>,
+  imei:          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>,
+  herramientas:  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M14 4a5 5 0 015 6l5 5-3 3-5-5a5 5 0 01-6-5l2 2 2-2-2-2 2-2z"/></svg>,
+  ordenes:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M14 4a5 5 0 015 6l5 5-3 3-5-5a5 5 0 01-6-5l2 2 2-2-2-2 2-2z"/></svg>,
+  presupuestos:  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 9h8M8 13h8M8 17h4"/></svg>,
+  servicios:     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>,
+  clientes:      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 11.5a3 3 0 100-6"/><path d="M21 19c0-2.4-1.8-4-4-4"/></svg>,
+  agenda:        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+  stock:         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M3.5 7l8.5-4 8.5 4-8.5 4-8.5-4z"/><path d="M3.5 7v10l8.5 4 8.5-4V7"/><path d="M12 11v10"/></svg>,
+  'ventas-equipos': <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>,
+  contable:      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d="M3 17l6-6 4 4 8-9"/><path d="M14 6h7v7"/></svg>,
+  caja:          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg>,
+  administracion:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+}
+
 const ALL_NAV: { id: NavItem; label: string; icon: string; permKey?: keyof Permissions; adminOnly?: boolean }[] = [
-  { id: 'inicio',         label: 'Inicio',                   icon: '🏠' },
-  { id: 'comparador',     label: 'Listas de precio',         icon: '📊', permKey: 'canViewComparador' },
-  { id: 'proveedores',    label: 'Proveedores',              icon: '🏢', permKey: 'canViewProveedores' },
-  { id: 'notasdash',      label: 'Tareas y Pedidos',         icon: '📋', permKey: 'canViewNotas' },
-  { id: 'imei',           label: 'Verificar IMEI',           icon: '🔍', permKey: 'canViewIMEI' },
-  { id: 'herramientas',   label: 'Herramientas Técnicas',    icon: '🛠️', permKey: 'canViewIMEI' },
-  { id: 'ordenes',        label: 'Órdenes de trabajo',       icon: '🔧', permKey: 'canViewOrdenes' },
-  { id: 'presupuestos',   label: 'Presupuestos',             icon: '📋', permKey: 'canViewOrdenes' },
-  { id: 'servicios',      label: 'Servicios',                icon: '🛠', permKey: 'canViewServicios' },
-  { id: 'clientes',       label: 'Clientes',                 icon: '👥', permKey: 'canViewClientes' },
-  { id: 'agenda',         label: 'Turnos',                   icon: '📅', permKey: 'canViewAgenda' },
-  { id: 'stock',          label: 'Stock',                    icon: '📦', permKey: 'canViewStock' },
-  { id: 'ventas-equipos', label: 'Venta de equipos',          icon: '📱' },
-  { id: 'contable',       label: 'Administración contable',  icon: '📒' },
-  { id: 'caja',           label: 'Caja de mostrador',        icon: '🖥️', permKey: 'canViewOrdenes' },
-  { id: 'administracion', label: 'Configuración del sistema', icon: '⚙️', adminOnly: true },
+  { id: 'inicio',         label: 'Inicio',                   icon: '' },
+  { id: 'comparador',     label: 'Listas de precio',         icon: '', permKey: 'canViewComparador' },
+  { id: 'proveedores',    label: 'Proveedores',              icon: '', permKey: 'canViewProveedores' },
+  { id: 'notasdash',      label: 'Tareas y Pedidos',         icon: '', permKey: 'canViewNotas' },
+  { id: 'imei',           label: 'Verificar IMEI',           icon: '', permKey: 'canViewIMEI' },
+  { id: 'herramientas',   label: 'Herramientas Técnicas',    icon: '', permKey: 'canViewIMEI' },
+  { id: 'ordenes',        label: 'Órdenes de trabajo',       icon: '', permKey: 'canViewOrdenes' },
+  { id: 'presupuestos',   label: 'Presupuestos',             icon: '', permKey: 'canViewOrdenes' },
+  { id: 'servicios',      label: 'Servicios',                icon: '', permKey: 'canViewServicios' },
+  { id: 'clientes',       label: 'Clientes',                 icon: '', permKey: 'canViewClientes' },
+  { id: 'agenda',         label: 'Turnos',                   icon: '', permKey: 'canViewAgenda' },
+  { id: 'stock',          label: 'Stock',                    icon: '', permKey: 'canViewStock' },
+  { id: 'ventas-equipos', label: 'Venta de equipos',          icon: '' },
+  { id: 'contable',       label: 'Administración contable',  icon: '' },
+  { id: 'caja',           label: 'Caja de mostrador',        icon: '', permKey: 'canViewOrdenes' },
+  { id: 'administracion', label: 'Configuración del sistema', icon: '', adminOnly: true },
 ]
 
 const NAV_FIXED = new Set<NavItem>(['inicio', 'administracion'])
@@ -604,10 +624,14 @@ export default function PriceComparator({
                   <span style={{ fontSize: 8, color: 'var(--text-dim)', position: 'absolute', left: 2, lineHeight: 1, letterSpacing: '-1px', opacity: 0.5 }}>⠿</span>
                 )}
                 <span style={{
-                  fontSize: 16, flexShrink: 0, lineHeight: 1,
-                  filter: isActive && selectedSupplierIds.size === 0 ? 'none' : 'grayscale(0.3)',
-                  transition: 'filter 0.15s',
-                }}>{item.icon}</span>
+                  flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center',
+                  opacity: isActive && selectedSupplierIds.size === 0 ? 1 : 0.55,
+                  transition: 'opacity 0.15s',
+                }}>
+                  {NAV_ICONS[item.id] ?? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{flexShrink:0}}><circle cx="12" cy="12" r="4"/></svg>
+                  )}
+                </span>
                 {(sidebarOpen || isMobile) && (
                   <span style={{
                     fontSize: 13,
@@ -676,7 +700,12 @@ export default function PriceComparator({
           onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
-          <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>{isDark ? '☀️' : '🌙'}</span>
+          <span style={{ flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center', opacity: 0.55 }}>
+            {isDark
+              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+            }
+          </span>
           {sidebarOpen && (
             <span style={{ fontSize: 13, fontWeight: 400, whiteSpace: 'nowrap' }}>
               {isDark ? 'Modo claro' : 'Modo oscuro'}
