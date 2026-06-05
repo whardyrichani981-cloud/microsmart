@@ -185,8 +185,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const ip = getClientIP(req)
 
-  // ── Rate limit check (DESACTIVADO temporalmente) ─────────────────────────
+  // ── Rate limit check ─────────────────────────────────────────────────────
   const { remaining } = await getRateInfo(ip)
+  if (remaining <= 0) {
+    return NextResponse.json(
+      { error: `Límite diario alcanzado. Máximo ${DAILY_LIMIT} análisis por día.` },
+      { status: 429 }
+    )
+  }
 
   try {
     const form = await req.formData()

@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
 
   try {
     // Llamar al endpoint POST de backup internamente
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`
+    // NEXT_PUBLIC_BASE_URL tiene prioridad; en Vercel se usa VERCEL_URL automáticamente
+    const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || vercelUrl || `http://localhost:${process.env.PORT || 3000}`
     const res = await fetch(`${baseUrl}/api/sistema/backup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

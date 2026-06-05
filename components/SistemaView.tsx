@@ -23,7 +23,6 @@ const GarantiasView      = lazy(() => import('./sistema/GarantiasView'))
 const CajaDiariaView     = lazy(() => import('./sistema/CajaDiariaView'))
 const CuentaCorrienteView = lazy(() => import('./sistema/CuentaCorrienteView'))
 const MercadoPagoView    = lazy(() => import('./sistema/MercadoPagoView'))
-
 type SectionId =
   | 'ordenes'
   | 'clientes'

@@ -665,7 +665,7 @@ export async function deleteListaData(proveedorId: string): Promise<void> {
 
 // ── Módulos ───────────────────────────────────────────────────────────────────
 const DEFAULT_MODULOS: Record<string, boolean> = {
-  notasdash: true, imei: true, herramientas: true,
+  notasdash: true, imei: true,
   ordenes: true, servicios: true, clientes: true, agenda: true,
   stock: true, ventas: true, gastos: true, comisiones: true, reportes: true,
 }
