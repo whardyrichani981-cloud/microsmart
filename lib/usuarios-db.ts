@@ -14,10 +14,10 @@ export interface UserRecord {
 const FILE = path.join(process.cwd(), 'data', 'sistema-usuarios.json')
 
 const DEFAULTS: UserRecord[] = [
-  { username: 'microsmart',  password: 'micro1278', role: 'superadmin', displayName: 'Ronald Diaz' },
-  { username: 'microwhardy', password: 'micro1278', role: 'superadmin', displayName: 'Whardy Richani' },
-  { username: 'microsaddi',  password: 'saddi',     role: 'employee',   displayName: 'Saddi Richani' },
-  { username: 'microsharon', password: 'sharon',    role: 'employee',   displayName: 'Sharon Quiroz' },
+  { username: 'microsmart',  password: 'microsmart2025', role: 'superadmin', displayName: 'Ronald Diaz' },
+  { username: 'microwhardy', password: 'microsmart2025', role: 'superadmin', displayName: 'Whardy Richani' },
+  { username: 'microsaddi',  password: 'saddi',          role: 'employee',   displayName: 'Saddi Richani' },
+  { username: 'microsharon', password: 'sharon',         role: 'employee',   displayName: 'Sharon Quiroz' },
 ]
 
 export function getUsers(): UserRecord[] {
