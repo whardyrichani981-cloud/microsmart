@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface ChatMessage { id: string; role: 'user' | 'owner' | 'bot'; text: string; createdAt: string }
 
@@ -44,6 +45,7 @@ function formatTime(iso: string) {
 }
 
 export default function ChatWidget() {
+  const pathname = usePathname()
   const [open, setOpen]               = useState(false)
   const [messages, setMessages]       = useState<ChatMessage[]>([])
   const [input, setInput]             = useState('')
@@ -149,6 +151,8 @@ export default function ChatWidget() {
       await fetchMessages(sessionId)
     } finally { setSending(false) }
   }
+
+  if (pathname === '/login') return null
 
   const accent = '#4ade80'
   const dark   = '#0f1117'

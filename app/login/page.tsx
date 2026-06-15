@@ -69,7 +69,7 @@ export default function LoginPage() {
               style={{
                 width: '100%', padding: '10px 14px', boxSizing: 'border-box',
                 background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: 8, color: '#e2e8f0', fontSize: 14, outline: 'none',
+                borderRadius: 8, color: '#111111', fontSize: 14, outline: 'none',
               }}
             />
           </div>
@@ -88,7 +88,7 @@ export default function LoginPage() {
               style={{
                 width: '100%', padding: '10px 14px', boxSizing: 'border-box',
                 background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: 8, color: '#e2e8f0', fontSize: 14, outline: 'none',
+                borderRadius: 8, color: '#111111', fontSize: 14, outline: 'none',
               }}
             />
           </div>
