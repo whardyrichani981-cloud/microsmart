@@ -67,6 +67,9 @@ export default function LoginPage() {
               placeholder="Usuario"
               required
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               style={{
                 width: '100%', padding: '10px 14px', boxSizing: 'border-box',
                 background: 'var(--surface2)', border: '1px solid var(--border)',
@@ -87,6 +90,9 @@ export default function LoginPage() {
                 placeholder="Contraseña"
                 required
                 autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 style={{
                   width: '100%', padding: '10px 40px 10px 14px', boxSizing: 'border-box',
                   background: 'var(--surface2)', border: '1px solid var(--border)',
