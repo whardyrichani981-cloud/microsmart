@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [pass, setPass] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPass, setShowPass] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -78,19 +79,33 @@ export default function LoginPage() {
             <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>
               Contraseña
             </label>
-            <input
-              type="password"
-              value={pass}
-              onChange={e => setPass(e.target.value)}
-              placeholder="Contraseña"
-              required
-              autoComplete="current-password"
-              style={{
-                width: '100%', padding: '10px 14px', boxSizing: 'border-box',
-                background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: 8, color: '#111111', fontSize: 14, outline: 'none',
-              }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPass ? 'text' : 'password'}
+                value={pass}
+                onChange={e => setPass(e.target.value)}
+                placeholder="Contraseña"
+                required
+                autoComplete="current-password"
+                style={{
+                  width: '100%', padding: '10px 40px 10px 14px', boxSizing: 'border-box',
+                  background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: 8, color: '#111111', fontSize: 14, outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(s => !s)}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: 4, color: '#94a3b8', fontSize: 16, lineHeight: 1,
+                }}
+                title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
           {error && (
