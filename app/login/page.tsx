@@ -25,11 +25,12 @@ export default function LoginPage() {
         router.push('/')
         router.refresh()
       } else {
-        const data = await res.json()
-        setError(data.error ?? 'Error al iniciar sesión')
+        let message = 'Credenciales incorrectas'
+        try { const d = await res.json(); message = d.error ?? message } catch { /* non-JSON */ }
+        setError(message)
       }
     } catch {
-      setError('Error de conexión')
+      setError('Sin conexión con el servidor')
     } finally {
       setLoading(false)
     }
